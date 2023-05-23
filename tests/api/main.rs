@@ -1,5 +1,5 @@
 use account_engine::{
-    account::LedgerType,
+    accounting::LedgerType,
     memory_store::MemoryStore,
     storage::{AccountEngineStorage, StorageError},
 };

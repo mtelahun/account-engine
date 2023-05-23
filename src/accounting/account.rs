@@ -3,7 +3,7 @@ use std::sync::Arc;
 use rust_decimal::Decimal;
 use rusty_money::iso::{self, Currency};
 
-use crate::ledger::Ledger;
+use crate::accounting::ledger::Ledger;
 
 use super::{error::AccountError, JournalEntry};
 

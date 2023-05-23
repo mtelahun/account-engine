@@ -1,9 +1,6 @@
 use rusty_money::iso::Currency;
 
-use crate::{
-    account::{Account, LedgerType},
-    ledger::Ledger,
-};
+use crate::accounting::{Account, Ledger, LedgerType};
 
 pub trait AccountEngineStorage {
     fn new_ledger(&self, name: &str, currency: &Currency) -> Result<Box<Ledger>, StorageError>;

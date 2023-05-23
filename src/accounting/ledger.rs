@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::account::{Account, LedgerType};
+use crate::accounting::{Account, LedgerType};
 use rusty_money::iso;
 
 #[derive(Clone, Debug)]

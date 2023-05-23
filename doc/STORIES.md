@@ -55,10 +55,10 @@ aggregate the Dr and Cr columns of the accounts below them.
 #### Acceptance Criteria
 Given the caller supplies all required information, when a ledger is created, it will:
 - have a name
-- have a default accounting period end-date defined by the month and day of the last day of the period
+- have a default accounting period template defined by the month and day of the first day of the period and the fiscal year
 - have zero or more default interim periods defined
 - have one accounting period, which will be the current period. It's start and end dates will
-be defined relative to the default accounting period end-date.
+be defined relative to the default accounting period template.
 - have a root intermediate account with the name of the ledger, who's only purpose is to function as parent to all first level accounts
 - have no leaf accounts defined
 - have one journal defined: General Journal

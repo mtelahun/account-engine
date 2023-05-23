@@ -2,7 +2,7 @@
 # Ledger
 The ledger is the "engine" that records and tracks the financial position of any orgainization or entity. It
 is the ultimate goal of this project to provide the "accounting engine" that another larger application can
-use drive its platform. It is meant to be used by ERPs, Fintech applications, financial tracking and
+use to drive its platform. It is meant to be used by ERPs, Fintech applications, financial tracking and
 management applications.
 
 #### Card
@@ -11,15 +11,15 @@ so I and my bookkeepers can create and maintain the company's financial records.
 
 #### Conversation
 - Non-goal: not interested in providing a GUI
-- Non-goal: not interestedin in providing an API
-- However, it should be possible for another app to slap a GUI or an API on this library and provide a more-or-less
+- Non-goal: not interestedin in providing a web API
+- However, it should be possible for another app to slap a GUI or an http endpoint on this library and provide a more-or-less
 complete accounting program out of the box
 - Implement basic accounting sanity checks
   - double-entry accounting
   - transactions: ensure Dr and Cr match
   - transactions: ensure accounting equation is not violated
 - How do we handle adjusting entries (should they even be included in this paradigm) ?
-- How do we handle the "Accounting Cycle" ?
+- How do we handle "The Accounting Cycle" ?
 
 #### Acceptance Criteria
 Given the ledger should support standard accounting practices, such as GAAP and IFRS, when a ledger is created, then
@@ -57,18 +57,12 @@ Given the caller supplies all required information, when a ledger is created, it
 - have a name
 - have a default accounting period end-date defined by the month and day of the last day of the period
 - have zero or more default interim periods defined
-- have an one accounting period, which will be the current period. It's start and end dates will
+- have one accounting period, which will be the current period. It's start and end dates will
 be defined relative to the default accounting period end-date.
-- have a root account with the name of the ledger, who's only purpose is to function as parent to all first level accounts
-- have interim accounts defined as such:
-Root
-  Assets
-  Liabilities
-  Capital
-  Revenue
-  Expenses
+- have a root intermediate account with the name of the ledger, who's only purpose is to function as parent to all first level accounts
 - have no leaf accounts defined
-- have no journals defined
+- have one journal defined: General Journal
+- have the ability to define an arbitrary number of journals
 
 ### Create an account
 #### Card
@@ -77,6 +71,9 @@ the company and outside entities that have a financial relationship with it.
 #### Conversation
 - Accounts recording information about the company are called **Ledger Accounts**. Accounts that refer to
 outside entities are called **External Accounts**.
+- Accounts are either **Leaf** accounts or **Intermediate** accounts. Intermediate account have no journal
+entries and summarize the result of child accounts. Leaf accounts have only journal entries and no children.
+- Account numbers must be unique
 - Account numbering should be left up to the caller/user.
 - Account records have two types of transactions: Debits (Dr) and Credits (Cr)
 - Account balances can be derived from transactions, but there are instances (i.e- end of period) when
@@ -88,6 +85,8 @@ Given the caller supplies all required information, when an account is created, 
 - have an account number
 - identify whether it is a ledger or an external account
 - have no transactions recorded
+- cannot create a journal entry in an intermediate account
+- cannot add child accounts to a leaf account
 
 ### Create a journal
 #### Card
@@ -130,7 +129,7 @@ As an accountant I must be able to post transactions recorded in a journal to th
 accounts affected by the transaction so that they are reflected accurately in the ledger.
 ### Conversation
 - ~~should the records be derived from the journals at run-time or should they be copied into
-a separate record.~~ For immutability purposes database records should be created.
+a separate record?~~ For immutability purposes database records should be created.
 - once created the record should not be deleted or modified
 ### Acceptance Criteria
 Given a complete journal transaction record, when a journal entry is created, then it will:

@@ -10,3 +10,4 @@ pub use account::LedgerType;
 pub use error::AccountError;
 pub use journal_entry::JournalEntry;
 pub use ledger::Ledger;
+pub use period::AccountingPeriod;

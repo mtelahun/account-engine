@@ -51,18 +51,22 @@ other places.
 #### Conversation
 - Use interim and leaf accounts to model the ledger hierarchy. Leaf accounts record transactions. Interim accounts
 aggregate the Dr and Cr columns of the accounts below them.
-- Accounts should be arranged by type: Assets, Liabilities, Capital, Revenue, Expense
+- ~~Accounts should be arranged by type: Assets, Liabilities, Capital, Revenue, Expense~~ This should be left to
+the caller since any non-trivial setup will have multiple additional ledgers in addtion to a General Ledger.
 #### Acceptance Criteria
 Given the caller supplies all required information, when a ledger is created, it will:
 - have a name
-- have a default accounting period template defined by the month and day of the first day of the period and the fiscal year
-- have zero or more default interim periods defined
-- have one accounting period, which will be the current period. It's start and end dates will
-be defined relative to the default accounting period template.
+- ~~have a default accounting period template defined by the month and day of the first day of the period and the fiscal year~~
+- ~~have zero or more default interim periods defined~~
+- ~~have one accounting period, which will be the current period. It's start and end dates will
+be defined relative to the default accounting period template.~~
+- have zero fiscal periods/years defined
 - have a root intermediate account with the name of the ledger, who's only purpose is to function as parent to all first level accounts
 - have no leaf accounts defined
 - have one journal defined: General Journal
 - have the ability to define an arbitrary number of journals
+- have zero or more subsidiary ledgers
+- have zero or more journals
 
 ### Create an account
 #### Card
@@ -87,6 +91,30 @@ Given the caller supplies all required information, when an account is created, 
 - have no transactions recorded
 - cannot create a journal entry in an intermediate account
 - cannot add child accounts to a leaf account
+
+### Create an accounting period
+#### Card
+As an accountant I want to setup an annual accounting period with possible additional interim periods so that I can
+discharge my reporting duties to the owners and to the government.
+#### Conversation
+- Should be independent from the ledger and other objects (though they may depend on it)
+- Accounting Period is annual.
+- Interim configuration can be:
+  - Calendr month
+    - 12 periods beginning on the 1st of each calendar month
+  - 4 weeks
+    - 13 periods beginning on the 1st monday of the accounting period
+    - each period is exactly 4 weeks long (has 4 mondays)
+  - 4-4-5 weeks
+    - 13 periods beginning on the 1st day of the first calendar month of the accounting period with
+    two 4-week periods followed by one 5-week period. This cycle repeats 4 times during the fiscal year.
+    - The first period is 4 weeks long and ends on the 28th of the calendar month of the first period.
+    For example: If start is Jan 1, first period ends Jan. 28 and last day of fiscal year is Dec. 31. If
+    start is June 1, first period ends June 28 and last day of fiscal year is May 31
+#### Acceptance criteria
+Given that the caller supplies all required information, when the caller sets up an accounting period, then it will:
+- have one or more fiscal years
+- zero or more interim periods in each fiscal year
 
 ### Create a journal
 #### Card
@@ -123,7 +151,7 @@ When a transaction is posted:
 - be in a Posted state
 - the library must refuse to modify or delete the transaction
 
-### Create a ledger record (journal entry)
+### Create a journal entry (ledger record)
 ### Card
 As an accountant I must be able to post transactions recorded in a journal to the ledger
 accounts affected by the transaction so that they are reflected accurately in the ledger.

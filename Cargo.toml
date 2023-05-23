@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 chrono = "0.4.24"
+chronoutil = "0.2.4"
 rust_decimal = "1.29.1"
 rusty-money = "0.4.1"

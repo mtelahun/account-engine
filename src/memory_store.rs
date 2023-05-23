@@ -1,3 +1,5 @@
+use chrono::{Datelike, NaiveDate};
+use chronoutil::RelativeDuration;
 use rusty_money::iso::Currency;
 use std::{
     collections::HashMap,
@@ -5,7 +7,10 @@ use std::{
 };
 
 use crate::{
-    accounting::{Account, Ledger, LedgerType},
+    accounting::{
+        period::{InterimPeriod, InterimType},
+        Account, AccountingPeriod, Ledger, LedgerType,
+    },
     storage::{AccountEngineStorage, StorageError},
 };
 
@@ -18,6 +23,7 @@ pub struct MemoryStore {
 pub struct Inner {
     ledgers: HashMap<String, Ledger>,
     accounts: HashMap<String, Account>,
+    periods: HashMap<i32, AccountingPeriod>,
 }
 
 impl MemoryStore {
@@ -37,6 +43,7 @@ impl Inner {
         Self {
             ledgers: HashMap::<String, Ledger>::new(),
             accounts: HashMap::<String, Account>::new(),
+            periods: HashMap::<i32, AccountingPeriod>::new(),
         }
     }
 }
@@ -100,5 +107,48 @@ impl AccountEngineStorage for MemoryStore {
         Err(StorageError::DuplicateRecord(
             "duplicate ledger name".into(),
         ))
+    }
+
+    fn new_period(
+        &self,
+        start: NaiveDate,
+        itype: InterimType,
+    ) -> Result<AccountingPeriod, StorageError> {
+        let end = start + RelativeDuration::years(1) + RelativeDuration::days(-1);
+        let mut period = AccountingPeriod {
+            fiscal_year: end.year(),
+            period_start: start,
+            period_end: end,
+            periods: Vec::<InterimPeriod>::new(),
+        };
+        let mut interim_periods = match itype {
+            InterimType::CalendarMonth => period.create_interim_calendar(),
+            InterimType::FourWeek => todo!(),
+            InterimType::FourFourFiveWeek => todo!(),
+        }
+        .map_err(|e| StorageError::Unknown(e.to_string()))?;
+        period.periods.append(&mut interim_periods);
+
+        let mut inner = self.inner.write().unwrap();
+        let search = inner.periods.get(&period.fiscal_year);
+        if search.is_none() {
+            inner.periods.insert(period.fiscal_year, period.clone());
+
+            return Ok(period);
+        }
+
+        Err(StorageError::DuplicateRecord(
+            "duplicate accounting period".into(),
+        ))
+    }
+
+    fn periods(&self) -> Result<Vec<AccountingPeriod>, StorageError> {
+        let mut res = Vec::<AccountingPeriod>::new();
+        let inner = self.inner.read().unwrap();
+        for value in inner.periods.values() {
+            res.push(value.clone())
+        }
+
+        Ok(res)
     }
 }

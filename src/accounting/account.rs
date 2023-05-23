@@ -54,7 +54,7 @@ impl Account {
             return Ok(());
         }
 
-        Err(AccountError::ValidationError(
+        Err(AccountError::Validation(
             "cannot add children to a leaf account".into(),
         ))
     }
@@ -128,7 +128,7 @@ mod tests {
         assert!(res_cash.is_err(), "adding child to Leaf fails");
         assert_eq!(
             res_cash.err().unwrap(),
-            Err::<(), AccountError>(AccountError::ValidationError(
+            Err::<(), AccountError>(AccountError::Validation(
                 "cannot add children to a leaf account".into()
             ))
             .err()

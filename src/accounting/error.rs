@@ -1,12 +1,16 @@
 #[derive(Debug, PartialEq)]
 pub enum AccountError {
-    ValidationError(String),
+    Internal(String),
+    Validation(String),
 }
 
 impl std::fmt::Display for AccountError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let AccountError::ValidationError(msg) = self;
-        write!(f, "ValidationError: {}", msg)
+        let msg = match self {
+            AccountError::Internal(msg) => format!("Internal Error: {}", msg),
+            AccountError::Validation(msg) => format!("Validation Error: {}", msg),
+        };
+        write!(f, "{}", msg)
     }
 }
 
@@ -18,13 +22,23 @@ mod tests {
 
     #[test]
     fn test_error_message() {
-        let err =
-            AccountError::ValidationError("some error validating caller supplied input".into());
-
+        // Act
+        let err: AccountError =
+            AccountError::Validation("some error validating caller supplied input".into());
+        // Assert
         assert_eq!(
             err.to_string(),
-            "ValidationError: some error validating caller supplied input",
+            "Validation Error: some error validating caller supplied input",
             "error string has correct format",
-        )
+        );
+
+        // Act
+        let err = AccountError::Internal("some internal library error".into());
+        // Assert
+        assert_eq!(
+            err.to_string(),
+            "Internal Error: some internal library error",
+            "error string has correct format",
+        );
     }
 }

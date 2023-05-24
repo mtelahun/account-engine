@@ -121,6 +121,7 @@ Given that the caller supplies all required information, when the caller sets up
 As an accountant I want to create a journal so a bookkeeper can record the company's financial transactions
 as they happen.
 #### Conversation
+- Attached to **one** General Ledger
 - Should contain an unique identifier for posting purposes
 - transactions are sorted in chronological order
 #### Acceptance Criteria

@@ -71,6 +71,20 @@ impl AccountEngineStorage for MemoryStore {
         res
     }
 
+    fn ledgers_by_name(&self, name: &str) -> Result<Vec<Ledger>, StorageError> {
+        let mut res = Vec::<Ledger>::new();
+        let inner = self.inner.read().unwrap();
+        let ledger = inner.ledgers.get(name);
+
+        if let Some(ledger) = ledger {
+            res.insert(0, ledger.clone());
+
+            return Ok(res);
+        }
+
+        Err(StorageError::RecordNotFound)
+    }
+
     fn new_account(
         &self,
         ledger: &Ledger,
@@ -150,5 +164,16 @@ impl AccountEngineStorage for MemoryStore {
         }
 
         Ok(res)
+    }
+
+    fn add_subsidiary(&self, main: &Ledger, subsidiary: Ledger) -> Result<(), StorageError> {
+        let mut inner = self.inner.write().unwrap();
+        let ledger = inner
+            .ledgers
+            .get_mut(&main.name)
+            .ok_or(StorageError::RecordNotFound)?;
+        ledger.subsidiaries.push(subsidiary);
+
+        Ok(())
     }
 }

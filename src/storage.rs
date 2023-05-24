@@ -25,12 +25,17 @@ pub trait AccountEngineStorage {
 
     fn ledgers(&self) -> Vec<Ledger>;
 
+    fn ledgers_by_name(&self, name: &str) -> Result<Vec<Ledger>, StorageError>;
+
     fn periods(&self) -> Result<Vec<AccountingPeriod>, StorageError>;
+
+    fn add_subsidiary(&self, main: &Ledger, subsidiary: Ledger) -> Result<(), StorageError>;
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum StorageError {
     DuplicateRecord(String),
+    RecordNotFound,
     Unknown(String),
 }
 
@@ -40,6 +45,7 @@ impl std::fmt::Display for StorageError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let msg = match self {
             StorageError::DuplicateRecord(msg) => format!("DuplicateRecord Error: {}", msg),
+            StorageError::RecordNotFound => "RecordNotFound Error".to_string(),
             StorageError::Unknown(msg) => format!("Unknown Error: {}", msg),
         };
         write!(f, "{}", msg)
@@ -69,6 +75,15 @@ mod tests {
         assert_eq!(
             err.to_string(),
             "Unknown Error: non-storage failure",
+            "error string has correct format",
+        );
+
+        // Act
+        let err = StorageError::RecordNotFound;
+        // Assert
+        assert_eq!(
+            err.to_string(),
+            "RecordNotFound Error",
             "error string has correct format",
         );
     }

@@ -8,6 +8,7 @@ pub struct Ledger {
     pub name: String,
     pub root: Option<Account>,
     pub currency: Arc<iso::Currency>,
+    pub subsidiaries: Vec<Ledger>,
 }
 
 impl Ledger {
@@ -16,6 +17,7 @@ impl Ledger {
         let mut ledger = Self {
             name: name.into(),
             root: None,
+            subsidiaries: Vec::<Ledger>::new(),
             currency,
         };
         ledger.root = Some(Account::new(
@@ -44,6 +46,11 @@ mod tests {
             &(*root.currency),
             iso::EUR,
             "the root account contains the same currency as the ledger"
-        )
+        );
+        assert_eq!(
+            ledger.subsidiaries.len(),
+            0,
+            "initially, a ledger has not subsidiary ledgers"
+        );
     }
 }

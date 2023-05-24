@@ -1,7 +1,7 @@
 use account_engine::{
     accounting::{
         period::{InterimPeriod, InterimType},
-        AccountingPeriod, LedgerType,
+        LedgerType,
     },
     memory_store::MemoryStore,
     storage::{AccountEngineStorage, StorageError},
@@ -30,6 +30,30 @@ fn test_unique_ledger_name() {
         .unwrap()
     );
     assert_eq!(db.ledgers().len(), 1, "Only one ledger in the list")
+}
+
+#[test]
+fn test_add_subsidiary_ledger() {
+    // Arrance
+    let db = MemoryStore::new();
+
+    // Act
+    let subsidiary = db.new_ledger("Sales Ledger", iso::EUR).unwrap();
+    let ledger = db.new_ledger("My Company", iso::USD).unwrap();
+    let _ = db.add_subsidiary(&ledger, *subsidiary);
+
+    // Assert
+    let ledgers = db.ledgers_by_name(&ledger.name).unwrap();
+    assert_eq!(db.ledgers().len(), 2, "There are two ledgers in the list");
+    assert_eq!(
+        ledgers[0].subsidiaries.len(),
+        1,
+        "There is one subsidiary ledger in the main ledger"
+    );
+    assert_eq!(
+        ledgers[0].subsidiaries[0].name, "Sales Ledger",
+        "The Sales Ledger is a subsidiary ledger of 'My Company'"
+    )
 }
 
 #[test]

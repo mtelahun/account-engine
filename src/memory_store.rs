@@ -9,7 +9,7 @@ use std::{
 use crate::{
     accounting::{
         period::{InterimPeriod, InterimType},
-        Account, AccountingPeriod, Ledger, LedgerType,
+        Account, AccountingPeriod, Journal, Ledger, LedgerType,
     },
     storage::{AccountEngineStorage, StorageError},
 };
@@ -24,6 +24,7 @@ pub struct Inner {
     ledgers: HashMap<String, Ledger>,
     accounts: HashMap<String, Account>,
     periods: HashMap<i32, AccountingPeriod>,
+    journals: HashMap<String, Journal>,
 }
 
 impl MemoryStore {
@@ -44,6 +45,7 @@ impl Inner {
             ledgers: HashMap::<String, Ledger>::new(),
             accounts: HashMap::<String, Account>::new(),
             periods: HashMap::<i32, AccountingPeriod>::new(),
+            journals: HashMap::<String, Journal>::new(),
         }
     }
 }
@@ -71,18 +73,16 @@ impl AccountEngineStorage for MemoryStore {
         res
     }
 
-    fn ledgers_by_name(&self, name: &str) -> Result<Vec<Ledger>, StorageError> {
+    fn ledgers_by_name(&self, name: &str) -> Vec<Ledger> {
         let mut res = Vec::<Ledger>::new();
         let inner = self.inner.read().unwrap();
         let ledger = inner.ledgers.get(name);
 
         if let Some(ledger) = ledger {
             res.insert(0, ledger.clone());
-
-            return Ok(res);
         }
 
-        Err(StorageError::RecordNotFound)
+        res
     }
 
     fn new_account(
@@ -175,5 +175,42 @@ impl AccountEngineStorage for MemoryStore {
         ledger.subsidiaries.push(subsidiary);
 
         Ok(())
+    }
+
+    fn new_journal<'a>(&self, journal: &'a Journal) -> Result<&'a Journal, StorageError> {
+        let name = journal.ledger.name.clone() + journal.code.as_str();
+        let mut inner = self.inner.write().unwrap();
+        let search = inner.journals.get(&name);
+        if search.is_none() {
+            inner.journals.insert(name, journal.clone());
+
+            return Ok(journal);
+        }
+
+        Err(StorageError::DuplicateRecord(
+            "duplicate journal code".into(),
+        ))
+    }
+
+    fn journals(&self) -> Vec<crate::accounting::Journal> {
+        let mut res = Vec::<Journal>::new();
+        let inner = self.inner.read().unwrap();
+        for value in inner.journals.values() {
+            res.push(value.clone())
+        }
+
+        res
+    }
+
+    fn journals_by_ledger(&self, ledger_name: &str) -> Vec<Journal> {
+        let mut res = Vec::<Journal>::new();
+        let inner = self.inner.read().unwrap();
+        for value in inner.journals.values() {
+            if value.ledger.name == ledger_name {
+                res.insert(0, value.clone());
+            }
+        }
+
+        res
     }
 }

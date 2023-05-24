@@ -127,7 +127,7 @@ as they happen.
 #### Acceptance Criteria
 Given the caller supplies all required information, when a journal is created, then it will:
 - have a name
-- have a code
+- have a unique code
 
 ### Create a journal transaction (xact)
 #### Card

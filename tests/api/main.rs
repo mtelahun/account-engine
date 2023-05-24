@@ -1,13 +1,31 @@
 use account_engine::{
     accounting::{
         period::{InterimPeriod, InterimType},
-        LedgerType,
+        Journal, JournalTransaction, LedgerType,
     },
     memory_store::MemoryStore,
     storage::{AccountEngineStorage, StorageError},
 };
 use chrono::NaiveDate;
 use rusty_money::iso;
+
+#[test]
+fn test_non_existant_ledger() {
+    // Arrance
+    let db = MemoryStore::new();
+
+    // Act
+    let _ = db.new_ledger("My Company", iso::USD);
+    let res = db.ledgers_by_name("Other Company");
+
+    // Assert
+    assert_eq!(db.ledgers().len(), 1, "Only one ledger in the list");
+    assert_eq!(
+        res.len(),
+        0,
+        "search for non-existent ledger returns nothing"
+    );
+}
 
 #[test]
 fn test_unique_ledger_name() {
@@ -43,7 +61,7 @@ fn test_add_subsidiary_ledger() {
     let _ = db.add_subsidiary(&ledger, *subsidiary);
 
     // Assert
-    let ledgers = db.ledgers_by_name(&ledger.name).unwrap();
+    let ledgers = db.ledgers_by_name(&ledger.name);
     assert_eq!(db.ledgers().len(), 2, "There are two ledgers in the list");
     assert_eq!(
         ledgers[0].subsidiaries.len(),
@@ -261,4 +279,58 @@ fn test_create_accounting_period_calendar() {
         "period end is Dec 31, 2023"
     );
     assert_eq!(fy2023.periods, periods, "periods calculated correctly")
+}
+
+#[test]
+fn test_unique_journal_name() {
+    // Arrance
+    let db = MemoryStore::new();
+    let ledger1 = db.new_ledger("My Company", iso::USD).unwrap();
+    let j1 = Journal {
+        name: "General".into(),
+        code: "G".into(),
+        ledger: ledger1.clone().into(),
+        xacts: Vec::<JournalTransaction>::new(),
+    };
+    let j2 = Journal {
+        name: "Sales".into(),
+        code: "G".into(),
+        ledger: ledger1.into(),
+        xacts: Vec::<JournalTransaction>::new(),
+    };
+    let ledger2 = db.new_ledger("Other Company", iso::USD).unwrap();
+    let mut j3 = j2.clone();
+    j3.ledger = ledger2.into();
+
+    // Act
+    let journal1 = db.new_journal(&j1);
+    let journal2 = db.new_journal(&j2);
+    let journal3 = db.new_journal(&j3);
+
+    // Assert
+    assert!(journal1.is_ok(), "first journal created successfully");
+    assert!(journal2.is_err(), "failed to create second ledger");
+    assert_eq!(
+        journal2.err().unwrap(),
+        Err::<(), StorageError>(StorageError::DuplicateRecord(
+            "duplicate journal code".into()
+        ))
+        .err()
+        .unwrap()
+    );
+    assert!(
+        journal3.is_ok(),
+        "jrnl with same code in ANOTHER ledger created successfully"
+    );
+    assert_eq!(db.journals().len(), 2, "Two journals created");
+    assert_eq!(
+        db.journals_by_ledger("My Company").len(),
+        1,
+        "One journal is in the first ledger"
+    );
+    assert_eq!(
+        db.journals_by_ledger("Other Company").len(),
+        1,
+        "The other journal is in the second ledger"
+    );
 }

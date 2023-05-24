@@ -1,7 +1,9 @@
 use chrono::NaiveDate;
 use rusty_money::iso::Currency;
 
-use crate::accounting::{period::InterimType, Account, AccountingPeriod, Ledger, LedgerType};
+use crate::accounting::{
+    period::InterimType, Account, AccountingPeriod, Journal, Ledger, LedgerType,
+};
 
 pub trait AccountEngineStorage {
     fn new_ledger(&self, name: &str, currency: &Currency) -> Result<Box<Ledger>, StorageError>;
@@ -21,11 +23,17 @@ pub trait AccountEngineStorage {
         itype: InterimType,
     ) -> Result<AccountingPeriod, StorageError>;
 
+    fn new_journal<'a>(&self, journal: &'a Journal) -> Result<&'a Journal, StorageError>;
+
+    fn journals(&self) -> Vec<Journal>;
+
+    fn journals_by_ledger(&self, ledger_name: &str) -> Vec<Journal>;
+
     fn accounts(&self, ledger: &Ledger) -> Vec<Account>;
 
     fn ledgers(&self) -> Vec<Ledger>;
 
-    fn ledgers_by_name(&self, name: &str) -> Result<Vec<Ledger>, StorageError>;
+    fn ledgers_by_name(&self, name: &str) -> Vec<Ledger>;
 
     fn periods(&self) -> Result<Vec<AccountingPeriod>, StorageError>;
 

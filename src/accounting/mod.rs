@@ -13,5 +13,6 @@ pub use error::AccountError;
 pub use journal::Journal;
 pub use journal_entry::JournalEntry;
 pub use journal_transaction::JournalTransaction;
+pub use journal_transaction::JournalTransactionModel;
 pub use ledger::Ledger;
 pub use period::AccountingPeriod;

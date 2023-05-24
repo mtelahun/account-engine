@@ -2,7 +2,8 @@ use chrono::NaiveDate;
 use rusty_money::iso::Currency;
 
 use crate::accounting::{
-    period::InterimType, Account, AccountingPeriod, Journal, Ledger, LedgerType,
+    journal_transaction::JournalTransaction, period::InterimType, Account, AccountingPeriod,
+    Journal, JournalTransactionModel, Ledger, LedgerType,
 };
 
 pub trait AccountEngineStorage {
@@ -29,7 +30,18 @@ pub trait AccountEngineStorage {
 
     fn journals_by_ledger(&self, ledger_name: &str) -> Vec<Journal>;
 
+    fn new_journal_transaction(
+        &self,
+        tx: JournalTransactionModel,
+    ) -> Result<JournalTransaction, StorageError>;
+
+    fn journal_transactions(&self) -> Vec<JournalTransaction>;
+
+    fn journal_transactions_by_ledger(&self, ledger_name: &str) -> Vec<JournalTransaction>;
+
     fn accounts(&self, ledger: &Ledger) -> Vec<Account>;
+
+    fn accounts_by_number(&self, ledger: &Ledger, number: &str) -> Vec<Account>;
 
     fn ledgers(&self) -> Vec<Ledger>;
 

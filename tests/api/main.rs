@@ -1,12 +1,18 @@
+use std::{
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
+
 use account_engine::{
     accounting::{
         period::{InterimPeriod, InterimType},
-        Journal, JournalTransaction, LedgerType,
+        Account, Journal, JournalTransaction, JournalTransactionModel, Ledger, LedgerType,
     },
     memory_store::MemoryStore,
     storage::{AccountEngineStorage, StorageError},
 };
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveDateTime};
+use rust_decimal::Decimal;
 use rusty_money::iso;
 
 #[test]
@@ -333,4 +339,173 @@ fn test_unique_journal_name() {
         1,
         "The other journal is in the second ledger"
     );
+}
+
+#[test]
+fn test_journal_transaction_creation() {
+    // Arrange
+    let state = TestState::new();
+    let ledger2 = state.db.new_ledger("Other Company", iso::USD).unwrap();
+    let _cash = state.create_account("1001");
+    let _bank = state.create_account("1002");
+    let _cash = state
+        .db
+        .new_account(&ledger2, "Cash", "1001", LedgerType::Leaf, Some(iso::USD))
+        .unwrap();
+    let _bank = state
+        .db
+        .new_account(&ledger2, "Bank", "1002", LedgerType::Leaf, Some(iso::USD))
+        .unwrap();
+    let j1 = Journal {
+        name: "General".into(),
+        code: "G".into(),
+        ledger: state.ledger.clone().into(),
+        xacts: Vec::<JournalTransaction>::new(),
+    };
+    let mut j2 = j1.clone();
+    j2.ledger = ledger2.clone().into();
+    let journal2 = state.db.new_journal(&j2).unwrap();
+
+    let now = timestamp();
+    let jx1 = JournalTransactionModel {
+        journal: Arc::new(state.journal.clone()),
+        timestamp: now,
+        posted: false,
+        amount: Decimal::ZERO,
+        acc_no_dr: "1001".into(),
+        acc_no_cr: "1002".into(),
+        description: "Withdrew cash for lunch".into(),
+        posting_ref: None,
+    };
+    let jx_same_ledger = jx1.clone();
+    let mut jx_other_ledger = jx1.clone();
+    jx_other_ledger.journal = Arc::new(journal2.clone());
+
+    // Act
+    let jx1_db = state.db.new_journal_transaction(jx1);
+    let jx_same_db = state.db.new_journal_transaction(jx_same_ledger);
+    let jx_other_db = state.db.new_journal_transaction(jx_other_ledger);
+
+    // Assert
+    assert!(jx1_db.is_ok(), "jx was created successfully");
+    assert!(
+        jx_same_db.is_ok(),
+        "jx (same id in same ledger) was successfull"
+    );
+    assert!(
+        jx_other_db.is_ok(),
+        "jx (same id in different ledger) was successfull"
+    );
+    let jx1_db = jx1_db.unwrap();
+    let jx_same_db = jx_same_db.unwrap();
+    let jx_other_db = jx_other_db.unwrap();
+    assert_ne!(jx1_db.id, jx_same_db.id, "transaction ids are different");
+    assert_ne!(jx1_db.id, jx_other_db.id, "transaction ids are different");
+    assert_ne!(
+        jx_same_db.id, jx_other_db.id,
+        "transaction ids are different"
+    );
+    assert_eq!(
+        state.db.journal_transactions().len(),
+        3,
+        "There are 3 jx(s) in the entire db"
+    );
+    assert_eq!(
+        state
+            .db
+            .journal_transactions_by_ledger(&state.ledger.name)
+            .len(),
+        2,
+        "There are two transaction when searching by 1st ledger"
+    );
+    assert_eq!(
+        state.db.journal_transactions_by_ledger(&ledger2.name).len(),
+        1,
+        "There is only one transaction when searching by 2nd ledger"
+    );
+}
+
+#[test]
+fn test_journal_transaction_creation_no_valid_account() {
+    // Arrange
+    let state = TestState::new();
+    let _bank = state
+        .db
+        .new_account(
+            &state.ledger,
+            "Bank",
+            "1002",
+            LedgerType::Leaf,
+            Some(iso::USD),
+        )
+        .unwrap();
+    let now = timestamp();
+    let jx1 = JournalTransactionModel {
+        journal: Arc::new(state.journal.clone()),
+        timestamp: now,
+        posted: false,
+        amount: Decimal::ZERO,
+        acc_no_dr: "1001".into(),
+        acc_no_cr: "1002".into(),
+        description: "Withdrew cash for lunch".into(),
+        posting_ref: None,
+    };
+
+    // Act
+    let jx1_db = state.db.new_journal_transaction(jx1);
+
+    // Assert
+    assert!(jx1_db.is_err(), "jx was created successfully");
+    assert_eq!(
+        state.db.journal_transactions().len(),
+        0,
+        "There are ZERO jx(s) in the entire db"
+    );
+}
+
+struct TestState {
+    db: MemoryStore,
+    ledger: Box<Ledger>,
+    journal: Journal,
+}
+
+impl TestState {
+    fn new() -> TestState {
+        let db = MemoryStore::new();
+        let ledger = db.new_ledger("My Company", iso::USD).unwrap();
+        let journal = Journal {
+            name: "General Journal".into(),
+            code: "G".into(),
+            ledger: Arc::from(ledger.clone()),
+            xacts: Vec::<JournalTransaction>::new(),
+        };
+
+        Self {
+            db,
+            ledger,
+            journal,
+        }
+    }
+
+    fn create_account(&self, number: &str) -> Account {
+        self.db
+            .new_account(
+                &self.ledger,
+                number,
+                number,
+                LedgerType::Leaf,
+                Some(iso::USD),
+            )
+            .unwrap()
+    }
+}
+
+fn timestamp() -> NaiveDateTime {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time before Unix epoch");
+    let naive =
+        NaiveDateTime::from_timestamp_opt(now.as_secs() as i64, now.subsec_nanos()).unwrap();
+
+    naive
 }

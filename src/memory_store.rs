@@ -9,22 +9,25 @@ use std::{
 use crate::{
     accounting::{
         period::{InterimPeriod, InterimType},
-        Account, AccountingPeriod, Journal, Ledger, LedgerType,
+        Account, AccountingPeriod, Journal, JournalTransaction, JournalTransactionModel, Ledger,
+        LedgerType,
     },
+    domain::ids::JournalTransactionId,
     storage::{AccountEngineStorage, StorageError},
 };
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct MemoryStore {
     inner: Arc<RwLock<Inner>>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Inner {
     ledgers: HashMap<String, Ledger>,
     accounts: HashMap<String, Account>,
     periods: HashMap<i32, AccountingPeriod>,
     journals: HashMap<String, Journal>,
+    journal_txs: HashMap<JournalTransactionId, JournalTransaction>,
 }
 
 impl MemoryStore {
@@ -46,6 +49,7 @@ impl Inner {
             accounts: HashMap::<String, Account>::new(),
             periods: HashMap::<i32, AccountingPeriod>::new(),
             journals: HashMap::<String, Journal>::new(),
+            journal_txs: HashMap::<JournalTransactionId, JournalTransaction>::new(),
         }
     }
 }
@@ -56,6 +60,18 @@ impl AccountEngineStorage for MemoryStore {
         let inner = self.inner.read().unwrap();
         for account in inner.accounts.values() {
             if account.ledger.name == ledger.name {
+                res.push(account.clone());
+            }
+        }
+
+        res
+    }
+
+    fn accounts_by_number(&self, ledger: &Ledger, number: &str) -> Vec<Account> {
+        let mut res = Vec::<Account>::new();
+        let inner = self.inner.read().unwrap();
+        for account in inner.accounts.values() {
+            if account.ledger.name == ledger.name && account.number == number {
                 res.push(account.clone());
             }
         }
@@ -207,6 +223,63 @@ impl AccountEngineStorage for MemoryStore {
         let inner = self.inner.read().unwrap();
         for value in inner.journals.values() {
             if value.ledger.name == ledger_name {
+                res.insert(0, value.clone());
+            }
+        }
+
+        res
+    }
+
+    fn new_journal_transaction(
+        &self,
+        tx: JournalTransactionModel,
+    ) -> Result<JournalTransaction, StorageError> {
+        let id = JournalTransactionId::new();
+        let ledger = tx.journal.ledger.clone();
+        let account_dr = self.accounts_by_number(&ledger, tx.acc_no_dr.as_str());
+        let account_cr = self.accounts_by_number(&ledger, tx.acc_no_cr.as_str());
+        if account_dr.is_empty() || account_cr.is_empty() {
+            return Err(StorageError::RecordNotFound);
+        }
+        let tx = JournalTransaction {
+            id,
+            timestamp: tx.timestamp,
+            posted: tx.posted,
+            amount: tx.amount,
+            description: tx.description,
+            posting_ref: tx.posting_ref,
+            journal: tx.journal,
+            account_dr: Arc::new(account_dr[0].to_owned()),
+            account_cr: Arc::new(account_cr[0].to_owned()),
+        };
+        let mut inner = self.inner.write().unwrap();
+        let search = inner.journal_txs.get(&id);
+        if search.is_none() {
+            inner.journal_txs.insert(id, tx.clone());
+
+            return Ok(tx);
+        }
+
+        Err(StorageError::DuplicateRecord(
+            "duplicate journal code".into(),
+        ))
+    }
+
+    fn journal_transactions(&self) -> Vec<JournalTransaction> {
+        let mut res = Vec::<JournalTransaction>::new();
+        let inner = self.inner.read().unwrap();
+        for value in inner.journal_txs.values() {
+            res.insert(0, value.clone());
+        }
+
+        res
+    }
+
+    fn journal_transactions_by_ledger(&self, ledger_name: &str) -> Vec<JournalTransaction> {
+        let mut res = Vec::<JournalTransaction>::new();
+        let inner = self.inner.read().unwrap();
+        for value in inner.journal_txs.values() {
+            if value.journal.ledger.name == ledger_name {
                 res.insert(0, value.clone());
             }
         }

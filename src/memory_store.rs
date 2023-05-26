@@ -3,16 +3,21 @@ use chronoutil::RelativeDuration;
 use rusty_money::iso::Currency;
 use std::{
     collections::HashMap,
+    str::FromStr,
     sync::{Arc, RwLock},
 };
 
 use crate::{
     accounting::{
+        journal_transaction::{PostingRef, TransactionState},
+        ledger_entry::{
+            ExternalTransaction, JournalEntry, LedgerKey, LedgerTransaction, LedgerXactType,
+        },
         period::{InterimPeriod, InterimType},
         Account, AccountingPeriod, Journal, JournalTransaction, JournalTransactionModel, Ledger,
-        LedgerType,
+        LedgerEntry, LedgerType,
     },
-    domain::ids::JournalTransactionId,
+    domain::{ids::JournalTransactionId, xact_type::XactType, AccountId, LedgerXactTypeCode},
     storage::{AccountEngineStorage, StorageError},
 };
 
@@ -24,10 +29,14 @@ pub struct MemoryStore {
 #[derive(Clone, Debug, Default)]
 pub struct Inner {
     ledgers: HashMap<String, Ledger>,
-    accounts: HashMap<String, Account>,
+    accounts: HashMap<AccountId, Account>,
     periods: HashMap<i32, AccountingPeriod>,
     journals: HashMap<String, Journal>,
     journal_txs: HashMap<JournalTransactionId, JournalTransaction>,
+    journal_entries: HashMap<LedgerKey, LedgerEntry>,
+    ledger_txs: HashMap<LedgerKey, LedgerTransaction>,
+    _ext_account_txs: HashMap<LedgerKey, ExternalTransaction>,
+    ledger_xact_type: HashMap<LedgerXactTypeCode, LedgerXactType>,
 }
 
 impl MemoryStore {
@@ -37,20 +46,33 @@ impl MemoryStore {
         }
     }
 
-    pub fn account_key(ledger_name: &str, account_number: &str) -> String {
-        ledger_name.to_string() + account_number
+    fn get_journal_entry_type(&self, _jxact_id: JournalTransactionId) -> LedgerXactType {
+        let inner = self.inner.read().unwrap();
+
+        *inner
+            .ledger_xact_type
+            .get(&LedgerXactTypeCode::from_str("AL").unwrap())
+            .unwrap()
     }
 }
 
 impl Inner {
     pub fn new() -> Inner {
-        Self {
+        let code = LedgerXactTypeCode::from_str("AL").unwrap();
+        let mut res = Self {
             ledgers: HashMap::<String, Ledger>::new(),
-            accounts: HashMap::<String, Account>::new(),
+            accounts: HashMap::<AccountId, Account>::new(),
             periods: HashMap::<i32, AccountingPeriod>::new(),
             journals: HashMap::<String, Journal>::new(),
             journal_txs: HashMap::<JournalTransactionId, JournalTransaction>::new(),
-        }
+            journal_entries: HashMap::<LedgerKey, LedgerEntry>::new(),
+            ledger_txs: HashMap::<LedgerKey, LedgerTransaction>::new(),
+            _ext_account_txs: HashMap::<LedgerKey, ExternalTransaction>::new(),
+            ledger_xact_type: HashMap::<LedgerXactTypeCode, LedgerXactType>::new(),
+        };
+        res.ledger_xact_type.insert(code, LedgerXactType { code });
+
+        res
     }
 }
 
@@ -65,6 +87,17 @@ impl AccountEngineStorage for MemoryStore {
         }
 
         res
+    }
+
+    fn account_by_id(&self, ledger: &Ledger, account_id: AccountId) -> Option<Account> {
+        let inner = self.inner.read().unwrap();
+        for account in inner.accounts.values() {
+            if account.ledger.name == ledger.name && account.id == account_id {
+                return Some(account.clone());
+            }
+        }
+
+        None
     }
 
     fn accounts_by_number(&self, ledger: &Ledger, number: &str) -> Vec<Account> {
@@ -111,17 +144,21 @@ impl AccountEngineStorage for MemoryStore {
     ) -> Result<Account, StorageError> {
         let account = Account::new(ledger, name, number, ltype, currency.unwrap());
         let mut inner = self.inner.write().unwrap();
-        let key = MemoryStore::account_key(&ledger.name, number);
-        let search = inner.accounts.get(&key);
+        for value in inner.accounts.values() {
+            if value.number == number && value.ledger.name == ledger.name {
+                return Err(StorageError::DuplicateRecord(
+                    "duplicate account number".into(),
+                ));
+            }
+        }
+        let search = inner.accounts.get(&account.id);
         if search.is_none() {
-            inner.accounts.insert(key, account.clone());
+            inner.accounts.insert(account.id, account.clone());
 
             return Ok(account);
         }
 
-        Err(StorageError::DuplicateRecord(
-            "duplicate account number".into(),
-        ))
+        Err(StorageError::DuplicateRecord("duplicate account ID".into()))
     }
 
     fn new_ledger(&self, name: &str, currency: &Currency) -> Result<Box<Ledger>, StorageError> {
@@ -244,7 +281,7 @@ impl AccountEngineStorage for MemoryStore {
         let tx = JournalTransaction {
             id,
             timestamp: tx.timestamp,
-            posted: tx.posted,
+            state: TransactionState::Posted,
             amount: tx.amount,
             description: tx.description,
             posting_ref: tx.posting_ref,
@@ -285,5 +322,161 @@ impl AccountEngineStorage for MemoryStore {
         }
 
         res
+    }
+
+    fn journal_transaction_by_id(&self, id: JournalTransactionId) -> Option<JournalTransaction> {
+        let inner = self.inner.read().unwrap();
+        for value in inner.journal_txs.values() {
+            if value.id == id {
+                return Some(value.clone());
+            }
+        }
+
+        None
+    }
+
+    fn post_journal_transaction(&self, jxact_id: JournalTransactionId) -> bool {
+        let ledger_xact_type = self.get_journal_entry_type(jxact_id);
+
+        let mut inner = self.inner.write().unwrap();
+        let mut xact = match inner.journal_txs.get_mut(&jxact_id) {
+            None => return false,
+            Some(value) => value,
+        };
+
+        let key = LedgerKey {
+            ledger_no: xact.account_cr.id,
+            datetime: xact.timestamp,
+        };
+        xact.posting_ref = Some(PostingRef::new(key, ledger_xact_type));
+        xact.state = TransactionState::Posted;
+
+        let entry = LedgerEntry {
+            ledger_no: key.ledger_no,
+            datetime: xact.timestamp,
+            ledger_xact_type,
+            amount: xact.amount,
+            journal_ref: xact.id,
+        };
+        let tx_dr = LedgerTransaction {
+            ledger_no: key.ledger_no,
+            datetime: xact.timestamp,
+            ledger_dr: xact.account_dr.id,
+        };
+
+        inner.journal_entries.insert(key, entry);
+        inner.ledger_txs.insert(key, tx_dr);
+
+        true
+    }
+
+    fn ledger_entries_by_account_id(&self, account_id: AccountId) -> Vec<LedgerEntry> {
+        let mut res = Vec::<LedgerEntry>::new();
+        let inner = self.inner.read().unwrap();
+        for (key, entry) in &inner.journal_entries {
+            if key.ledger_no == account_id {
+                res.append(&mut vec![*entry]);
+            }
+        }
+
+        res
+    }
+
+    fn ledger_transactions_by_account_id(&self, account_id: AccountId) -> Vec<LedgerTransaction> {
+        let mut res = Vec::<LedgerTransaction>::new();
+        let inner = self.inner.read().unwrap();
+        for tx in inner.ledger_txs.values() {
+            if tx.ledger_dr == account_id {
+                res.push(*tx);
+            }
+        }
+
+        res
+    }
+
+    fn ledger_entry_by_key(&self, key: LedgerKey) -> Option<LedgerEntry> {
+        let inner = self.inner.read().unwrap();
+        if let Some(entry) = inner.journal_entries.get(&key) {
+            return Some(*entry);
+        };
+
+        None
+    }
+
+    fn ledger_transaction_by_key(&self, key: LedgerKey) -> Option<LedgerTransaction> {
+        let inner = self.inner.read().unwrap();
+        for tx in inner.ledger_txs.values() {
+            if tx.ledger_no == key.ledger_no && tx.datetime == key.datetime {
+                return Some(*tx);
+            }
+        }
+
+        None
+    }
+
+    fn ledger_entry_by_ref(&self, posting_ref: PostingRef) -> Option<LedgerEntry> {
+        if let Some(res) = self.ledger_entry_by_key(posting_ref.ledger_key()) {
+            return Some(res);
+        }
+
+        None
+    }
+
+    fn journal_entries_by_account_id(&self, account_id: AccountId) -> Vec<JournalEntry> {
+        let mut res = Vec::<JournalEntry>::new();
+        let entries = self.ledger_entries_by_account_id(account_id);
+        let xacts = self.ledger_transactions_by_account_id(account_id);
+        for e in entries {
+            res.push(JournalEntry {
+                ledger_no: e.ledger_no,
+                datetime: e.datetime,
+                xact_type: XactType::Cr,
+                amount: e.amount,
+                journal_ref: e.journal_ref,
+            })
+        }
+        for t in xacts {
+            let counterpart = self
+                .ledger_entry_by_key(LedgerKey {
+                    ledger_no: t.ledger_no,
+                    datetime: t.datetime,
+                })
+                .unwrap();
+            res.push(JournalEntry {
+                ledger_no: t.ledger_dr,
+                datetime: t.datetime,
+                xact_type: XactType::Dr,
+                amount: counterpart.amount,
+                journal_ref: counterpart.journal_ref,
+            })
+        }
+
+        res
+    }
+
+    fn journal_entries_by_key(&self, key: LedgerKey) -> Vec<JournalEntry> {
+        let mut res = Vec::<JournalEntry>::new();
+        let le = self.ledger_entry_by_key(key).unwrap();
+        let lt = self.ledger_transaction_by_key(key).unwrap();
+        res.push(JournalEntry {
+            ledger_no: le.ledger_no,
+            datetime: le.datetime,
+            xact_type: XactType::Cr,
+            amount: le.amount,
+            journal_ref: le.journal_ref,
+        });
+        res.push(JournalEntry {
+            ledger_no: lt.ledger_dr,
+            datetime: lt.datetime,
+            xact_type: XactType::Dr,
+            amount: le.amount,
+            journal_ref: le.journal_ref,
+        });
+
+        res
+    }
+
+    fn journal_entries_by_ref(&self, posting_ref: PostingRef) -> Vec<JournalEntry> {
+        self.journal_entries_by_key(posting_ref.ledger_key())
     }
 }

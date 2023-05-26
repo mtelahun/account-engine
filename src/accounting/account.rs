@@ -3,12 +3,25 @@ use std::sync::Arc;
 use rust_decimal::Decimal;
 use rusty_money::iso::{self, Currency};
 
-use crate::accounting::ledger::Ledger;
+use crate::{accounting::ledger::Ledger, domain::AccountId};
 
-use super::{error::AccountError, JournalEntry};
+use super::{error::AccountError, LedgerEntry};
+
+#[derive(Clone, Debug)]
+pub struct AccountModel {
+    pub name: String,
+    pub number: String,
+    pub ltype: LedgerType,
+    pub currency: Arc<iso::Currency>,
+    _dr_balance: Decimal,
+    _cr_balance: Decimal,
+    pub ledger: Arc<Ledger>,
+    pub children: Vec<Account>,
+}
 
 #[derive(Clone, Debug)]
 pub struct Account {
+    pub id: AccountId,
     pub name: String,
     pub number: String,
     pub ltype: LedgerType,
@@ -36,6 +49,7 @@ impl Account {
         let currency = Arc::new(*currency);
         let ledger = Arc::new(ledger.clone());
         Self {
+            id: AccountId::new(),
             name: name.to_owned(),
             number: number.to_owned(),
             children: Vec::<Account>::new(),
@@ -59,8 +73,8 @@ impl Account {
         ))
     }
 
-    pub fn journal_entries(&self) -> Vec<JournalEntry> {
-        Vec::<JournalEntry>::new()
+    pub fn journal_entries(&self) -> Vec<LedgerEntry> {
+        Vec::<LedgerEntry>::new()
     }
 }
 

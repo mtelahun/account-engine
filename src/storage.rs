@@ -1,9 +1,15 @@
 use chrono::NaiveDate;
 use rusty_money::iso::Currency;
 
-use crate::accounting::{
-    journal_transaction::JournalTransaction, period::InterimType, Account, AccountingPeriod,
-    Journal, JournalTransactionModel, Ledger, LedgerType,
+use crate::{
+    accounting::{
+        journal_transaction::{JournalTransaction, PostingRef},
+        ledger_entry::{JournalEntry, LedgerKey, LedgerTransaction},
+        period::InterimType,
+        Account, AccountingPeriod, Journal, JournalTransactionModel, Ledger, LedgerEntry,
+        LedgerType,
+    },
+    domain::{AccountId, JournalTransactionId},
 };
 
 pub trait AccountEngineStorage {
@@ -37,15 +43,40 @@ pub trait AccountEngineStorage {
 
     fn journal_transactions(&self) -> Vec<JournalTransaction>;
 
+    fn journal_transaction_by_id(
+        &self,
+        jxact_id: JournalTransactionId,
+    ) -> Option<JournalTransaction>;
+
     fn journal_transactions_by_ledger(&self, ledger_name: &str) -> Vec<JournalTransaction>;
 
+    fn post_journal_transaction(&self, jxact_id: JournalTransactionId) -> bool;
+
     fn accounts(&self, ledger: &Ledger) -> Vec<Account>;
+
+    fn account_by_id(&self, ledger: &Ledger, account_id: AccountId) -> Option<Account>;
 
     fn accounts_by_number(&self, ledger: &Ledger, number: &str) -> Vec<Account>;
 
     fn ledgers(&self) -> Vec<Ledger>;
 
     fn ledgers_by_name(&self, name: &str) -> Vec<Ledger>;
+
+    fn ledger_entry_by_key(&self, key: LedgerKey) -> Option<LedgerEntry>;
+
+    fn ledger_entry_by_ref(&self, posting_ref: PostingRef) -> Option<LedgerEntry>;
+
+    fn ledger_entries_by_account_id(&self, account_id: AccountId) -> Vec<LedgerEntry>;
+
+    fn ledger_transactions_by_account_id(&self, account_id: AccountId) -> Vec<LedgerTransaction>;
+
+    fn ledger_transaction_by_key(&self, key: LedgerKey) -> Option<LedgerTransaction>;
+
+    fn journal_entries_by_account_id(&self, account_id: AccountId) -> Vec<JournalEntry>;
+
+    fn journal_entries_by_key(&self, key: LedgerKey) -> Vec<JournalEntry>;
+
+    fn journal_entries_by_ref(&self, posting_ref: PostingRef) -> Vec<JournalEntry>;
 
     fn periods(&self) -> Result<Vec<AccountingPeriod>, StorageError>;
 
@@ -65,7 +96,7 @@ impl std::fmt::Display for StorageError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let msg = match self {
             StorageError::DuplicateRecord(msg) => format!("DuplicateRecord Error: {}", msg),
-            StorageError::RecordNotFound => "RecordNotFound Error".to_string(),
+            StorageError::RecordNotFound => "RecordNotFound Error".into(),
             StorageError::Unknown(msg) => format!("Unknown Error: {}", msg),
         };
         write!(f, "{}", msg)

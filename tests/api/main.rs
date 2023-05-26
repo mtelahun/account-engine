@@ -5,6 +5,7 @@ use std::{
 
 use account_engine::{
     accounting::{
+        journal_transaction::TransactionState,
         period::{InterimPeriod, InterimType},
         Account, Journal, JournalTransaction, JournalTransactionModel, Ledger, LedgerType,
     },
@@ -370,7 +371,7 @@ fn test_journal_transaction_creation() {
     let jx1 = JournalTransactionModel {
         journal: Arc::new(state.journal.clone()),
         timestamp: now,
-        posted: false,
+        state: TransactionState::Pending,
         amount: Decimal::ZERO,
         acc_no_dr: "1001".into(),
         acc_no_cr: "1002".into(),
@@ -429,21 +430,12 @@ fn test_journal_transaction_creation() {
 fn test_journal_transaction_creation_no_valid_account() {
     // Arrange
     let state = TestState::new();
-    let _bank = state
-        .db
-        .new_account(
-            &state.ledger,
-            "Bank",
-            "1002",
-            LedgerType::Leaf,
-            Some(iso::USD),
-        )
-        .unwrap();
+    let _bank = state.create_account("1002");
     let now = timestamp();
     let jx1 = JournalTransactionModel {
         journal: Arc::new(state.journal.clone()),
         timestamp: now,
-        posted: false,
+        state: TransactionState::Pending,
         amount: Decimal::ZERO,
         acc_no_dr: "1001".into(),
         acc_no_cr: "1002".into(),
@@ -460,6 +452,75 @@ fn test_journal_transaction_creation_no_valid_account() {
         state.db.journal_transactions().len(),
         0,
         "There are ZERO jx(s) in the entire db"
+    );
+}
+
+#[test]
+fn test_post_journal_transaction_happy_path() {
+    // Arrange
+    let state = TestState::new();
+    let cash = state.create_account("1001");
+    let bank = state.create_account("1002");
+    let jxact = state.create_journal_xact(Decimal::from(100), "1001", "1002", "Withdrew cash");
+
+    // Act
+    let posted = state.db.post_journal_transaction(jxact.id);
+
+    // Assert
+    assert!(posted, "the call to 'post' the journal tx succeeded");
+    let bank_entries = state.db.journal_entries_by_account_id(bank.id);
+    let cash_entries = state.db.journal_entries_by_account_id(cash.id);
+    let jxact = state.db.journal_transaction_by_id(jxact.id).unwrap();
+    let entries = state.db.journal_entries_by_ref(jxact.posting_ref.unwrap());
+    assert_eq!(
+        jxact.state,
+        TransactionState::Posted,
+        "journal tx IS Posted"
+    );
+    assert_eq!(
+        cash_entries.len(),
+        1,
+        "there is ONE journal entry in the cash account"
+    );
+    assert_eq!(
+        bank_entries.len(),
+        1,
+        "there is ONE journal entry in the bank account"
+    );
+    assert_eq!(
+        entries[0], bank_entries[0],
+        "the 1st posting ref points to the CR account"
+    );
+    assert_eq!(
+        entries[1], cash_entries[0],
+        "the 2nd posting ref points to the DR account"
+    );
+    let cr_account = state.db.account_by_id(&bank.ledger, bank.id).unwrap();
+    let dr_account = state.db.account_by_id(&cash.ledger, cash.id).unwrap();
+    assert_eq!(
+        cr_account.number, jxact.account_cr.number,
+        "ledger CR ac. matches journal"
+    );
+    assert_eq!(
+        dr_account.number, jxact.account_dr.number,
+        "ledger DR ac. matches journal"
+    );
+    assert_eq!(
+        entries[0].datetime, jxact.timestamp,
+        "ledger datetime matches journal"
+    );
+    assert_ne!(
+        entries[1].ledger_no.to_string(),
+        entries[0].ledger_no.to_string(),
+        "accounts ARE different"
+    );
+    assert_eq!(
+        entries[1].datetime, entries[0].datetime,
+        "both journal entries' timestamp ARE equal"
+    );
+    assert_ne!(
+        jxact.account_dr.number, jxact.account_cr.number,
+        "dr and cr account are different"
     );
 }
 
@@ -497,6 +558,27 @@ impl TestState {
                 Some(iso::USD),
             )
             .unwrap()
+    }
+
+    fn create_journal_xact(
+        &self,
+        amount: Decimal,
+        dr: &str,
+        cr: &str,
+        desc: &str,
+    ) -> JournalTransaction {
+        let jxact = JournalTransactionModel {
+            journal: Arc::new(self.journal.clone()),
+            timestamp: timestamp(),
+            state: TransactionState::Pending,
+            amount: amount,
+            acc_no_dr: dr.to_string(),
+            acc_no_cr: cr.to_string(),
+            description: desc.to_string(),
+            posting_ref: None,
+        };
+
+        self.db.new_journal_transaction(jxact).unwrap()
     }
 }
 

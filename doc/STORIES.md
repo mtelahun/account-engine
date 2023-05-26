@@ -83,6 +83,7 @@ entries and summarize the result of child accounts. Leaf accounts have only jour
 - Account balances can be derived from transactions, but there are instances (i.e- end of period) when
 they need to be recorded. Usually required by law (i.e financial reporting, bank account balance statements).
 - records should be sorted in chronological order
+- derived account balance vs stored account balance
 #### Acceptance Criteria
 Given the caller supplies all required information, when an account is created, then it will:
 - have a name
@@ -148,38 +149,35 @@ Given the caller supplies all required information, when a transaction is create
 - be freely modifyable (or even deleted)
 
 When a transaction is posted:
-- the Posting Reference field will contain the Dr and Cr account number separated by a comman
+- the Posting Reference field will contain the Dr and Cr account numbers ~~separated by a comman~~
 - be in a Posted state
 - the library must refuse to modify or delete the transaction
 
 ### Create a journal entry (ledger record)
-### Card
+#### Card
 As an accountant I must be able to post transactions recorded in a journal to the ledger
 accounts affected by the transaction so that they are reflected accurately in the ledger.
-### Conversation
+#### Conversation
 - ~~should the records be derived from the journals at run-time or should they be copied into
 a separate record?~~ For immutability purposes database records should be created.
 - once created the record should not be deleted or modified
-### Acceptance Criteria
+#### Acceptance Criteria
 Given a complete journal transaction record, when a journal entry is created, then it will:
 - have a Journal Reference containing the unique identfier of the journal transaction
 - have a date identical to the date in the journal transaction
 - have a non-deactivated account
-- if the account was debited in the journal transaction the Dr field of the entry will
-have an amount identical to the one in the journal transaction and the Cr field will be empty and
-the description will contain the name of the account that was credited
-- if the account was credited in the journal transaction the Cr field of the entry will
-have an amount identical to the one in the journal transaction and the Dr field will be empty and
-the description will contain the name of the account that was debited
 - refuse to modify or delete it
+the journal transaction will:
+- be in a Posted state
+- not be modified or deleted
 
 ### Post one or more journal transactions to the ledger
-### Card
+#### Card
 As an accountant I want to post one or more journal transactions to the ledger so that they can be
 accurately reflected in the ledger accounts.
-### Conversation
+#### Conversation
 see discussion above
-### Acceptance Criteria
+#### Acceptance Criteria
 Given a full and accurate journal transaction, when the caller posts it to the ledger, then it will perform the following steps:
 - Each journal transaction will create two journal entries in the ledger
 1. Initiate a post to the Dr account in the transaction and

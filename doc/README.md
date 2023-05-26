@@ -38,7 +38,7 @@ Liabilities, and Equity.
 
 In any valid double-entry accounting transaction the following 2 statements must hold true:
   Debits = Credits
-  Equity = Capital + Withdrawals + Revenue + Expenses)
+  Equity = Capital + Withdrawals + Revenue + Expenses
   Balance of Asset Account(s) = Balance of Liability + Equity Account(s)
 
 Ledger - contains the heirarchy of accounts used to maintain an organization's financial position.

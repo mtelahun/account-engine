@@ -36,4 +36,25 @@ mod tests {
         assert_eq!(jid.len(), 36, "A uuid string is 36 chars long");
         assert_eq!(jid.matches('-').count(), 4, "A uuid string as 4 '-'s");
     }
+
+    #[test]
+    fn test_default() {
+        #[derive(Default)]
+        struct Foo {
+            id: UniqueId,
+        }
+        let foo = Foo {
+            ..Default::default()
+        };
+        assert_eq!(
+            foo.id.to_string().len(),
+            36,
+            "A uuid string is 36 chars long"
+        );
+        assert_eq!(
+            foo.id.to_string().matches('-').count(),
+            4,
+            "A uuid string as 4 '-'s"
+        );
+    }
 }

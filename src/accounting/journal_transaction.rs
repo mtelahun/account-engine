@@ -3,11 +3,11 @@ use std::sync::Arc;
 use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
-use crate::domain::JournalTransactionId;
+use crate::domain::{AccountId, JournalTransactionId};
 
 use super::{
     ledger_entry::{LedgerKey, LedgerXactType},
-    Account, Journal,
+    Journal,
 };
 
 #[derive(Clone, Debug)]
@@ -29,8 +29,8 @@ pub struct JournalTransaction {
     pub journal: Arc<Journal>,
     pub state: TransactionState,
     pub amount: Decimal,
-    pub account_dr: Arc<Account>,
-    pub account_cr: Arc<Account>,
+    pub account_dr: AccountId,
+    pub account_cr: AccountId,
     pub description: String,
     pub posting_ref: Option<PostingRef>,
 }

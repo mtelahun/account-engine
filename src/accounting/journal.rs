@@ -1,11 +1,11 @@
-use std::sync::Arc;
+use crate::domain::LedgerId;
 
-use super::{JournalTransaction, Ledger};
+use super::JournalTransaction;
 
 #[derive(Clone, Debug)]
 pub struct Journal {
     pub name: String,
     pub code: String,
-    pub ledger: Arc<Ledger>,
+    pub ledger: LedgerId,
     pub xacts: Vec<JournalTransaction>,
 }

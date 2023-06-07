@@ -9,6 +9,7 @@ use account_engine::{
     memory_store::MemoryStore,
     orm::{error::OrmError, RepositoryOrm},
 };
+use arrayvec::ArrayString;
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 use rusty_money::iso;
@@ -38,13 +39,14 @@ fn test_duplicate_ledger_name() {
     let state = TestState::new();
     let ledger1 = state.ledger;
     assert_eq!(
-        ledger1.name, "My Company",
+        ledger1.name.as_str(),
+        "My Company",
         "Initial GL name is 'My Company'"
     );
 
     // Act
     let ledger2 = general_ledger::Model {
-        name: "My Company",
+        name: ArrayString::<256>::from("My Company").unwrap(),
         currency: *iso::USD,
     };
     let ledger2 = state.db.create(&ledger2);
@@ -63,7 +65,7 @@ fn test_unique_account_number() {
     // Arrange
     let state = TestState::new();
     let ledger2 = general_ledger::Model {
-        name: "Other Company",
+        name: ArrayString::<256>::from("Other Company").unwrap(),
         currency: *iso::USD,
     };
     let ledger2 = state.db.create(&ledger2).unwrap();
@@ -73,9 +75,9 @@ fn test_unique_account_number() {
     let assets_same_gl = state.create_account("1000", "Assets", None);
     let assets_different_gl = ledger::Model {
         general_ledger_id: ledger2.id,
-        ledger_no: "1000",
+        ledger_no: ArrayString::<64>::from("1000").unwrap(),
         ledger_type: LedgerType::Leaf,
-        name: "Assets",
+        name: ArrayString::<256>::from("Assets").unwrap(),
         currency: None,
     };
     let assets_different_gl = state.db.create(&assets_different_gl);
@@ -269,7 +271,7 @@ fn test_unique_journal_name() {
     let state = TestState::new();
     let gl1 = &state.ledger;
     let gl2 = general_ledger::Model {
-        name: "Other Company",
+        name: ArrayString::<256>::from("Other Company").unwrap(),
         currency: *iso::USD,
     };
     let gl2 = state.db.create(&gl2).unwrap();
@@ -339,7 +341,7 @@ fn test_journal_transaction_creation() {
     // Arrange
     let state = TestState::new();
     let gl2 = general_ledger::Model {
-        name: "Other Company",
+        name: ArrayString::<256>::from("Other Company").unwrap(),
         currency: *iso::USD,
     };
     let gl2 = state.db.create(&gl2).unwrap();
@@ -536,7 +538,7 @@ impl TestState {
     fn new() -> TestState {
         let db = MemoryStore::new();
         let ledger = general_ledger::Model {
-            name: "My Company",
+            name: ArrayString::<256>::from("My Company").unwrap(),
             currency: *iso::USD,
         };
         let ledger = db.create(&ledger).unwrap();
@@ -563,9 +565,9 @@ impl TestState {
         let ledger_id = ledger_id.unwrap_or(self.ledger.id);
         let account = ledger::Model {
             general_ledger_id: ledger_id,
-            ledger_no: number,
+            ledger_no: ArrayString::<64>::from(number).unwrap(),
             ledger_type: LedgerType::Leaf,
-            name: name,
+            name: ArrayString::<256>::from(name).unwrap(),
             currency: None,
         };
 

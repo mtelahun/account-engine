@@ -1,3 +1,4 @@
+use arrayvec::ArrayString;
 use chronoutil::RelativeDuration;
 use std::{
     collections::HashMap,
@@ -373,7 +374,7 @@ impl RepositoryOrm<general_ledger::Model, general_ledger::ActiveModel, LedgerId>
         let gl_id = LedgerId::new();
         let root = ledger::Model {
             general_ledger_id: gl_id,
-            ledger_no: "0",
+            ledger_no: ArrayString::<64>::from("0").unwrap(),
             ledger_type: LedgerType::Intermediate,
             name: model.name,
             currency: None,
@@ -428,7 +429,7 @@ impl RepositoryOrm<ledger::Model, ledger::ActiveModel, AccountId> for MemoryStor
         if inner.ledger.iter().any(|(k, v)| {
             *k == ledger.id
                 || (v.general_ledger_id == ledger.general_ledger_id
-                    && ledger.ledger_no != "0"
+                    && ledger.ledger_no != ArrayString::<64>::from("0").unwrap()
                     && v.ledger_no == ledger.ledger_no)
         }) {
             return Err(OrmError::DuplicateRecord(format!(

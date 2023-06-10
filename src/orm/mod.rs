@@ -12,7 +12,7 @@ pub trait RepositoryEntity {
     const NAME: &'static str;
 }
 
-pub trait RepositoryOrm<M, AM, I>
+pub trait AccountRepository<M, AM, I>
 where
     AM: RepositoryEntity,
 {

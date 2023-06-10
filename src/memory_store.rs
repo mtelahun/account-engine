@@ -18,7 +18,7 @@ use crate::{
         ledger, ledger_entry, ledger_intermediate, ledger_leaf, ledger_transaction,
         ledger_xact_type, InterimType, LedgerKey, LedgerType, PostingRef, TransactionState,
     },
-    orm::{error::OrmError, RepositoryOrm},
+    orm::{error::OrmError, AccountRepository},
 };
 
 #[derive(Clone, Debug, Default)]
@@ -244,7 +244,7 @@ impl Inner {
     }
 }
 
-impl RepositoryOrm<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
+impl AccountRepository<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
     for MemoryStore
 {
     fn create(
@@ -312,7 +312,7 @@ impl RepositoryOrm<accounting_period::Model, accounting_period::ActiveModel, Per
 }
 
 impl
-    RepositoryOrm<
+    AccountRepository<
         interim_accounting_period::Model,
         interim_accounting_period::ActiveModel,
         InterimPeriodId,
@@ -366,7 +366,9 @@ impl
     }
 }
 
-impl RepositoryOrm<general_ledger::Model, general_ledger::ActiveModel, LedgerId> for MemoryStore {
+impl AccountRepository<general_ledger::Model, general_ledger::ActiveModel, LedgerId>
+    for MemoryStore
+{
     fn create(
         &self,
         model: &general_ledger::Model,
@@ -416,7 +418,7 @@ impl RepositoryOrm<general_ledger::Model, general_ledger::ActiveModel, LedgerId>
     }
 }
 
-impl RepositoryOrm<ledger::Model, ledger::ActiveModel, AccountId> for MemoryStore {
+impl AccountRepository<ledger::Model, ledger::ActiveModel, AccountId> for MemoryStore {
     fn create(&self, model: &ledger::Model) -> Result<ledger::ActiveModel, OrmError> {
         if model.parent_id.is_none() && model.ledger_no != ArrayString::<64>::from("0").unwrap() {
             return Err(OrmError::Constraint("ledger has no parent".into()));
@@ -504,7 +506,7 @@ impl RepositoryOrm<ledger::Model, ledger::ActiveModel, AccountId> for MemoryStor
     }
 }
 
-impl RepositoryOrm<journal::Model, journal::ActiveModel, JournalId> for MemoryStore {
+impl AccountRepository<journal::Model, journal::ActiveModel, JournalId> for MemoryStore {
     fn create(&self, model: &journal::Model) -> Result<journal::ActiveModel, OrmError> {
         let id = JournalId::new();
         let journal = journal::ActiveModel {
@@ -552,7 +554,7 @@ impl RepositoryOrm<journal::Model, journal::ActiveModel, JournalId> for MemorySt
 }
 
 impl
-    RepositoryOrm<
+    AccountRepository<
         journal_transaction::Model,
         journal_transaction::ActiveModel,
         JournalTransactionId,

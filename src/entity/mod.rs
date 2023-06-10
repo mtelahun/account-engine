@@ -3,7 +3,7 @@ pub mod entry;
 pub mod external;
 pub mod gl;
 pub mod jrnl;
-pub mod ledger_types;
+pub mod ledgers;
 pub mod period;
 
 // Re-exports
@@ -17,7 +17,7 @@ pub use external::{entity_type, external_account_type};
 pub use gl::general_ledger;
 pub use jrnl::journal;
 pub use jrnl::transaction::{journal_transaction, PostingRef, TransactionState};
-pub use ledger_types::account::ledger_leaf;
-pub use ledger_types::intermediate::ledger_intermediate;
-pub use ledger_types::{account_type, ledger, LedgerType};
+pub use ledgers::account::ledger_leaf;
+pub use ledgers::intermediate::ledger_intermediate;
+pub use ledgers::{account_type, ledger, LedgerType};
 pub use period::{accounting_period, interim_accounting_period, InterimType};

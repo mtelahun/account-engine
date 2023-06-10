@@ -7,7 +7,7 @@ use account_engine::{
         ledger, InterimType, LedgerType, TransactionState,
     },
     memory_store::MemoryStore,
-    orm::{error::OrmError, RepositoryOrm},
+    orm::{error::OrmError, AccountRepository},
 };
 use arrayvec::ArrayString;
 use chrono::{NaiveDate, NaiveDateTime};

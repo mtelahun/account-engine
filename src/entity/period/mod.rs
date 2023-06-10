@@ -14,7 +14,7 @@ pub mod accounting_period {
             ids::{InterimPeriodId, PeriodId},
             LedgerId,
         },
-        orm::RepositoryOrm,
+        orm::AccountRepository,
     };
 
     use super::{interim_accounting_period, InterimType};
@@ -40,7 +40,7 @@ pub mod accounting_period {
     impl ActiveModel {
         pub fn create_interim_calendar(
             &self,
-            orm: &dyn RepositoryOrm<
+            orm: &dyn AccountRepository<
                 interim_accounting_period::Model,
                 interim_accounting_period::ActiveModel,
                 InterimPeriodId,

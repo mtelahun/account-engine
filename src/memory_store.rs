@@ -15,7 +15,7 @@ use crate::{
     entity::{
         accounting_period, general_ledger, interim_accounting_period, journal_entry,
         jrnl::{journal, transaction::journal_transaction},
-        ledger, ledger_account, ledger_entry, ledger_intermediate, ledger_transaction,
+        ledger, ledger_entry, ledger_intermediate, ledger_leaf, ledger_transaction,
         ledger_xact_type, InterimType, LedgerKey, LedgerType, PostingRef, TransactionState,
     },
     orm::{error::OrmError, RepositoryOrm},
@@ -31,7 +31,7 @@ pub struct Inner {
     general_ledger: HashMap<LedgerId, general_ledger::ActiveModel>,
     ledger: HashMap<AccountId, ledger::ActiveModel>,
     ledger_intermediate: HashMap<AccountId, ledger_intermediate::ActiveModel>,
-    ledger_account: HashMap<AccountId, ledger_account::ActiveModel>,
+    ledger_account: HashMap<AccountId, ledger_leaf::ActiveModel>,
     period: HashMap<PeriodId, accounting_period::ActiveModel>,
     interim_period: HashMap<InterimPeriodId, interim_accounting_period::ActiveModel>,
     journal: HashMap<JournalId, journal::ActiveModel>,
@@ -226,7 +226,7 @@ impl Inner {
             general_ledger: HashMap::<LedgerId, general_ledger::ActiveModel>::new(),
             ledger: HashMap::<AccountId, ledger::ActiveModel>::new(),
             ledger_intermediate: HashMap::<AccountId, ledger_intermediate::ActiveModel>::new(),
-            ledger_account: HashMap::<AccountId, ledger_account::ActiveModel>::new(),
+            ledger_account: HashMap::<AccountId, ledger_leaf::ActiveModel>::new(),
             period: HashMap::<PeriodId, accounting_period::ActiveModel>::new(),
             interim_period: HashMap::<InterimPeriodId, interim_accounting_period::ActiveModel>::new(
             ),
@@ -376,6 +376,7 @@ impl RepositoryOrm<general_ledger::Model, general_ledger::ActiveModel, LedgerId>
             general_ledger_id: gl_id,
             ledger_no: ArrayString::<64>::from("0").unwrap(),
             ledger_type: LedgerType::Intermediate,
+            parent_id: None,
             name: model.name,
             currency: None,
         };
@@ -417,11 +418,27 @@ impl RepositoryOrm<general_ledger::Model, general_ledger::ActiveModel, LedgerId>
 
 impl RepositoryOrm<ledger::Model, ledger::ActiveModel, AccountId> for MemoryStore {
     fn create(&self, model: &ledger::Model) -> Result<ledger::ActiveModel, OrmError> {
+        if model.parent_id.is_none() && model.ledger_no != ArrayString::<64>::from("0").unwrap() {
+            return Err(OrmError::Constraint("ledger has no parent".into()));
+        } else if model.ledger_no != ArrayString::<64>::from("0").unwrap() {
+            let parent = self.search(Some(&[model.parent_id.unwrap()]));
+            if parent[0].ledger_type != LedgerType::Intermediate {
+                return Err(OrmError::Validation(
+                    "parent ledger is not an Intermediate Ledger".into(),
+                ));
+            } else if model.general_ledger_id != parent[0].general_ledger_id {
+                return Err(OrmError::Validation(
+                    "child ledger not in same general ledger as parent".into(),
+                ));
+            }
+        }
+
         let ledger = ledger::ActiveModel {
             id: AccountId::new(),
             general_ledger_id: model.general_ledger_id,
             ledger_no: model.ledger_no,
             ledger_type: model.ledger_type,
+            parent_id: model.parent_id,
             name: model.name,
             currency: model.currency,
         };
@@ -450,7 +467,7 @@ impl RepositoryOrm<ledger::Model, ledger::ActiveModel, AccountId> for MemoryStor
                 .ledger_intermediate
                 .insert(intermediate.id, intermediate);
         } else {
-            let account = ledger_account::ActiveModel {
+            let account = ledger_leaf::ActiveModel {
                 id: ledger.id,
                 ledger_no: ledger.ledger_no,
             };

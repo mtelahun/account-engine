@@ -71,12 +71,25 @@ fn test_unique_account_number() {
     let ledger2 = state.db.create(&ledger2).unwrap();
 
     // Act
-    let assets_original = state.create_account("1000", "Assets", None);
-    let assets_same_gl = state.create_account("1000", "Assets", None);
+    let assets_original = state.create_account(
+        "1000",
+        "Assets",
+        LedgerType::Leaf,
+        Some(state.ledger.root),
+        None,
+    );
+    let assets_same_gl = state.create_account(
+        "1000",
+        "Assets",
+        LedgerType::Leaf,
+        Some(state.ledger.root),
+        None,
+    );
     let assets_different_gl = ledger::Model {
         general_ledger_id: ledger2.id,
         ledger_no: ArrayString::<64>::from("1000").unwrap(),
         ledger_type: LedgerType::Leaf,
+        parent_id: Some(ledger2.root),
         name: ArrayString::<256>::from("Assets").unwrap(),
         currency: None,
     };
@@ -112,13 +125,87 @@ fn test_unique_account_number() {
 }
 
 #[test]
+fn test_account_and_parent_in_same_ledger() {
+    // Arrange
+    let state = TestState::new();
+    let ledger2 = general_ledger::Model {
+        name: ArrayString::<256>::from("Other Company").unwrap(),
+        currency: *iso::USD,
+    };
+    let ledger2 = state.db.create(&ledger2).unwrap();
+
+    // Act
+    let assets = state.create_account(
+        "1000",
+        "Assets",
+        LedgerType::Intermediate,
+        Some(state.ledger.root),
+        None,
+    );
+    let cash = state.create_account("1001", "Cash", LedgerType::Leaf, Some(ledger2.root), None);
+
+    // Assert
+    assert!(assets.is_ok(), "intermediate account created successfully");
+    assert!(cash.is_err(), "failed to create cash account");
+    assert_eq!(
+        cash.err().unwrap(),
+        Err::<(), OrmError>(OrmError::Validation(
+            "child ledger not in same general ledger as parent".into(),
+        ))
+        .err()
+        .unwrap()
+    );
+}
+
+#[test]
+fn test_parent_is_intermediate() {
+    // Arrange
+    let state = TestState::new();
+
+    // Act
+    let assets = state
+        .create_account(
+            "1000",
+            "Assets",
+            LedgerType::Leaf,
+            Some(state.ledger.root),
+            None,
+        )
+        .unwrap();
+    let cash = state.create_account("1001", "Cash", LedgerType::Leaf, Some(assets.id), None);
+
+    // Assert
+    assert!(cash.is_err(), "failed to create cash account");
+    assert_eq!(
+        cash.err().unwrap(),
+        Err::<(), OrmError>(OrmError::Validation(
+            "parent ledger is not an Intermediate Ledger".into(),
+        ))
+        .err()
+        .unwrap()
+    );
+}
+
+#[test]
 fn test_duplicate_account_name_ok() {
     // Arrange
     let state = TestState::new();
-    let assets_original = state.create_account("1000", "Assets", None);
+    let assets_original = state.create_account(
+        "1000",
+        "Assets",
+        LedgerType::Leaf,
+        Some(state.ledger.root),
+        None,
+    );
 
     // Act
-    let assets_same_gl = state.create_account("1001", "Assets", None);
+    let assets_same_gl = state.create_account(
+        "1001",
+        "Assets",
+        LedgerType::Leaf,
+        Some(state.ledger.root),
+        None,
+    );
 
     // Assert
     assert!(
@@ -345,10 +432,42 @@ fn test_journal_transaction_creation() {
         currency: *iso::USD,
     };
     let gl2 = state.db.create(&gl2).unwrap();
-    let cash1 = state.create_account("1001", "Cash", None).unwrap();
-    let bank1 = state.create_account("1002", "Bank", None).unwrap();
-    let cash2 = state.create_account("1001", "Cash", Some(gl2.id)).unwrap();
-    let bank2 = state.create_account("1002", "Bank", Some(gl2.id)).unwrap();
+    let cash1 = state
+        .create_account(
+            "1001",
+            "Cash",
+            LedgerType::Leaf,
+            Some(state.ledger.root),
+            None,
+        )
+        .unwrap();
+    let bank1 = state
+        .create_account(
+            "1002",
+            "Bank",
+            LedgerType::Leaf,
+            Some(state.ledger.root),
+            None,
+        )
+        .unwrap();
+    let cash2 = state
+        .create_account(
+            "1001",
+            "Cash",
+            LedgerType::Leaf,
+            Some(gl2.root),
+            Some(gl2.id),
+        )
+        .unwrap();
+    let bank2 = state
+        .create_account(
+            "1002",
+            "Bank",
+            LedgerType::Leaf,
+            Some(gl2.root),
+            Some(gl2.id),
+        )
+        .unwrap();
     let journal2 = state
         .create_journal("G", "General Journal", Some(gl2.id))
         .unwrap();
@@ -422,7 +541,15 @@ fn test_journal_transaction_creation_no_valid_account() {
     // Arrange
     let state = TestState::new();
     let account_dr_id = AccountId::new();
-    let bank = state.create_account("1002", "Bank", None).unwrap();
+    let bank = state
+        .create_account(
+            "1002",
+            "Bank",
+            LedgerType::Leaf,
+            Some(state.ledger.root),
+            None,
+        )
+        .unwrap();
     let now = timestamp();
     let jx1 = journal_transaction::Model {
         journal_id: state.journal.id,
@@ -461,8 +588,24 @@ fn test_journal_transaction_creation_no_valid_account() {
 fn test_post_journal_transaction_happy_path() {
     // Arrange
     let state = TestState::new();
-    let cash = state.create_account("1001", "Cash", None).unwrap();
-    let bank = state.create_account("1002", "Bank", None).unwrap();
+    let cash = state
+        .create_account(
+            "1001",
+            "Cash",
+            LedgerType::Leaf,
+            Some(state.ledger.root),
+            None,
+        )
+        .unwrap();
+    let bank = state
+        .create_account(
+            "1002",
+            "Bank",
+            LedgerType::Leaf,
+            Some(state.ledger.root),
+            None,
+        )
+        .unwrap();
     let jxact = state
         .create_journal_xact(Decimal::from(100), cash.id, bank.id, "Withdrew cash", None)
         .unwrap();
@@ -560,13 +703,16 @@ impl TestState {
         &self,
         number: &'static str,
         name: &'static str,
+        typ: LedgerType,
+        parent_id: Option<AccountId>,
         ledger_id: Option<LedgerId>,
     ) -> Result<ledger::ActiveModel, OrmError> {
         let ledger_id = ledger_id.unwrap_or(self.ledger.id);
         let account = ledger::Model {
             general_ledger_id: ledger_id,
             ledger_no: ArrayString::<64>::from(number).unwrap(),
-            ledger_type: LedgerType::Leaf,
+            ledger_type: typ,
+            parent_id,
             name: ArrayString::<256>::from(name).unwrap(),
             currency: None,
         };

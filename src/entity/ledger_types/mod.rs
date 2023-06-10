@@ -3,6 +3,7 @@ pub mod intermediate;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub enum LedgerType {
+    Derived,
     Intermediate,
     Leaf,
 }
@@ -20,6 +21,7 @@ pub mod ledger {
         pub general_ledger_id: LedgerId,
         pub ledger_no: ArrayString<64>,
         pub ledger_type: LedgerType,
+        pub parent_id: Option<AccountId>,
         pub name: ArrayString<256>,
         pub currency: Option<iso::Currency>,
     }
@@ -30,6 +32,7 @@ pub mod ledger {
         pub general_ledger_id: LedgerId,
         pub ledger_no: ArrayString<64>,
         pub ledger_type: LedgerType,
+        pub parent_id: Option<AccountId>,
         pub name: ArrayString<256>,
         pub currency: Option<iso::Currency>,
     }

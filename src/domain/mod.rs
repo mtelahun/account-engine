@@ -12,5 +12,5 @@ pub mod xact_type;
 pub use external_account_type_code::ExternalAccountTypeCode;
 pub use external_xact_type_code::ExternalXactTypeCode;
 pub use fixed_len_char::FixedLenChar;
-pub use ids::{AccountId, JournalTransactionId, LedgerId, PeriodId};
+pub use ids::{AccountBookId, AccountId, JournalTransactionId, LedgerId, PeriodId};
 pub use ledger_xact_type_code::LedgerXactTypeCode;

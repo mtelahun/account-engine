@@ -38,13 +38,14 @@ pub mod accounting_period {
     }
 
     impl ActiveModel {
-        pub fn create_interim_calendar(
+        pub async fn create_interim_calendar(
             &self,
-            orm: &dyn AccountRepository<
+            orm: &(dyn AccountRepository<
                 interim_accounting_period::Model,
                 interim_accounting_period::ActiveModel,
                 InterimPeriodId,
-            >,
+            > + Send
+                  + Sync),
         ) -> Result<Vec<interim_accounting_period::ActiveModel>, String> {
             let mut periods = Vec::<interim_accounting_period::ActiveModel>::new();
             let delta = RelativeDuration::months(1);
@@ -60,6 +61,7 @@ pub mod accounting_period {
                 };
                 let period = orm
                     .create(&period)
+                    .await
                     .map_err(|e| format!("error creating interim period: {}", e))?;
                 periods.push(period);
 

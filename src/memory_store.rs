@@ -1,10 +1,8 @@
 use arrayvec::ArrayString;
+use async_trait::async_trait;
 use chronoutil::RelativeDuration;
-use std::{
-    collections::HashMap,
-    str::FromStr,
-    sync::{Arc, RwLock},
-};
+use std::{collections::HashMap, str::FromStr, sync::Arc};
+use tokio::sync::RwLock;
 
 use crate::{
     domain::{
@@ -49,13 +47,13 @@ impl MemoryStore {
         }
     }
 
-    pub fn journal_entries_by_account_id(
+    pub async fn journal_entries_by_account_id(
         &self,
         account_id: AccountId,
     ) -> Vec<journal_entry::ActiveModel> {
         let mut res = Vec::<journal_entry::ActiveModel>::new();
-        let entries = self.ledger_entries_by_account_id(account_id);
-        let xacts = self.ledger_transactions_by_account_id(account_id);
+        let entries = self.ledger_entries_by_account_id(account_id).await;
+        let xacts = self.ledger_transactions_by_account_id(account_id).await;
         for e in entries {
             res.push(journal_entry::ActiveModel {
                 ledger_no: e.ledger_no,
@@ -71,6 +69,7 @@ impl MemoryStore {
                     ledger_no: t.ledger_no,
                     datetime: t.datetime,
                 })
+                .await
                 .unwrap();
             res.push(journal_entry::ActiveModel {
                 ledger_no: t.ledger_dr,
@@ -84,12 +83,12 @@ impl MemoryStore {
         res
     }
 
-    pub fn ledger_entries_by_account_id(
+    pub async fn ledger_entries_by_account_id(
         &self,
         account_id: AccountId,
     ) -> Vec<ledger_entry::ActiveModel> {
         let mut res = Vec::<ledger_entry::ActiveModel>::new();
-        let inner = self.inner.read().unwrap();
+        let inner = self.inner.read().await;
         for (key, entry) in &inner.journal_entry {
             if key.ledger_no == account_id {
                 res.append(&mut vec![*entry]);
@@ -99,12 +98,12 @@ impl MemoryStore {
         res
     }
 
-    pub fn ledger_transactions_by_account_id(
+    pub async fn ledger_transactions_by_account_id(
         &self,
         account_id: AccountId,
     ) -> Vec<ledger_transaction::ActiveModel> {
         let mut res = Vec::<ledger_transaction::ActiveModel>::new();
-        let inner = self.inner.read().unwrap();
+        let inner = self.inner.read().await;
         for tx in inner.ledger_xact.values() {
             if tx.ledger_dr == account_id {
                 res.push(*tx);
@@ -114,8 +113,8 @@ impl MemoryStore {
         res
     }
 
-    pub fn ledger_entry_by_key(&self, key: LedgerKey) -> Option<ledger_entry::ActiveModel> {
-        let inner = self.inner.read().unwrap();
+    pub async fn ledger_entry_by_key(&self, key: LedgerKey) -> Option<ledger_entry::ActiveModel> {
+        let inner = self.inner.read().await;
         if let Some(entry) = inner.journal_entry.get(&key) {
             return Some(*entry);
         };
@@ -123,17 +122,17 @@ impl MemoryStore {
         None
     }
 
-    pub fn journal_entries_by_ref(
+    pub async fn journal_entries_by_ref(
         &self,
         posting_ref: PostingRef,
     ) -> Vec<journal_entry::ActiveModel> {
-        self.journal_entries_by_key(posting_ref.ledger_key())
+        self.journal_entries_by_key(posting_ref.ledger_key()).await
     }
 
-    fn journal_entries_by_key(&self, key: LedgerKey) -> Vec<journal_entry::ActiveModel> {
+    async fn journal_entries_by_key(&self, key: LedgerKey) -> Vec<journal_entry::ActiveModel> {
         let mut res = Vec::<journal_entry::ActiveModel>::new();
-        let le = self.ledger_entry_by_key(key).unwrap();
-        let lt = self.ledger_transaction_by_key(key).unwrap();
+        let le = self.ledger_entry_by_key(key).await.unwrap();
+        let lt = self.ledger_transaction_by_key(key).await.unwrap();
         res.push(journal_entry::ActiveModel {
             ledger_no: le.ledger_no,
             datetime: le.datetime,
@@ -152,8 +151,11 @@ impl MemoryStore {
         res
     }
 
-    fn ledger_transaction_by_key(&self, key: LedgerKey) -> Option<ledger_transaction::ActiveModel> {
-        let inner = self.inner.read().unwrap();
+    async fn ledger_transaction_by_key(
+        &self,
+        key: LedgerKey,
+    ) -> Option<ledger_transaction::ActiveModel> {
+        let inner = self.inner.read().await;
         for tx in inner.ledger_xact.values() {
             if tx.ledger_no == key.ledger_no && tx.datetime == key.datetime {
                 return Some(*tx);
@@ -171,10 +173,10 @@ impl MemoryStore {
     //     None
     // }
 
-    pub fn post_journal_transaction(&self, jxact_id: JournalTransactionId) -> bool {
-        let ledger_xact_type = self.get_journal_entry_type(jxact_id);
+    pub async fn post_journal_transaction(&self, jxact_id: JournalTransactionId) -> bool {
+        let ledger_xact_type = self.get_journal_entry_type(jxact_id).await;
 
-        let mut inner = self.inner.write().unwrap();
+        let mut inner = self.inner.write().await;
         let mut xact = match inner.journal_xact.get_mut(&jxact_id) {
             None => return false,
             Some(value) => value,
@@ -206,11 +208,11 @@ impl MemoryStore {
         true
     }
 
-    fn get_journal_entry_type(
+    async fn get_journal_entry_type(
         &self,
         _jxact_id: JournalTransactionId,
     ) -> ledger_xact_type::ActiveModel {
-        let inner = self.inner.read().unwrap();
+        let inner = self.inner.read().await;
 
         *inner
             .ledger_xact_type
@@ -244,10 +246,11 @@ impl Inner {
     }
 }
 
+#[async_trait]
 impl AccountRepository<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
     for MemoryStore
 {
-    fn create(
+    async fn create(
         &self,
         model: &accounting_period::Model,
     ) -> Result<accounting_period::ActiveModel, OrmError> {
@@ -267,9 +270,10 @@ impl AccountRepository<accounting_period::Model, accounting_period::ActiveModel,
             InterimType::FourWeek => todo!(),
             InterimType::FourFourFiveWeek => todo!(),
         }
+        .await
         .map_err(OrmError::Internal)?;
 
-        let mut inner = self.inner.write().unwrap();
+        let mut inner = self.inner.write().await;
         let search_ids = inner.period.get(&period.id);
         let mut search_ledger = false;
         for value in inner.period.values() {
@@ -288,9 +292,9 @@ impl AccountRepository<accounting_period::Model, accounting_period::ActiveModel,
         ))
     }
 
-    fn search(&self, ids: Option<&[PeriodId]>) -> Vec<accounting_period::ActiveModel> {
+    async fn search(&self, ids: Option<&[PeriodId]>) -> Vec<accounting_period::ActiveModel> {
         let mut res = Vec::<accounting_period::ActiveModel>::new();
-        let inner = self.inner.read().unwrap();
+        let inner = self.inner.read().await;
         if let Some(ids) = ids {
             for value in inner.period.values() {
                 if ids.iter().any(|id| value.id == *id) {
@@ -306,11 +310,16 @@ impl AccountRepository<accounting_period::Model, accounting_period::ActiveModel,
         res
     }
 
-    fn update(&self, _ids: &[PeriodId], _model: &accounting_period::Model) -> Result<(), OrmError> {
+    async fn update(
+        &self,
+        _ids: &[PeriodId],
+        _model: &accounting_period::Model,
+    ) -> Result<(), OrmError> {
         todo!()
     }
 }
 
+#[async_trait]
 impl
     AccountRepository<
         interim_accounting_period::Model,
@@ -318,7 +327,7 @@ impl
         InterimPeriodId,
     > for MemoryStore
 {
-    fn create(
+    async fn create(
         &self,
         model: &interim_accounting_period::Model,
     ) -> Result<interim_accounting_period::ActiveModel, OrmError> {
@@ -329,18 +338,18 @@ impl
             start: model.start,
             end: model.end,
         };
-        let mut inner = self.inner.write().unwrap();
+        let mut inner = self.inner.write().await;
         inner.interim_period.insert(id, interim);
 
         Ok(interim)
     }
 
-    fn search(
+    async fn search(
         &self,
         ids: Option<&[InterimPeriodId]>,
     ) -> Vec<interim_accounting_period::ActiveModel> {
         let mut res = Vec::<interim_accounting_period::ActiveModel>::new();
-        let inner = self.inner.read().unwrap();
+        let inner = self.inner.read().await;
         if let Some(ids) = ids {
             for value in inner.interim_period.values() {
                 if ids.iter().any(|id| *id == value.id) {
@@ -357,7 +366,7 @@ impl
         res
     }
 
-    fn update(
+    async fn update(
         &self,
         _ids: &[InterimPeriodId],
         _model: &interim_accounting_period::Model,
@@ -366,10 +375,11 @@ impl
     }
 }
 
+#[async_trait]
 impl AccountRepository<general_ledger::Model, general_ledger::ActiveModel, LedgerId>
     for MemoryStore
 {
-    fn create(
+    async fn create(
         &self,
         model: &general_ledger::Model,
     ) -> Result<general_ledger::ActiveModel, OrmError> {
@@ -382,22 +392,22 @@ impl AccountRepository<general_ledger::Model, general_ledger::ActiveModel, Ledge
             name: model.name,
             currency: None,
         };
-        let root = self.create(&root)?;
+        let root = self.create(&root).await?;
         let gl = general_ledger::ActiveModel {
             id: gl_id,
             name: model.name,
             currency: model.currency,
             root: root.id,
         };
-        let mut inner = self.inner.write().unwrap();
+        let mut inner = self.inner.write().await;
         inner.general_ledger.insert(gl_id, gl);
 
         Ok(gl)
     }
 
-    fn search(&self, ids: Option<&[LedgerId]>) -> Vec<general_ledger::ActiveModel> {
+    async fn search(&self, ids: Option<&[LedgerId]>) -> Vec<general_ledger::ActiveModel> {
         let mut res = Vec::<general_ledger::ActiveModel>::new();
-        let inner = self.inner.read().unwrap();
+        let inner = self.inner.read().await;
         if let Some(ids) = ids {
             for gl in inner.general_ledger.values() {
                 if ids.iter().any(|i| *i == gl.id) {
@@ -413,17 +423,22 @@ impl AccountRepository<general_ledger::Model, general_ledger::ActiveModel, Ledge
         res
     }
 
-    fn update(&self, _ids: &[LedgerId], _model: &general_ledger::Model) -> Result<(), OrmError> {
+    async fn update(
+        &self,
+        _ids: &[LedgerId],
+        _model: &general_ledger::Model,
+    ) -> Result<(), OrmError> {
         todo!()
     }
 }
 
+#[async_trait]
 impl AccountRepository<ledger::Model, ledger::ActiveModel, AccountId> for MemoryStore {
-    fn create(&self, model: &ledger::Model) -> Result<ledger::ActiveModel, OrmError> {
+    async fn create(&self, model: &ledger::Model) -> Result<ledger::ActiveModel, OrmError> {
         if model.parent_id.is_none() && model.ledger_no != ArrayString::<64>::from("0").unwrap() {
             return Err(OrmError::Constraint("ledger has no parent".into()));
         } else if model.ledger_no != ArrayString::<64>::from("0").unwrap() {
-            let parent = self.search(Some(&[model.parent_id.unwrap()]));
+            let parent = self.search(Some(&[model.parent_id.unwrap()])).await;
             if parent[0].ledger_type != LedgerType::Intermediate {
                 return Err(OrmError::Validation(
                     "parent ledger is not an Intermediate Ledger".into(),
@@ -444,7 +459,7 @@ impl AccountRepository<ledger::Model, ledger::ActiveModel, AccountId> for Memory
             name: model.name,
             currency: model.currency,
         };
-        let mut inner = self.inner.write().unwrap();
+        let mut inner = self.inner.write().await;
         if inner.ledger.iter().any(|(k, v)| {
             *k == ledger.id
                 || (v.general_ledger_id == ledger.general_ledger_id
@@ -483,9 +498,9 @@ impl AccountRepository<ledger::Model, ledger::ActiveModel, AccountId> for Memory
         Ok(ledger)
     }
 
-    fn search(&self, ids: Option<&[AccountId]>) -> Vec<ledger::ActiveModel> {
+    async fn search(&self, ids: Option<&[AccountId]>) -> Vec<ledger::ActiveModel> {
         let mut res = Vec::<ledger::ActiveModel>::new();
-        let inner = self.inner.read().unwrap();
+        let inner = self.inner.read().await;
         if let Some(ids) = ids {
             for account in inner.ledger.values() {
                 if ids.iter().any(|i| *i == account.id) {
@@ -501,13 +516,14 @@ impl AccountRepository<ledger::Model, ledger::ActiveModel, AccountId> for Memory
         res
     }
 
-    fn update(&self, _ids: &[AccountId], _model: &ledger::Model) -> Result<(), OrmError> {
+    async fn update(&self, _ids: &[AccountId], _model: &ledger::Model) -> Result<(), OrmError> {
         todo!()
     }
 }
 
+#[async_trait]
 impl AccountRepository<journal::Model, journal::ActiveModel, JournalId> for MemoryStore {
-    fn create(&self, model: &journal::Model) -> Result<journal::ActiveModel, OrmError> {
+    async fn create(&self, model: &journal::Model) -> Result<journal::ActiveModel, OrmError> {
         let id = JournalId::new();
         let journal = journal::ActiveModel {
             id,
@@ -515,7 +531,7 @@ impl AccountRepository<journal::Model, journal::ActiveModel, JournalId> for Memo
             code: model.code.clone(),
             ledger_id: model.ledger_id,
         };
-        let mut inner = self.inner.write().unwrap();
+        let mut inner = self.inner.write().await;
         let is_duplicate = inner
             .journal
             .iter()
@@ -530,9 +546,9 @@ impl AccountRepository<journal::Model, journal::ActiveModel, JournalId> for Memo
         Ok(journal)
     }
 
-    fn search(&self, ids: Option<&[JournalId]>) -> Vec<journal::ActiveModel> {
+    async fn search(&self, ids: Option<&[JournalId]>) -> Vec<journal::ActiveModel> {
         let mut res = Vec::<journal::ActiveModel>::new();
-        let inner = self.inner.read().unwrap();
+        let inner = self.inner.read().await;
         if let Some(ids) = ids {
             for value in inner.journal.values() {
                 if ids.iter().any(|id| *id == value.id) {
@@ -548,16 +564,20 @@ impl AccountRepository<journal::Model, journal::ActiveModel, JournalId> for Memo
         res
     }
 
-    fn update(&self, _ids: &[JournalId], _model: &journal::Model) -> Result<(), OrmError> {
+    async fn update(&self, _ids: &[JournalId], _model: &journal::Model) -> Result<(), OrmError> {
         todo!()
     }
 }
 
+#[async_trait]
 impl AccountRepository<journal_line::Model, journal_line::ActiveModel, JournalTransactionId>
     for MemoryStore
 {
-    fn create(&self, model: &journal_line::Model) -> Result<journal_line::ActiveModel, OrmError> {
-        let inner = self.inner.read().unwrap();
+    async fn create(
+        &self,
+        model: &journal_line::Model,
+    ) -> Result<journal_line::ActiveModel, OrmError> {
+        let inner = self.inner.read().await;
         let is_dr = inner.ledger.contains_key(&model.account_dr_id);
         let is_cr = inner.ledger.contains_key(&model.account_cr_id);
         drop(inner);
@@ -586,7 +606,7 @@ impl AccountRepository<journal_line::Model, journal_line::ActiveModel, JournalTr
             description: model.description.clone(),
             posting_ref: model.posting_ref,
         };
-        let mut inner = self.inner.write().unwrap();
+        let mut inner = self.inner.write().await;
         let search = inner.journal_xact.get(&id);
         if search.is_none() {
             inner.journal_xact.insert(id, jtx.clone());
@@ -600,9 +620,9 @@ impl AccountRepository<journal_line::Model, journal_line::ActiveModel, JournalTr
         )))
     }
 
-    fn search(&self, ids: Option<&[JournalTransactionId]>) -> Vec<journal_line::ActiveModel> {
+    async fn search(&self, ids: Option<&[JournalTransactionId]>) -> Vec<journal_line::ActiveModel> {
         let mut res = Vec::<journal_line::ActiveModel>::new();
-        let inner = self.inner.read().unwrap();
+        let inner = self.inner.read().await;
 
         if let Some(ids) = ids {
             for value in inner.journal_xact.values() {
@@ -619,7 +639,7 @@ impl AccountRepository<journal_line::Model, journal_line::ActiveModel, JournalTr
         res
     }
 
-    fn update(
+    async fn update(
         &self,
         _ids: &[JournalTransactionId],
         _model: &journal_line::Model,

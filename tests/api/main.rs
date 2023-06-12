@@ -14,17 +14,17 @@ use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 use rusty_money::iso;
 
-#[test]
-fn test_non_existant_ledger() {
+#[tokio::test]
+async fn test_non_existant_ledger() {
     // Arrange
-    let state = TestState::new();
+    let state = TestState::new().await;
     let gl_id = LedgerId::new();
 
     // Act
-    let res = state.db.search(Some(&[gl_id]));
+    let res = state.db.search(Some(&[gl_id])).await;
 
     // Assert
-    let all_gl: Vec<general_ledger::ActiveModel> = state.db.search(None);
+    let all_gl: Vec<general_ledger::ActiveModel> = state.db.search(None).await;
     assert_eq!(all_gl.len(), 1, "Only one GL in the list");
     assert_eq!(
         res.len(),
@@ -33,10 +33,10 @@ fn test_non_existant_ledger() {
     );
 }
 
-#[test]
-fn test_duplicate_ledger_name() {
+#[tokio::test]
+async fn test_duplicate_ledger_name() {
     // Arrange
-    let state = TestState::new();
+    let state = TestState::new().await;
     let ledger1 = state.ledger;
     assert_eq!(
         ledger1.name.as_str(),
@@ -49,42 +49,46 @@ fn test_duplicate_ledger_name() {
         name: ArrayString::<256>::from("My Company").unwrap(),
         currency: *iso::USD,
     };
-    let ledger2 = state.db.create(&ledger2);
+    let ledger2 = state.db.create(&ledger2).await;
 
     // Assert
     assert!(ledger2.is_ok(), "second identical GL created successfully");
     let ledger2 = ledger2.unwrap();
     assert_eq!(ledger2.name, ledger1.name, "Both GLs have identical names");
     assert_ne!(ledger1.id, ledger2.id, "Ledger IDs are different");
-    let ledgers: Vec<general_ledger::ActiveModel> = state.db.search(None);
+    let ledgers: Vec<general_ledger::ActiveModel> = state.db.search(None).await;
     assert_eq!(ledgers.len(), 2, "There are 2 GLs in the list")
 }
 
-#[test]
-fn test_unique_account_number() {
+#[tokio::test]
+async fn test_unique_account_number() {
     // Arrange
-    let state = TestState::new();
+    let state = TestState::new().await;
     let ledger2 = general_ledger::Model {
         name: ArrayString::<256>::from("Other Company").unwrap(),
         currency: *iso::USD,
     };
-    let ledger2 = state.db.create(&ledger2).unwrap();
+    let ledger2 = state.db.create(&ledger2).await.unwrap();
 
     // Act
-    let assets_original = state.create_account(
-        "1000",
-        "Assets",
-        LedgerType::Leaf,
-        Some(state.ledger.root),
-        None,
-    );
-    let assets_same_gl = state.create_account(
-        "1000",
-        "Assets",
-        LedgerType::Leaf,
-        Some(state.ledger.root),
-        None,
-    );
+    let assets_original = state
+        .create_account(
+            "1000",
+            "Assets",
+            LedgerType::Leaf,
+            Some(state.ledger.root),
+            None,
+        )
+        .await;
+    let assets_same_gl = state
+        .create_account(
+            "1000",
+            "Assets",
+            LedgerType::Leaf,
+            Some(state.ledger.root),
+            None,
+        )
+        .await;
     let assets_different_gl = ledger::Model {
         general_ledger_id: ledger2.id,
         ledger_no: ArrayString::<64>::from("1000").unwrap(),
@@ -93,7 +97,7 @@ fn test_unique_account_number() {
         name: ArrayString::<256>::from("Assets").unwrap(),
         currency: None,
     };
-    let assets_different_gl = state.db.create(&assets_different_gl);
+    let assets_different_gl = state.db.create(&assets_different_gl).await;
 
     // Assert
     assert!(
@@ -110,6 +114,7 @@ fn test_unique_account_number() {
     let gl1_accounts: Vec<ledger::ActiveModel> = state
         .db
         .search(None)
+        .await
         .into_iter()
         .filter(|l: &ledger::ActiveModel| l.general_ledger_id == state.ledger.id)
         .collect();
@@ -124,25 +129,29 @@ fn test_unique_account_number() {
     );
 }
 
-#[test]
-fn test_account_and_parent_in_same_ledger() {
+#[tokio::test]
+async fn test_account_and_parent_in_same_ledger() {
     // Arrange
-    let state = TestState::new();
+    let state = TestState::new().await;
     let ledger2 = general_ledger::Model {
         name: ArrayString::<256>::from("Other Company").unwrap(),
         currency: *iso::USD,
     };
-    let ledger2 = state.db.create(&ledger2).unwrap();
+    let ledger2 = state.db.create(&ledger2).await.unwrap();
 
     // Act
-    let assets = state.create_account(
-        "1000",
-        "Assets",
-        LedgerType::Intermediate,
-        Some(state.ledger.root),
-        None,
-    );
-    let cash = state.create_account("1001", "Cash", LedgerType::Leaf, Some(ledger2.root), None);
+    let assets = state
+        .create_account(
+            "1000",
+            "Assets",
+            LedgerType::Intermediate,
+            Some(state.ledger.root),
+            None,
+        )
+        .await;
+    let cash = state
+        .create_account("1001", "Cash", LedgerType::Leaf, Some(ledger2.root), None)
+        .await;
 
     // Assert
     assert!(assets.is_ok(), "intermediate account created successfully");
@@ -157,10 +166,10 @@ fn test_account_and_parent_in_same_ledger() {
     );
 }
 
-#[test]
-fn test_parent_is_intermediate() {
+#[tokio::test]
+async fn test_parent_is_intermediate() {
     // Arrange
-    let state = TestState::new();
+    let state = TestState::new().await;
 
     // Act
     let assets = state
@@ -171,8 +180,11 @@ fn test_parent_is_intermediate() {
             Some(state.ledger.root),
             None,
         )
+        .await
         .unwrap();
-    let cash = state.create_account("1001", "Cash", LedgerType::Leaf, Some(assets.id), None);
+    let cash = state
+        .create_account("1001", "Cash", LedgerType::Leaf, Some(assets.id), None)
+        .await;
 
     // Assert
     assert!(cash.is_err(), "failed to create cash account");
@@ -186,26 +198,30 @@ fn test_parent_is_intermediate() {
     );
 }
 
-#[test]
-fn test_duplicate_account_name_ok() {
+#[tokio::test]
+async fn test_duplicate_account_name_ok() {
     // Arrange
-    let state = TestState::new();
-    let assets_original = state.create_account(
-        "1000",
-        "Assets",
-        LedgerType::Leaf,
-        Some(state.ledger.root),
-        None,
-    );
+    let state = TestState::new().await;
+    let assets_original = state
+        .create_account(
+            "1000",
+            "Assets",
+            LedgerType::Leaf,
+            Some(state.ledger.root),
+            None,
+        )
+        .await;
 
     // Act
-    let assets_same_gl = state.create_account(
-        "1001",
-        "Assets",
-        LedgerType::Leaf,
-        Some(state.ledger.root),
-        None,
-    );
+    let assets_same_gl = state
+        .create_account(
+            "1001",
+            "Assets",
+            LedgerType::Leaf,
+            Some(state.ledger.root),
+            None,
+        )
+        .await;
 
     // Assert
     assert!(
@@ -221,7 +237,7 @@ fn test_duplicate_account_name_ok() {
         assets_same_gl.unwrap().name,
         "account with duplicate name created successfully"
     );
-    let gl1_accounts: Vec<ledger::ActiveModel> = state.db.search(None);
+    let gl1_accounts: Vec<ledger::ActiveModel> = state.db.search(None).await;
     assert_eq!(
         gl1_accounts.len(),
         3,
@@ -229,10 +245,10 @@ fn test_duplicate_account_name_ok() {
     );
 }
 
-#[test]
-fn test_unique_accounting_period() {
+#[tokio::test]
+async fn test_unique_accounting_period() {
     // Arrance
-    let state = TestState::new();
+    let state = TestState::new().await;
     let period = accounting_period::Model {
         ledger_id: state.ledger.id,
         fiscal_year: 2023,
@@ -241,8 +257,8 @@ fn test_unique_accounting_period() {
     };
 
     // Act
-    let fy = state.db.create(&period);
-    let fy_duplicate = state.db.create(&period);
+    let fy = state.db.create(&period).await;
+    let fy_duplicate = state.db.create(&period).await;
 
     // Assert
     assert!(fy.is_ok(), "first fiscal year created successfully");
@@ -258,21 +274,21 @@ fn test_unique_accounting_period() {
         .err()
         .unwrap()
     );
-    let periods: Vec<accounting_period::ActiveModel> = state.db.search(None);
+    let periods: Vec<accounting_period::ActiveModel> = state.db.search(None).await;
     assert_eq!(periods.len(), 1, "Only one period in the list")
 }
 
-#[test]
-fn test_create_accounting_period_calendar() {
+#[tokio::test]
+async fn test_create_accounting_period_calendar() {
     // Arrange
-    let state = TestState::new();
+    let state = TestState::new().await;
     let fy = accounting_period::Model {
         ledger_id: state.ledger.id,
         fiscal_year: 2023,
         period_start: NaiveDate::from_ymd_opt(2023, 1, 1).unwrap(),
         period_type: InterimType::CalendarMonth,
     };
-    let fy = state.db.create(&fy).unwrap();
+    let fy = state.db.create(&fy).await.unwrap();
     let dates = vec![
         (
             NaiveDate::from_ymd_opt(2023, 1, 1).unwrap(),
@@ -325,7 +341,7 @@ fn test_create_accounting_period_calendar() {
     ];
 
     // Act
-    let subperiods: Vec<interim_accounting_period::ActiveModel> = state.db.search(None);
+    let subperiods: Vec<interim_accounting_period::ActiveModel> = state.db.search(None).await;
 
     // Assert
     assert_eq!(subperiods.len(), 12, "12 periods in Calendar Month period");
@@ -352,16 +368,16 @@ fn test_create_accounting_period_calendar() {
     );
 }
 
-#[test]
-fn test_unique_journal_name() {
+#[tokio::test]
+async fn test_unique_journal_name() {
     // Arrange
-    let state = TestState::new();
+    let state = TestState::new().await;
     let gl1 = &state.ledger;
     let gl2 = general_ledger::Model {
         name: ArrayString::<256>::from("Other Company").unwrap(),
         currency: *iso::USD,
     };
-    let gl2 = state.db.create(&gl2).unwrap();
+    let gl2 = state.db.create(&gl2).await.unwrap();
     let j1 = journal::Model {
         name: "General".into(),
         code: "S".into(),
@@ -376,9 +392,9 @@ fn test_unique_journal_name() {
     j3.ledger_id = gl2.id;
 
     // Act
-    let journal1 = state.db.create(&j1);
-    let journal2 = state.db.create(&j2);
-    let journal3 = state.db.create(&j3);
+    let journal1 = state.db.create(&j1).await;
+    let journal2 = state.db.create(&j2).await;
+    let journal3 = state.db.create(&j3).await;
 
     // Assert
     assert!(journal1.is_ok(), "first journal created successfully");
@@ -395,7 +411,7 @@ fn test_unique_journal_name() {
         journal3.is_ok(),
         "jrnl with same code in ANOTHER ledger created successfully"
     );
-    let journals: Vec<journal::ActiveModel> = state.db.search(None);
+    let journals: Vec<journal::ActiveModel> = state.db.search(None).await;
     assert_eq!(
         journals.len(),
         3,
@@ -423,15 +439,15 @@ fn test_unique_journal_name() {
     );
 }
 
-#[test]
-fn test_journal_transaction_creation() {
+#[tokio::test]
+async fn test_journal_transaction_creation() {
     // Arrange
-    let state = TestState::new();
+    let state = TestState::new().await;
     let gl2 = general_ledger::Model {
         name: ArrayString::<256>::from("Other Company").unwrap(),
         currency: *iso::USD,
     };
-    let gl2 = state.db.create(&gl2).unwrap();
+    let gl2 = state.db.create(&gl2).await.unwrap();
     let cash1 = state
         .create_account(
             "1001",
@@ -440,6 +456,7 @@ fn test_journal_transaction_creation() {
             Some(state.ledger.root),
             None,
         )
+        .await
         .unwrap();
     let bank1 = state
         .create_account(
@@ -449,6 +466,7 @@ fn test_journal_transaction_creation() {
             Some(state.ledger.root),
             None,
         )
+        .await
         .unwrap();
     let cash2 = state
         .create_account(
@@ -458,6 +476,7 @@ fn test_journal_transaction_creation() {
             Some(gl2.root),
             Some(gl2.id),
         )
+        .await
         .unwrap();
     let bank2 = state
         .create_account(
@@ -467,9 +486,11 @@ fn test_journal_transaction_creation() {
             Some(gl2.root),
             Some(gl2.id),
         )
+        .await
         .unwrap();
     let journal2 = state
         .create_journal("G", "General Journal", Some(gl2.id))
+        .await
         .unwrap();
 
     let now = timestamp();
@@ -490,9 +511,9 @@ fn test_journal_transaction_creation() {
     jx_other_ledger.account_dr_id = cash2.id;
 
     // Act
-    let jx1 = state.db.create(&jx1);
-    let jx_same_ledger = state.db.create(&jx_same_ledger);
-    let jx_other_ledger = state.db.create(&jx_other_ledger);
+    let jx1 = state.db.create(&jx1).await;
+    let jx_same_ledger = state.db.create(&jx_same_ledger).await;
+    let jx_other_ledger = state.db.create(&jx_other_ledger).await;
 
     // Assert
     assert!(jx1.is_ok(), "jx was created successfully");
@@ -513,7 +534,7 @@ fn test_journal_transaction_creation() {
         jx_same_ledger.id, jx_other_ledger.id,
         "transaction ids are different"
     );
-    let jxacts: Vec<journal_line::ActiveModel> = state.db.search(None);
+    let jxacts: Vec<journal_line::ActiveModel> = state.db.search(None).await;
     assert_eq!(jxacts.len(), 3, "There are 3 jx(s) in the entire db");
     let jxacts1: Vec<journal_line::ActiveModel> = jxacts
         .clone()
@@ -536,10 +557,10 @@ fn test_journal_transaction_creation() {
     );
 }
 
-#[test]
-fn test_journal_transaction_creation_no_valid_account() {
+#[tokio::test]
+async fn test_journal_transaction_creation_no_valid_account() {
     // Arrange
-    let state = TestState::new();
+    let state = TestState::new().await;
     let account_dr_id = AccountId::new();
     let bank = state
         .create_account(
@@ -549,6 +570,7 @@ fn test_journal_transaction_creation_no_valid_account() {
             Some(state.ledger.root),
             None,
         )
+        .await
         .unwrap();
     let now = timestamp();
     let jx1 = journal_line::Model {
@@ -563,7 +585,7 @@ fn test_journal_transaction_creation_no_valid_account() {
     };
 
     // Act
-    let jx1_db = state.db.create(&jx1);
+    let jx1_db = state.db.create(&jx1).await;
 
     // Assert
     assert!(jx1_db.is_err(), "jx was created successfully");
@@ -576,7 +598,7 @@ fn test_journal_transaction_creation_no_valid_account() {
         .err()
         .unwrap()
     );
-    let jxacts: Vec<journal_line::ActiveModel> = state.db.search(None);
+    let jxacts: Vec<journal_line::ActiveModel> = state.db.search(None).await;
     assert_eq!(
         jxacts.len(),
         0,
@@ -584,10 +606,10 @@ fn test_journal_transaction_creation_no_valid_account() {
     );
 }
 
-#[test]
-fn test_post_journal_transaction_happy_path() {
+#[tokio::test]
+async fn test_post_journal_transaction_happy_path() {
     // Arrange
-    let state = TestState::new();
+    let state = TestState::new().await;
     let cash = state
         .create_account(
             "1001",
@@ -596,6 +618,7 @@ fn test_post_journal_transaction_happy_path() {
             Some(state.ledger.root),
             None,
         )
+        .await
         .unwrap();
     let bank = state
         .create_account(
@@ -605,20 +628,25 @@ fn test_post_journal_transaction_happy_path() {
             Some(state.ledger.root),
             None,
         )
+        .await
         .unwrap();
     let jxact = state
         .create_journal_xact(Decimal::from(100), cash.id, bank.id, "Withdrew cash", None)
+        .await
         .unwrap();
 
     // Act
-    let posted = state.db.post_journal_transaction(jxact.id);
+    let posted = state.db.post_journal_transaction(jxact.id).await;
 
     // Assert
     assert!(posted, "the call to 'post' the journal tx succeeded");
-    let bank_entries = state.db.journal_entries_by_account_id(bank.id);
-    let cash_entries = state.db.journal_entries_by_account_id(cash.id);
-    let jxact = &state.db.search(Some(&[jxact.id]))[0];
-    let entries = state.db.journal_entries_by_ref(jxact.posting_ref.unwrap());
+    let bank_entries = state.db.journal_entries_by_account_id(bank.id).await;
+    let cash_entries = state.db.journal_entries_by_account_id(cash.id).await;
+    let jxact = &state.db.search(Some(&[jxact.id])).await[0];
+    let entries = state
+        .db
+        .journal_entries_by_ref(jxact.posting_ref.unwrap())
+        .await;
     assert_eq!(
         jxact.state,
         TransactionState::Posted,
@@ -642,8 +670,8 @@ fn test_post_journal_transaction_happy_path() {
         entries[1], cash_entries[0],
         "the 2nd posting ref points to the DR account"
     );
-    let cr_account = state.db.search(Some(&[bank.id]))[0];
-    let dr_account = state.db.search(Some(&[cash.id]))[0];
+    let cr_account = state.db.search(Some(&[bank.id])).await[0];
+    let dr_account = state.db.search(Some(&[cash.id])).await[0];
     assert_eq!(
         cr_account.id, jxact.account_cr_id,
         "ledger CR ac. matches journal"
@@ -678,19 +706,19 @@ struct TestState {
 }
 
 impl TestState {
-    fn new() -> TestState {
+    async fn new() -> TestState {
         let db = MemoryStore::new();
         let ledger = general_ledger::Model {
             name: ArrayString::<256>::from("My Company").unwrap(),
             currency: *iso::USD,
         };
-        let ledger = db.create(&ledger).unwrap();
+        let ledger = db.create(&ledger).await.unwrap();
         let journal = journal::Model {
             name: "General Journal".into(),
             code: "G".into(),
             ledger_id: ledger.id,
         };
-        let journal = db.create(&journal).unwrap();
+        let journal = db.create(&journal).await.unwrap();
 
         Self {
             db,
@@ -699,7 +727,7 @@ impl TestState {
         }
     }
 
-    fn create_account(
+    async fn create_account(
         &self,
         number: &'static str,
         name: &'static str,
@@ -717,10 +745,10 @@ impl TestState {
             currency: None,
         };
 
-        self.db.create(&account)
+        self.db.create(&account).await
     }
 
-    fn create_journal(
+    async fn create_journal(
         &self,
         code: &'static str,
         name: &'static str,
@@ -733,10 +761,10 @@ impl TestState {
             ledger_id,
         };
 
-        self.db.create(&model)
+        self.db.create(&model).await
     }
 
-    fn create_journal_xact(
+    async fn create_journal_xact(
         &self,
         amount: Decimal,
         account_dr_id: AccountId,
@@ -756,7 +784,7 @@ impl TestState {
             account_cr_id,
         };
 
-        self.db.create(&model)
+        self.db.create(&model).await
     }
 }
 

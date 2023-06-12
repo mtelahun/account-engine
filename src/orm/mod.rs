@@ -1,5 +1,6 @@
 pub mod error;
 
+use async_trait::async_trait;
 // Re-exports
 pub use error::OrmError;
 
@@ -11,15 +12,18 @@ pub trait RepositoryEntity {
     const NAME: &'static str;
 }
 
+#[async_trait]
 pub trait AccountRepository<M, AM, I>
 where
-    AM: RepositoryEntity,
+    M: Send + Sync,
+    AM: RepositoryEntity + Send + Sync,
+    I: Send + Sync,
 {
-    fn create(&self, model: &M) -> Result<AM, OrmError>;
+    async fn create(&self, model: &M) -> Result<AM, OrmError>;
 
-    fn search(&self, ids: Option<&[I]>) -> Vec<AM>;
+    async fn search(&self, ids: Option<&[I]>) -> Vec<AM>;
 
-    fn update(&self, ids: &[I], model: &M) -> Result<(), OrmError>;
+    async fn update(&self, ids: &[I], model: &M) -> Result<(), OrmError>;
 }
 
 impl RepositoryEntity for accounting_period::ActiveModel {

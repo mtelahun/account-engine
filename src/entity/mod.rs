@@ -16,7 +16,7 @@ pub use external::account::external_account;
 pub use external::{entity_type, external_account_type};
 pub use gl::general_ledger;
 pub use jrnl::journal;
-pub use jrnl::transaction::{journal_transaction, PostingRef, TransactionState};
+pub use jrnl::transaction::{journal_line, PostingRef, TransactionState};
 pub use ledgers::account::ledger_leaf;
 pub use ledgers::intermediate::ledger_intermediate;
 pub use ledgers::{account_type, ledger, LedgerType};

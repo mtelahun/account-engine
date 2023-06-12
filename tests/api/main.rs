@@ -3,7 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use account_engine::{
     domain::{ids::JournalId, AccountId, LedgerId},
     entity::{
-        accounting_period, general_ledger, interim_accounting_period, journal, journal_transaction,
+        accounting_period, general_ledger, interim_accounting_period, journal, journal_line,
         ledger, InterimType, LedgerType, TransactionState,
     },
     memory_store::MemoryStore,
@@ -473,7 +473,7 @@ fn test_journal_transaction_creation() {
         .unwrap();
 
     let now = timestamp();
-    let jx1 = journal_transaction::Model {
+    let jx1 = journal_line::Model {
         journal_id: state.journal.id,
         timestamp: now,
         state: TransactionState::Pending,
@@ -513,14 +513,14 @@ fn test_journal_transaction_creation() {
         jx_same_ledger.id, jx_other_ledger.id,
         "transaction ids are different"
     );
-    let jxacts: Vec<journal_transaction::ActiveModel> = state.db.search(None);
+    let jxacts: Vec<journal_line::ActiveModel> = state.db.search(None);
     assert_eq!(jxacts.len(), 3, "There are 3 jx(s) in the entire db");
-    let jxacts1: Vec<journal_transaction::ActiveModel> = jxacts
+    let jxacts1: Vec<journal_line::ActiveModel> = jxacts
         .clone()
         .into_iter()
         .filter(|jx| jx.journal_id == state.journal.id)
         .collect();
-    let jxacts2: Vec<journal_transaction::ActiveModel> = jxacts
+    let jxacts2: Vec<journal_line::ActiveModel> = jxacts
         .into_iter()
         .filter(|jx| jx.journal_id == journal2.id)
         .collect();
@@ -551,7 +551,7 @@ fn test_journal_transaction_creation_no_valid_account() {
         )
         .unwrap();
     let now = timestamp();
-    let jx1 = journal_transaction::Model {
+    let jx1 = journal_line::Model {
         journal_id: state.journal.id,
         timestamp: now,
         state: TransactionState::Pending,
@@ -576,7 +576,7 @@ fn test_journal_transaction_creation_no_valid_account() {
         .err()
         .unwrap()
     );
-    let jxacts: Vec<journal_transaction::ActiveModel> = state.db.search(None);
+    let jxacts: Vec<journal_line::ActiveModel> = state.db.search(None);
     assert_eq!(
         jxacts.len(),
         0,
@@ -743,9 +743,9 @@ impl TestState {
         account_cr_id: AccountId,
         desc: &str,
         journal_id: Option<JournalId>,
-    ) -> Result<journal_transaction::ActiveModel, OrmError> {
+    ) -> Result<journal_line::ActiveModel, OrmError> {
         let journal_id: JournalId = journal_id.unwrap_or(self.journal.id);
-        let model = journal_transaction::Model {
+        let model = journal_line::Model {
             journal_id,
             timestamp: timestamp(),
             state: TransactionState::Pending,

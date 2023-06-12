@@ -4,8 +4,7 @@ pub mod error;
 pub use error::OrmError;
 
 use crate::entity::{
-    accounting_period, general_ledger, interim_accounting_period, journal, journal_transaction,
-    ledger,
+    accounting_period, general_ledger, interim_accounting_period, journal, journal_line, ledger,
 };
 
 pub trait RepositoryEntity {
@@ -43,7 +42,7 @@ impl RepositoryEntity for journal::ActiveModel {
     const NAME: &'static str = "journal";
 }
 
-impl RepositoryEntity for journal_transaction::ActiveModel {
+impl RepositoryEntity for journal_line::ActiveModel {
     const NAME: &'static str = "journal_xact";
 }
 

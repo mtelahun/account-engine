@@ -24,7 +24,7 @@ impl PostingRef {
     }
 }
 
-pub mod journal_transaction {
+pub mod journal_line {
     use chrono::NaiveDateTime;
     use rust_decimal::Decimal;
 

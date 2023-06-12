@@ -14,7 +14,7 @@ use crate::{
     },
     entity::{
         accounting_period, general_ledger, interim_accounting_period, journal_entry,
-        jrnl::{journal, transaction::journal_transaction},
+        jrnl::{journal, transaction::journal_line},
         ledger, ledger_entry, ledger_intermediate, ledger_leaf, ledger_transaction,
         ledger_xact_type, InterimType, LedgerKey, LedgerType, PostingRef, TransactionState,
     },
@@ -35,7 +35,7 @@ pub struct Inner {
     period: HashMap<PeriodId, accounting_period::ActiveModel>,
     interim_period: HashMap<InterimPeriodId, interim_accounting_period::ActiveModel>,
     journal: HashMap<JournalId, journal::ActiveModel>,
-    journal_xact: HashMap<JournalTransactionId, journal_transaction::ActiveModel>,
+    journal_xact: HashMap<JournalTransactionId, journal_line::ActiveModel>,
     journal_entry: HashMap<LedgerKey, ledger_entry::ActiveModel>,
     ledger_xact: HashMap<LedgerKey, ledger_transaction::ActiveModel>,
     // _ext_account_txs: HashMap<LedgerKey, ExternalTransaction>,
@@ -231,7 +231,7 @@ impl Inner {
             interim_period: HashMap::<InterimPeriodId, interim_accounting_period::ActiveModel>::new(
             ),
             journal: HashMap::<JournalId, journal::ActiveModel>::new(),
-            journal_xact: HashMap::<JournalTransactionId, journal_transaction::ActiveModel>::new(),
+            journal_xact: HashMap::<JournalTransactionId, journal_line::ActiveModel>::new(),
             journal_entry: HashMap::<LedgerKey, ledger_entry::ActiveModel>::new(),
             ledger_xact: HashMap::<LedgerKey, ledger_transaction::ActiveModel>::new(),
             // _ext_account_txs: HashMap::<LedgerKey, ExternalTransaction>::new(),
@@ -553,17 +553,10 @@ impl AccountRepository<journal::Model, journal::ActiveModel, JournalId> for Memo
     }
 }
 
-impl
-    AccountRepository<
-        journal_transaction::Model,
-        journal_transaction::ActiveModel,
-        JournalTransactionId,
-    > for MemoryStore
+impl AccountRepository<journal_line::Model, journal_line::ActiveModel, JournalTransactionId>
+    for MemoryStore
 {
-    fn create(
-        &self,
-        model: &journal_transaction::Model,
-    ) -> Result<journal_transaction::ActiveModel, OrmError> {
+    fn create(&self, model: &journal_line::Model) -> Result<journal_line::ActiveModel, OrmError> {
         let inner = self.inner.read().unwrap();
         let is_dr = inner.ledger.contains_key(&model.account_dr_id);
         let is_cr = inner.ledger.contains_key(&model.account_cr_id);
@@ -582,7 +575,7 @@ impl
         }
 
         let id = JournalTransactionId::new();
-        let jtx = journal_transaction::ActiveModel {
+        let jtx = journal_line::ActiveModel {
             id,
             timestamp: model.timestamp,
             journal_id: model.journal_id,
@@ -607,11 +600,8 @@ impl
         )))
     }
 
-    fn search(
-        &self,
-        ids: Option<&[JournalTransactionId]>,
-    ) -> Vec<journal_transaction::ActiveModel> {
-        let mut res = Vec::<journal_transaction::ActiveModel>::new();
+    fn search(&self, ids: Option<&[JournalTransactionId]>) -> Vec<journal_line::ActiveModel> {
+        let mut res = Vec::<journal_line::ActiveModel>::new();
         let inner = self.inner.read().unwrap();
 
         if let Some(ids) = ids {
@@ -632,7 +622,7 @@ impl
     fn update(
         &self,
         _ids: &[JournalTransactionId],
-        _model: &journal_transaction::Model,
+        _model: &journal_line::Model,
     ) -> Result<(), OrmError> {
         todo!()
     }

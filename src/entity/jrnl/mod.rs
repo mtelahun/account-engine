@@ -1,13 +1,12 @@
 pub mod transaction;
 
 pub mod journal {
-    use crate::domain::{ids::JournalId, LedgerId};
+    use crate::domain::ids::JournalId;
 
     #[derive(Clone, Debug)]
     pub struct Model {
         pub name: String,
         pub code: String,
-        pub ledger_id: LedgerId,
     }
 
     #[derive(Clone, Debug)]
@@ -15,6 +14,5 @@ pub mod journal {
         pub id: JournalId,
         pub name: String,
         pub code: String,
-        pub ledger_id: LedgerId,
     }
 }

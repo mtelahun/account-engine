@@ -1,20 +1,20 @@
 pub mod general_ledger {
-    use arrayvec::ArrayString;
-    use rusty_money::iso;
 
-    use crate::domain::{AccountId, LedgerId};
+    use crate::domain::{
+        array_long_string::ArrayLongString, AccountId, ArrayCodeString, GeneralLedgerId,
+    };
 
     #[derive(Clone, Copy, Debug)]
     pub struct Model {
-        pub name: ArrayString<256>,
-        pub currency: iso::Currency,
+        pub name: ArrayLongString,
+        pub currency_code: ArrayCodeString,
     }
 
     #[derive(Clone, Copy, Debug)]
     pub struct ActiveModel {
-        pub id: LedgerId,
-        pub name: ArrayString<256>,
+        pub id: GeneralLedgerId,
+        pub name: ArrayLongString,
         pub root: AccountId,
-        pub currency: iso::Currency,
+        pub currency_code: ArrayCodeString,
     }
 }

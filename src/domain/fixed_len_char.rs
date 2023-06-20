@@ -1,4 +1,5 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::io::Write;
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub struct FixedLenChar<const L: usize> {
@@ -29,6 +30,20 @@ impl<const L: usize> FixedLenChar<L> {
 
     pub fn len(&self) -> usize {
         self.inner.len()
+    }
+}
+
+impl<const L: usize> From<String> for FixedLenChar<L> {
+    fn from(value: String) -> Self {
+        let mut value = value;
+        if value.len() > L {
+            value.truncate(L);
+        }
+        let mut inner: [u8; L] = [0; L];
+        let mut inner_p: &mut [u8] = &mut inner;
+        inner_p.write_all(value.as_bytes()).unwrap();
+
+        Self { inner }
     }
 }
 

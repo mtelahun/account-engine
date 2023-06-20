@@ -1,11 +1,14 @@
-use super::unique_id::UniqueId;
+use std::ops::Deref;
 
-#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub struct AccountId(UniqueId);
+use postgres_types::{FromSql, ToSql};
+
+#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
+#[postgres(name = "accountid")]
+pub struct AccountId(uuid::Uuid);
 
 impl AccountId {
     pub fn new() -> AccountId {
-        Self(UniqueId::new())
+        Self(uuid::Uuid::new_v4())
     }
 }
 
@@ -15,12 +18,21 @@ impl std::fmt::Display for AccountId {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub struct AccountBookId(UniqueId);
+impl Deref for AccountId {
+    type Target = uuid::Uuid;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
+#[postgres(name = "accountbookid")]
+pub struct AccountBookId(uuid::Uuid);
 
 impl AccountBookId {
     pub fn new() -> AccountBookId {
-        Self(UniqueId::new())
+        Self(uuid::Uuid::new_v4())
     }
 }
 
@@ -30,12 +42,21 @@ impl std::fmt::Display for AccountBookId {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub struct JournalId(UniqueId);
+impl Deref for AccountBookId {
+    type Target = uuid::Uuid;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
+#[postgres(name = "journalid")]
+pub struct JournalId(uuid::Uuid);
 
 impl JournalId {
     pub fn new() -> JournalId {
-        Self(UniqueId::new())
+        Self(uuid::Uuid::new_v4())
     }
 }
 
@@ -45,42 +66,45 @@ impl std::fmt::Display for JournalId {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub struct JournalTransactionId(UniqueId);
+impl Deref for JournalId {
+    type Target = uuid::Uuid;
 
-impl JournalTransactionId {
-    pub fn new() -> JournalTransactionId {
-        Self(UniqueId::new())
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
-impl std::fmt::Display for JournalTransactionId {
+#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
+#[postgres(name = "generalledgerid")]
+pub struct GeneralLedgerId(uuid::Uuid);
+
+impl GeneralLedgerId {
+    pub fn new() -> GeneralLedgerId {
+        Self(uuid::Uuid::new_v4())
+    }
+}
+
+impl std::fmt::Display for GeneralLedgerId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub struct LedgerId(UniqueId);
+impl Deref for GeneralLedgerId {
+    type Target = uuid::Uuid;
 
-impl LedgerId {
-    pub fn new() -> LedgerId {
-        Self(UniqueId::new())
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
-impl std::fmt::Display for LedgerId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub struct PeriodId(UniqueId);
+#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
+#[postgres(name = "periodid")]
+pub struct PeriodId(uuid::Uuid);
 
 impl PeriodId {
     pub fn new() -> PeriodId {
-        Self(UniqueId::new())
+        Self(uuid::Uuid::new_v4())
     }
 }
 
@@ -90,18 +114,35 @@ impl std::fmt::Display for PeriodId {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub struct InterimPeriodId(UniqueId);
+impl Deref for PeriodId {
+    type Target = uuid::Uuid;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
+#[postgres(name = "interimperiodid")]
+pub struct InterimPeriodId(uuid::Uuid);
 
 impl InterimPeriodId {
     pub fn new() -> InterimPeriodId {
-        Self(UniqueId::new())
+        Self(uuid::Uuid::new_v4())
     }
 }
 
 impl std::fmt::Display for InterimPeriodId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl Deref for InterimPeriodId {
+    type Target = uuid::Uuid;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -116,14 +157,8 @@ mod tests {
     }
 
     #[test]
-    fn test_jx_id() {
-        let jxid = JournalTransactionId::new();
-        assert_eq!(jxid.to_string().len(), 36, "journal tx ID is 36 chars long")
-    }
-
-    #[test]
     fn test_ledger_id() {
-        let lid = LedgerId::new();
+        let lid = GeneralLedgerId::new();
         assert_eq!(lid.to_string().len(), 36, "ledger ID is 36 chars long")
     }
 

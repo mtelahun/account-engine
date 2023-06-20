@@ -1,57 +1,59 @@
+use postgres_types::{FromSql, ToSql};
+
 pub mod account;
 pub mod intermediate;
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, ToSql, FromSql)]
+#[postgres(name = "ledgertype")]
 pub enum LedgerType {
+    #[postgres(name = "derived")]
     Derived,
+    #[postgres(name = "intermediate")]
     Intermediate,
+    #[postgres(name = "leaf")]
     Leaf,
 }
 
 pub mod ledger {
-    use arrayvec::ArrayString;
-    use rusty_money::iso;
-
-    use crate::domain::{AccountId, LedgerId};
+    use crate::domain::{
+        array_long_string::ArrayLongString, array_short_string::ArrayShortString, AccountId,
+        ArrayCodeString,
+    };
 
     use super::LedgerType;
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct Model {
-        pub general_ledger_id: LedgerId,
-        pub ledger_no: ArrayString<64>,
+        pub ledger_no: ArrayShortString,
         pub ledger_type: LedgerType,
         pub parent_id: Option<AccountId>,
-        pub name: ArrayString<256>,
-        pub currency: Option<iso::Currency>,
+        pub name: ArrayLongString,
+        pub currency_code: Option<ArrayCodeString>,
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct ActiveModel {
         pub id: AccountId,
-        pub general_ledger_id: LedgerId,
-        pub ledger_no: ArrayString<64>,
+        pub ledger_no: ArrayShortString,
         pub ledger_type: LedgerType,
         pub parent_id: Option<AccountId>,
-        pub name: ArrayString<256>,
-        pub currency: Option<iso::Currency>,
+        pub name: ArrayLongString,
+        pub currency_code: Option<ArrayCodeString>,
     }
 }
 
 pub mod account_type {
-    use arrayvec::ArrayString;
-
-    use crate::domain::account_type::AccountType;
+    use crate::domain::{account_type::AccountType, array_long_string::ArrayLongString};
 
     #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
     pub struct Model {
         pub code: AccountType,
-        pub description: ArrayString<256>,
+        pub description: ArrayLongString,
     }
 
     #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
     pub struct ActiveModel {
         pub code: AccountType,
-        pub description: ArrayString<256>,
+        pub description: ArrayLongString,
     }
 }

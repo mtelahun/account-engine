@@ -1,6 +1,11 @@
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+use postgres_types::{FromSql, ToSql};
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ToSql, FromSql)]
+#[postgres(name = "xacttype")]
 pub enum XactType {
+    #[postgres(name = "cr")]
     Cr,
+    #[postgres(name = "dr")]
     Dr,
 }
 

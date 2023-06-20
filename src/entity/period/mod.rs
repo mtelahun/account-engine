@@ -1,19 +1,24 @@
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+use postgres_types::{FromSql, ToSql};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ToSql, FromSql)]
+#[postgres(name = "interimtype")]
 pub enum InterimType {
+    #[postgres(name = "calendar_month")]
     CalendarMonth,
+    #[postgres(name = "4week")]
     FourWeek,
+    #[postgres(name = "445week")]
     FourFourFiveWeek,
 }
 
 pub mod accounting_period {
     use chrono::{Datelike, NaiveDate};
+
     use chronoutil::RelativeDuration;
+    use postgres_types::{FromSql, ToSql};
 
     use crate::{
-        domain::{
-            ids::{InterimPeriodId, PeriodId},
-            LedgerId,
-        },
+        domain::ids::{InterimPeriodId, PeriodId},
         orm::AccountRepository,
     };
 
@@ -21,20 +26,30 @@ pub mod accounting_period {
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct Model {
-        pub ledger_id: LedgerId,
         pub fiscal_year: i32,
         pub period_start: NaiveDate,
         pub period_type: InterimType,
     }
 
-    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, ToSql, FromSql)]
     pub struct ActiveModel {
         pub id: PeriodId,
-        pub ledger_id: LedgerId,
         pub fiscal_year: i32,
         pub period_start: NaiveDate,
         pub period_end: NaiveDate,
         pub period_type: InterimType,
+    }
+
+    impl std::fmt::Display for InterimType {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let s = match self {
+                InterimType::CalendarMonth => "calendar_month",
+                InterimType::FourWeek => "4week",
+                InterimType::FourFourFiveWeek => "445week",
+            };
+
+            write!(f, "{s}")
+        }
     }
 
     impl ActiveModel {
@@ -110,5 +125,34 @@ pub mod interim_accounting_period {
         pub parent_id: PeriodId,
         pub start: NaiveDate,
         pub end: NaiveDate,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::entity::InterimType;
+
+    #[test]
+    fn test_interimtype_to_string() {
+        let calendar_month = InterimType::CalendarMonth;
+        assert_eq!(
+            calendar_month.to_string(),
+            "calendar_month",
+            "Enum -> string is correct"
+        );
+
+        let calendar_month = InterimType::FourWeek;
+        assert_eq!(
+            calendar_month.to_string(),
+            "4week",
+            "Enum -> string is correct"
+        );
+
+        let calendar_month = InterimType::FourFourFiveWeek;
+        assert_eq!(
+            calendar_month.to_string(),
+            "445week",
+            "Enum -> string is correct"
+        );
     }
 }

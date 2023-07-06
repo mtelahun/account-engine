@@ -140,32 +140,36 @@ pub mod account_transaction {
 }
 
 pub mod ledger_xact_type {
-    use crate::domain::LedgerXactTypeCode;
+    use crate::domain::{ArrayLongString, LedgerXactTypeCode};
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct Model {
         pub code: LedgerXactTypeCode,
+        pub description: ArrayLongString,
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct ActiveModel {
         pub code: LedgerXactTypeCode,
+        pub description: ArrayLongString,
     }
 }
 
 pub mod external_xact_type {
-    use crate::domain::{ExternalXactTypeCode, LedgerXactTypeCode};
+    use crate::domain::{ArrayLongString, ExternalXactTypeCode, LedgerXactTypeCode};
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct Model {
         pub ledger_xact_type_code: LedgerXactTypeCode,
         pub code: ExternalXactTypeCode,
+        pub description: ArrayLongString,
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct ActiveModel {
         pub ledger_xact_type_code: LedgerXactTypeCode,
         pub code: ExternalXactTypeCode,
+        pub description: ArrayLongString,
     }
 }
 

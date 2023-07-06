@@ -10,8 +10,11 @@ use account_engine::{
         jrnl::transaction::{journal_transaction, journal_transaction_line},
         ledger, InterimType, LedgerType, TransactionState,
     },
-    orm::{AccountRepository, OrmError},
-    postgres::PgStore,
+    orm::{
+        AccountingPeriodService, GeneralLedgerService, JournalService, JournalTransactionService,
+        LedgerService, OrmError, ResourceOperations,
+    },
+    repository::postgres::repository::PostgresRepository,
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
@@ -25,43 +28,16 @@ async fn non_existant_ledger() {
     let gl_id = GeneralLedgerId::new();
 
     // Act
-    let res = state.store.search(Some(vec![gl_id])).await.unwrap();
+    let res = state.store.get(Some(&vec![gl_id])).await.unwrap();
 
     // Assert
-    let all_gl: Vec<general_ledger::ActiveModel> = state.store.search(None).await.unwrap();
+    let all_gl: Vec<general_ledger::ActiveModel> = state.store.get(None).await.unwrap();
     assert_eq!(all_gl.len(), 1, "Only one GL in the list");
     assert_eq!(
         res.len(),
         0,
         "search for non-existent ledger returns nothing"
     );
-}
-
-#[tokio::test]
-async fn duplicate_ledger_name() {
-    // Arrange
-    let state = TestState::new().await;
-    let ledger1 = state.general_ledger;
-    assert_eq!(
-        ledger1.name.as_str(),
-        "My Company",
-        "Initial GL name is 'My Company'"
-    );
-
-    // Act
-    let ledger2 = general_ledger::Model {
-        name: ArrayLongString::from_str("My Company").unwrap(),
-        currency_code: ArrayCodeString::from_str("USD").unwrap(),
-    };
-    let ledger2 = state.store.create(&ledger2).await;
-
-    // Assert
-    assert!(ledger2.is_ok(), "second identical GL created successfully");
-    let ledger2 = ledger2.unwrap();
-    assert_eq!(ledger2.name, ledger1.name, "Both GLs have identical names");
-    assert_ne!(ledger1.id, ledger2.id, "Ledger IDs are different");
-    let ledgers: Vec<general_ledger::ActiveModel> = state.store.search(None).await.unwrap();
-    assert_eq!(ledgers.len(), 2, "There are 2 GLs in the list")
 }
 
 #[tokio::test]
@@ -97,7 +73,7 @@ async fn unique_account_number() {
         .err()
         .unwrap()
     );
-    let gl1_accounts: Vec<ledger::ActiveModel> = state.store.search(None).await.unwrap();
+    let gl1_accounts: Vec<ledger::ActiveModel> = state.store.get(None).await.unwrap();
     assert_eq!(
         gl1_accounts.len(),
         2,
@@ -176,7 +152,8 @@ async fn duplicate_account_name_ok() {
             LedgerType::Leaf,
             Some(state.general_ledger.root),
         )
-        .await;
+        .await
+        .expect("failed to create original account");
 
     // Act
     let assets_same_gl = state
@@ -186,25 +163,17 @@ async fn duplicate_account_name_ok() {
             LedgerType::Leaf,
             Some(state.general_ledger.root),
         )
-        .await;
+        .await
+        .expect("failed to create account with duplicate name");
 
     // Assert
-    assert!(
-        assets_original.is_ok(),
-        "first account created successfully"
-    );
-    assert!(
-        assets_same_gl.is_ok(),
-        "second account with same name created successfully"
-    );
     assert_eq!(
-        assets_original.unwrap().name,
-        assets_same_gl.unwrap().name,
+        assets_original.name, assets_same_gl.name,
         "account with duplicate name created successfully"
     );
     let gl1_accounts: Vec<ledger::ActiveModel> = state
         .store
-        .search(None)
+        .get(None)
         .await
         .expect("unexpected search error");
     assert_eq!(
@@ -225,7 +194,7 @@ async fn unique_accounting_period() {
     };
     let periods: Vec<accounting_period::ActiveModel> = state
         .store
-        .search(None)
+        .get(None)
         .await
         .expect("unexpected search error");
     assert_eq!(
@@ -235,8 +204,8 @@ async fn unique_accounting_period() {
     );
 
     // Act
-    let fy = state.store.create(&period).await;
-    let fy_duplicate = state.store.create(&period).await;
+    let fy = AccountingPeriodService::create(&state.store, &period).await;
+    let fy_duplicate = AccountingPeriodService::create(&state.store, &period).await;
 
     // Assert
     assert!(fy.is_ok(), "first fiscal year created successfully");
@@ -254,7 +223,7 @@ async fn unique_accounting_period() {
     );
     let periods: Vec<accounting_period::ActiveModel> = state
         .store
-        .search(None)
+        .get(None)
         .await
         .expect("unexpected search error");
     assert_eq!(periods.len(), 1, "Only one period in the list");
@@ -269,9 +238,7 @@ async fn create_accounting_period_calendar() {
         period_start: NaiveDate::from_ymd_opt(2023, 1, 1).unwrap(),
         period_type: InterimType::CalendarMonth,
     };
-    let fy = state
-        .store
-        .create(&fy)
+    let fy = AccountingPeriodService::create(&state.store, &fy)
         .await
         .expect("unable to create accounting period");
     let dates = vec![
@@ -328,7 +295,7 @@ async fn create_accounting_period_calendar() {
     // Act
     let subperiods: Vec<interim_accounting_period::ActiveModel> = state
         .store
-        .search(None)
+        .get(None)
         .await
         .expect("unexpected search error");
 
@@ -371,26 +338,29 @@ async fn unique_journal_name() {
     };
 
     // Act
-    state
-        .store
-        .create(&j1)
+    JournalService::create(&state.store, &j1)
         .await
         .expect("1st journal creation failed");
-    let journal2 = state.store.create(&j2).await;
+    let journal2 = JournalService::create(&state.store, &j2).await;
 
     // Assert
-    assert!(journal2.is_err(), "failed to create second ledger");
+    assert!(
+        journal2.is_err(),
+        "failed to create second journal with duplicate code"
+    );
     assert_eq!(
         journal2.err().unwrap(),
-        Err::<(), OrmError>(OrmError::DuplicateRecord(
-            "duplicate Journal Id or Code".into()
+        Err::<(), OrmError>(OrmError::Internal(
+            "db error: ERROR: duplicate key value violates unique constraint \
+            \"journal_code_key\"\nDETAIL: Key (code)=(S) already exists."
+                .into()
         ))
         .err()
         .unwrap()
     );
     let journals: Vec<journal::ActiveModel> = state
         .store
-        .search(None)
+        .get(None)
         .await
         .expect("unexpected search error");
     assert_eq!(
@@ -453,12 +423,10 @@ async fn journal_transaction_creation() {
     let jx_same_ledger = jx1.clone();
 
     // Act
-    let _ = state
-        .store
-        .create(&jx1)
+    let _ = JournalTransactionService::create(&state.store, &jx1)
         .await
         .expect("1st journal transaction failed");
-    let jx_same_ledger = state.store.create(&jx_same_ledger).await;
+    let jx_same_ledger = JournalTransactionService::create(&state.store, &jx_same_ledger).await;
 
     // Assert
     assert!(jx_same_ledger.is_err());
@@ -475,7 +443,7 @@ async fn journal_transaction_creation() {
     );
     let jxacts: Vec<journal_transaction::ActiveModel> = state
         .store
-        .search(None)
+        .retrieve(None)
         .await
         .expect("unexpected search error");
     assert_eq!(
@@ -631,7 +599,7 @@ async fn journal_transaction_invalid_common(
     msg: &str,
 ) {
     // Act
-    let jx1_db = state.store.create(jx1).await;
+    let jx1_db = JournalTransactionService::create(&state.store, jx1).await;
 
     // Assert
     assert!(
@@ -641,7 +609,7 @@ async fn journal_transaction_invalid_common(
     assert_eq!(jx1_db.err().unwrap(), expected_error, "{msg}");
     let jxacts: Vec<journal_transaction::ActiveModel> = state
         .store
-        .search(None)
+        .retrieve(None)
         .await
         .expect(format!("{msg}: unexpected search error").as_str());
     assert_eq!(
@@ -681,22 +649,25 @@ async fn post_journal_transaction_happy_path() {
     // Act
     let posted = state
         .store
-        .post_journal_transaction(jxact.id())
+        .post_transaction(jxact.id())
         .await
         .expect("failed to post journal transaction");
 
     // Assert
     assert!(posted, "the call to 'post' the journal tx succeeded");
-    let bank_entries = state.store.journal_entries_by_account_id(bank.id).await;
-    let cash_entries = state.store.journal_entries_by_account_id(cash.id).await;
-    let jxact = &state
+    let bank_entries = state
         .store
-        .search(Some(vec![jxact.id()]))
+        .journal_entries(bank.id)
+        .await
+        .expect("failed to get journal enries for Bank ledger");
+    let cash_entries = state
+        .store
+        .journal_entries(cash.id)
+        .await
+        .expect("failed to get journal entries for Cash ledger");
+    let jxact = &JournalTransactionService::retrieve(&state.store, Some(&vec![jxact.id()]))
         .await
         .expect("unexpected search error")[0];
-    println!("cash_id: {}", cash.id);
-    println!("bank_id: {}", bank.id);
-    println!("posting_ref: {:?}", jxact.lines[0].posting_ref);
     let entry1 = state
         .store
         .journal_entry_by_posting_ref(jxact.lines[0].posting_ref.unwrap())
@@ -734,14 +705,14 @@ async fn post_journal_transaction_happy_path() {
         entry2, bank_entries[0],
         "the 2nd posting ref points to the CR account"
     );
-    let cr_account = state
+    let cr_account: ledger::ActiveModel = state
         .store
-        .search(Some(vec![bank.id]))
+        .get(Some(&vec![bank.id]))
         .await
         .expect("unexpected search error")[0];
-    let dr_account = state
+    let dr_account: ledger::ActiveModel = state
         .store
-        .search(Some(vec![cash.id]))
+        .get(Some(&vec![cash.id]))
         .await
         .expect("unexpected search error")[0];
     assert_eq!(
@@ -776,7 +747,7 @@ async fn post_journal_transaction_happy_path() {
 
 pub struct TestState {
     pub db_name: String,
-    pub store: PgStore,
+    pub store: PostgresRepository,
     pub general_ledger: general_ledger::ActiveModel,
     pub journal: journal::ActiveModel,
 }
@@ -785,26 +756,24 @@ impl TestState {
     pub async fn new() -> TestState {
         let db_name = uuid::Uuid::new_v4().to_string();
         let postgres_url = format!("postgres://postgres:password@localhost:5432");
-        let db_url = format!("{}/{}", postgres_url, db_name);
-        Self::migrate_db(&db_name, &postgres_url).await;
-        let store = PgStore::build(&db_url)
+        let store = PostgresRepository::new_schema(&db_name, &postgres_url)
             .await
-            .expect("unable to connect to database store");
+            .expect("failed to connect to newly created database: {db_name}");
         println!("Database name: {db_name}");
 
         let general_ledger = general_ledger::Model {
-            name: ArrayLongString::from_str("My Company").unwrap(),
+            name: ArrayLongString::from_str("My Compnay").unwrap(),
             currency_code: ArrayCodeString::from_str("USD").unwrap(),
         };
         let general_ledger = store
-            .create(&general_ledger)
+            .init(&general_ledger)
             .await
-            .expect("failed to create general ledger");
+            .expect("failed to update general ledger");
         let journal = journal::Model {
             name: "General Journal".into(),
             code: "G".into(),
         };
-        let journal = store.create(&journal).await.unwrap();
+        let journal = JournalService::create(&store, &journal).await.unwrap();
 
         Self {
             store,
@@ -812,24 +781,6 @@ impl TestState {
             journal,
             db_name,
         }
-    }
-
-    pub async fn migrate_db(db_name: &str, url: &str) {
-        let pool = sqlx::PgPool::connect(url)
-            .await
-            .expect("sqlx failed to connect to DB");
-        let sql = format!(r#"CREATE DATABASE "{db_name}";"#);
-        sqlx::query(&sql)
-            .execute(&pool)
-            .await
-            .expect("failed to create test database");
-        let pool = sqlx::PgPool::connect(&format!("{url}/{db_name}"))
-            .await
-            .expect("failed to connect to newly created db");
-        sqlx::migrate!()
-            .run(&pool)
-            .await
-            .expect("Database migration failed");
     }
 
     pub async fn create_account(
@@ -847,7 +798,7 @@ impl TestState {
             currency_code: None,
         };
 
-        self.store.create(&account).await
+        LedgerService::create(&self.store, &account).await
     }
 
     pub async fn create_journal(
@@ -860,7 +811,7 @@ impl TestState {
             code: code.into(),
         };
 
-        self.store.create(&model).await
+        JournalService::create(&self.store, &model).await
     }
 
     pub async fn create_journal_xact(
@@ -900,7 +851,7 @@ impl TestState {
             lines: vec![line1, line2],
         };
 
-        self.store.create(&model).await
+        JournalTransactionService::create(&self.store, &model).await
     }
 
     pub fn simple_xact_model(&self) -> SimpleJournalTransaction {

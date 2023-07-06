@@ -45,6 +45,9 @@ CREATE TABLE ledger_transaction_type(
 INSERT INTO ledger(id, ledger_no, name, ledger_type)
     VALUES(gen_random_uuid(), '0', 'Root', 'intermediate');
 
+INSERT INTO general_ledger(id, name, currency_code, root)
+    VALUES(gen_random_uuid(), 'Root', 'USD', (SELECT id from ledger LIMIT 1));
+
 ALTER TABLE ledger
     ADD CONSTRAINT ct_parent_id_not_null
         CHECK (parent_id IS NOT NULL) NOT VALID;

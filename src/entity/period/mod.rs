@@ -19,7 +19,7 @@ pub mod accounting_period {
 
     use crate::{
         domain::ids::{InterimPeriodId, PeriodId},
-        orm::AccountRepository,
+        orm::ResourceOperations,
     };
 
     use super::{interim_accounting_period, InterimType};
@@ -55,7 +55,7 @@ pub mod accounting_period {
     impl ActiveModel {
         pub async fn create_interim_calendar(
             &self,
-            orm: &(dyn AccountRepository<
+            orm: &(dyn ResourceOperations<
                 interim_accounting_period::Model,
                 interim_accounting_period::ActiveModel,
                 InterimPeriodId,
@@ -75,7 +75,7 @@ pub mod accounting_period {
                     parent_id: self.id,
                 };
                 let period = orm
-                    .create(&period)
+                    .insert(&period)
                     .await
                     .map_err(|e| format!("error creating interim period: {}", e))?;
                 periods.push(period);

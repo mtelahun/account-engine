@@ -2,19 +2,18 @@ use std::str::FromStr;
 
 use account_engine::{
     domain::{
-        ids::JournalId, AccountId, ArrayCodeString, ArrayLongString, ArrayShortString,
-        GeneralLedgerId, XactType,
+        ids::JournalId, AccountId, ArrayCodeString, ArrayLongString, ArrayShortString, XactType,
     },
     entity::{
-        accounting_period, general_ledger, interim_accounting_period, journal,
-        jrnl::transaction::{journal_transaction, journal_transaction_line},
-        ledger, InterimType, LedgerType, TransactionState,
+        account_engine::AccountEngine, accounting_period, general_ledger, journal, ledger,
+        InterimType, LedgerType, TransactionState,
     },
-    orm::{
+    resource::{postgres::repository::PostgresRepository, OrmError},
+    service::ServiceError,
+    service::{
         AccountingPeriodService, GeneralLedgerService, JournalService, JournalTransactionService,
-        LedgerService, OrmError, ResourceOperations,
+        LedgerService,
     },
-    repository::postgres::repository::PostgresRepository,
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
@@ -25,14 +24,18 @@ use crate::timestamp;
 async fn non_existant_ledger() {
     // Arrange
     let state = TestState::new().await;
-    let gl_id = GeneralLedgerId::new();
+    let ledger_id = AccountId::new();
 
     // Act
-    let res = state.store.get(Some(&vec![gl_id])).await.unwrap();
+    let res = GeneralLedgerService::get_ledgers(&state.engine, Some(&vec![ledger_id]))
+        .await
+        .unwrap();
 
     // Assert
-    let all_gl: Vec<general_ledger::ActiveModel> = state.store.get(None).await.unwrap();
-    assert_eq!(all_gl.len(), 1, "Only one GL in the list");
+    let all: Vec<ledger::ActiveModel> = GeneralLedgerService::get_ledgers(&state.engine, None)
+        .await
+        .unwrap();
+    assert_eq!(all.len(), 1, "0 ledgers (minus root) in the list");
     assert_eq!(
         res.len(),
         0,
@@ -67,13 +70,13 @@ async fn unique_account_number() {
     assert!(assets_same_gl.is_err(), "failed to create second account");
     assert_eq!(
         assets_same_gl.err().unwrap(),
-        Err::<(), OrmError>(OrmError::DuplicateRecord(
+        Err::<(), ServiceError>(ServiceError::Validation(
             "duplicate ledger number: 1000".into(),
         ))
         .err()
         .unwrap()
     );
-    let gl1_accounts: Vec<ledger::ActiveModel> = state.store.get(None).await.unwrap();
+    let gl1_accounts: Vec<ledger::ActiveModel> = state.engine.get_ledgers(None).await.unwrap();
     assert_eq!(
         gl1_accounts.len(),
         2,
@@ -104,7 +107,7 @@ async fn account_parent_is_not_null() {
     assert!(cash.is_err(), "ledger creation w/out parent_id must fail");
     assert_eq!(
         cash.err().unwrap(),
-        Err::<(), OrmError>(OrmError::Constraint("ledger must have parent".into(),))
+        Err::<(), ServiceError>(ServiceError::Validation("ledger must have parent".into(),))
             .err()
             .unwrap()
     );
@@ -133,7 +136,7 @@ async fn parent_is_intermediate() {
     assert!(cash.is_err(), "failed to create cash account");
     assert_eq!(
         cash.err().unwrap(),
-        Err::<(), OrmError>(OrmError::Validation(
+        Err::<(), ServiceError>(ServiceError::Validation(
             "parent ledger is not an Intermediate Ledger".into(),
         ))
         .err()
@@ -171,9 +174,9 @@ async fn duplicate_account_name_ok() {
         assets_original.name, assets_same_gl.name,
         "account with duplicate name created successfully"
     );
-    let gl1_accounts: Vec<ledger::ActiveModel> = state
-        .store
-        .get(None)
+    let gl1_accounts = state
+        .engine
+        .get_ledgers(None)
         .await
         .expect("unexpected search error");
     assert_eq!(
@@ -193,8 +196,8 @@ async fn unique_accounting_period() {
         period_type: InterimType::CalendarMonth,
     };
     let periods: Vec<accounting_period::ActiveModel> = state
-        .store
-        .get(None)
+        .engine
+        .get_periods(None)
         .await
         .expect("unexpected search error");
     assert_eq!(
@@ -204,26 +207,29 @@ async fn unique_accounting_period() {
     );
 
     // Act
-    let fy = AccountingPeriodService::create(&state.store, &period).await;
-    let fy_duplicate = AccountingPeriodService::create(&state.store, &period).await;
+    let _ = state
+        .engine
+        .create_period(&period)
+        .await
+        .expect("failed to create first fiscal year");
+    let fy_duplicate = state.engine.create_period(&period).await;
 
     // Assert
-    assert!(fy.is_ok(), "first fiscal year created successfully");
     assert!(
         fy_duplicate.is_err(),
         "duplicate fiscal year creation should fail"
     );
     assert_eq!(
         fy_duplicate.err().unwrap(),
-        Err::<(), OrmError>(OrmError::DuplicateRecord(
+        Err::<(), ServiceError>(ServiceError::Validation(
             "duplicate accounting period".into()
         ))
         .err()
         .unwrap()
     );
     let periods: Vec<accounting_period::ActiveModel> = state
-        .store
-        .get(None)
+        .engine
+        .get_periods(None)
         .await
         .expect("unexpected search error");
     assert_eq!(periods.len(), 1, "Only one period in the list");
@@ -238,7 +244,9 @@ async fn create_accounting_period_calendar() {
         period_start: NaiveDate::from_ymd_opt(2023, 1, 1).unwrap(),
         period_type: InterimType::CalendarMonth,
     };
-    let fy = AccountingPeriodService::create(&state.store, &fy)
+    let fy = state
+        .engine
+        .create_period(&fy)
         .await
         .expect("unable to create accounting period");
     let dates = vec![
@@ -293,9 +301,9 @@ async fn create_accounting_period_calendar() {
     ];
 
     // Act
-    let subperiods: Vec<interim_accounting_period::ActiveModel> = state
-        .store
-        .get(None)
+    let subperiods = state
+        .engine
+        .get_interim_periods(None)
         .await
         .expect("unexpected search error");
 
@@ -338,10 +346,12 @@ async fn unique_journal_name() {
     };
 
     // Act
-    JournalService::create(&state.store, &j1)
+    state
+        .engine
+        .create_journal(&j1)
         .await
         .expect("1st journal creation failed");
-    let journal2 = JournalService::create(&state.store, &j2).await;
+    let journal2 = state.engine.create_journal(&j2).await;
 
     // Assert
     assert!(
@@ -350,17 +360,17 @@ async fn unique_journal_name() {
     );
     assert_eq!(
         journal2.err().unwrap(),
-        Err::<(), OrmError>(OrmError::Internal(
+        Err::<(), ServiceError>(ServiceError::Resource(OrmError::Internal(
             "db error: ERROR: duplicate key value violates unique constraint \
             \"journal_code_key\"\nDETAIL: Key (code)=(S) already exists."
                 .into()
-        ))
+        )))
         .err()
         .unwrap()
     );
-    let journals: Vec<journal::ActiveModel> = state
-        .store
-        .get(None)
+    let journals = state
+        .engine
+        .get_journals(None)
         .await
         .expect("unexpected search error");
     assert_eq!(
@@ -394,7 +404,7 @@ async fn journal_transaction_creation() {
         .unwrap();
 
     let now = timestamp();
-    let jx1_line1 = journal_transaction_line::Model {
+    let jx1_line1 = journal::transaction::line::Model {
         journal_id: state.journal.id,
         timestamp: now,
         ledger_id: Some(cash1.id),
@@ -404,7 +414,7 @@ async fn journal_transaction_creation() {
         amount: Decimal::ZERO,
         posting_ref: None,
     };
-    let jx1_line2 = journal_transaction_line::Model {
+    let jx1_line2 = journal::transaction::line::Model {
         journal_id: state.journal.id,
         timestamp: now,
         ledger_id: Some(bank1.id),
@@ -414,7 +424,7 @@ async fn journal_transaction_creation() {
         amount: Decimal::ZERO,
         posting_ref: None,
     };
-    let jx1 = journal_transaction::Model {
+    let jx1 = journal::transaction::Model {
         journal_id: state.journal.id,
         timestamp: now,
         explanation: "Withdrew cash for lunch".into(),
@@ -423,10 +433,15 @@ async fn journal_transaction_creation() {
     let jx_same_ledger = jx1.clone();
 
     // Act
-    let _ = JournalTransactionService::create(&state.store, &jx1)
+    let _ = state
+        .engine
+        .create_journal_transaction(&jx1)
         .await
         .expect("1st journal transaction failed");
-    let jx_same_ledger = JournalTransactionService::create(&state.store, &jx_same_ledger).await;
+    let jx_same_ledger = state
+        .engine
+        .create_journal_transaction(&jx_same_ledger)
+        .await;
 
     // Assert
     assert!(jx_same_ledger.is_err());
@@ -437,13 +452,13 @@ async fn journal_transaction_creation() {
     );
     assert_eq!(
         jx_same_ledger.err().unwrap(),
-        Err::<(), OrmError>(OrmError::Internal(err_str.into()))
+        Err::<(), ServiceError>(ServiceError::Resource(OrmError::Internal(err_str.into())))
             .err()
             .unwrap()
     );
-    let jxacts: Vec<journal_transaction::ActiveModel> = state
-        .store
-        .retrieve(None)
+    let jxacts = state
+        .engine
+        .get_journal_transactions(None)
         .await
         .expect("unexpected search error");
     assert_eq!(
@@ -475,7 +490,7 @@ async fn journal_transaction_creation_invalid() {
                 jx1.lines = vec![jxact.line1, jxact.line2];
                 jx1
             },
-            OrmError::Internal(format!(
+            ServiceError::Validation(format!(
                 "both ledger and account fields empty: transaction: JournalTransactionId {{ Journal ID: {}, Timestamp: {} }}", 
                 jxact.jx.journal_id, jxact.timestamp
             )),
@@ -489,7 +504,7 @@ async fn journal_transaction_creation_invalid() {
                 jx1.lines = vec![jxact.line1, jx_line2];
                 jx1
             },
-            OrmError::Internal(format!(
+            ServiceError::Validation(format!(
                 "both ledger and account fields empty: transaction: JournalTransactionId {{ Journal ID: {}, Timestamp: {} }}",
                 jxact.jx.journal_id, jxact.timestamp
             )),
@@ -504,7 +519,7 @@ async fn journal_transaction_creation_invalid() {
                 jx1.lines = vec![jx_line1, jxact.line2];
                 jx1
             },
-            OrmError::Internal(format!(
+            ServiceError::Validation(format!(
                 "both ledger and account fields NOT empty: transaction: JournalTransactionId {{ Journal ID: {}, Timestamp: {} }}",
                 jxact.jx.journal_id, jxact.timestamp
             )),
@@ -521,7 +536,7 @@ async fn journal_transaction_creation_invalid() {
                 jx1.lines = vec![jx_line1, jx_line2];
                 jx1
             },
-            OrmError::Internal(format!(
+            ServiceError::Validation(format!(
                 "both ledger and account fields NOT empty: transaction: JournalTransactionId {{ Journal ID: {}, Timestamp: {} }}",
                 jxact.jx.journal_id, jxact.timestamp
             )),
@@ -535,7 +550,7 @@ async fn journal_transaction_creation_invalid() {
                 jx1.lines = vec![jx_line1, jxact.line2];
                 jx1
             },
-            OrmError::RecordNotFound(format!(
+            ServiceError::EmptyRecord(format!(
                 "account id: {fake_account_id}",
             )),
             "line1: ledger_id is fake",
@@ -550,7 +565,7 @@ async fn journal_transaction_creation_invalid() {
                 jx1.lines = vec![jx_line1, jx_line2];
                 jx1
             },
-            OrmError::RecordNotFound(format!(
+            ServiceError::EmptyRecord(format!(
                 "account id: {fake_account_id}",
             )),
             "line2: ledger_id is fake",
@@ -594,12 +609,12 @@ async fn journal_transaction_creation_invalid() {
 
 async fn journal_transaction_invalid_common(
     state: &TestState,
-    jx1: &journal_transaction::Model,
-    expected_error: OrmError,
+    jx1: &journal::transaction::Model,
+    expected_error: ServiceError,
     msg: &str,
 ) {
     // Act
-    let jx1_db = JournalTransactionService::create(&state.store, jx1).await;
+    let jx1_db = state.engine.create_journal_transaction(&jx1).await;
 
     // Assert
     assert!(
@@ -607,9 +622,9 @@ async fn journal_transaction_invalid_common(
         "{msg}: journal transaction creation must fail if no valid account"
     );
     assert_eq!(jx1_db.err().unwrap(), expected_error, "{msg}");
-    let jxacts: Vec<journal_transaction::ActiveModel> = state
-        .store
-        .retrieve(None)
+    let jxacts = state
+        .engine
+        .get_journal_transactions(None)
         .await
         .expect(format!("{msg}: unexpected search error").as_str());
     assert_eq!(
@@ -648,7 +663,7 @@ async fn post_journal_transaction_happy_path() {
 
     // Act
     let posted = state
-        .store
+        .engine
         .post_transaction(jxact.id())
         .await
         .expect("failed to post journal transaction");
@@ -656,26 +671,30 @@ async fn post_journal_transaction_happy_path() {
     // Assert
     assert!(posted, "the call to 'post' the journal tx succeeded");
     let bank_entries = state
-        .store
+        .engine
         .journal_entries(bank.id)
         .await
         .expect("failed to get journal enries for Bank ledger");
     let cash_entries = state
-        .store
+        .engine
         .journal_entries(cash.id)
         .await
         .expect("failed to get journal entries for Cash ledger");
-    let jxact = &JournalTransactionService::retrieve(&state.store, Some(&vec![jxact.id()]))
+    let jxact = state
+        .engine
+        .get_journal_transactions(Some(&vec![jxact.id()]))
         .await
-        .expect("unexpected search error")[0];
+        .expect("unexpected search error")
+        .pop()
+        .expect("unable to fetch journal transaction");
     let entry1 = state
-        .store
+        .engine
         .journal_entry_by_posting_ref(jxact.lines[0].posting_ref.unwrap())
         .await
         .expect("failed to fech journal entry #1 by posting ref.")
         .expect("journal entry #1 is empty");
     let entry2 = state
-        .store
+        .engine
         .journal_entry_by_posting_ref(jxact.lines[1].posting_ref.unwrap())
         .await
         .expect("failed to fech journal entry #2 by posting ref.")
@@ -706,13 +725,13 @@ async fn post_journal_transaction_happy_path() {
         "the 2nd posting ref points to the CR account"
     );
     let cr_account: ledger::ActiveModel = state
-        .store
-        .get(Some(&vec![bank.id]))
+        .engine
+        .get_ledgers(Some(&vec![bank.id]))
         .await
         .expect("unexpected search error")[0];
     let dr_account: ledger::ActiveModel = state
-        .store
-        .get(Some(&vec![cash.id]))
+        .engine
+        .get_ledgers(Some(&vec![cash.id]))
         .await
         .expect("unexpected search error")[0];
     assert_eq!(
@@ -747,7 +766,7 @@ async fn post_journal_transaction_happy_path() {
 
 pub struct TestState {
     pub db_name: String,
-    pub store: PostgresRepository,
+    pub engine: AccountEngine<PostgresRepository>,
     pub general_ledger: general_ledger::ActiveModel,
     pub journal: journal::ActiveModel,
 }
@@ -759,24 +778,26 @@ impl TestState {
         let store = PostgresRepository::new_schema(&db_name, &postgres_url)
             .await
             .expect("failed to connect to newly created database: {db_name}");
+        let engine = AccountEngine::new(store)
+            .await
+            .expect("failed to instantiate account-engine");
         println!("Database name: {db_name}");
 
         let general_ledger = general_ledger::Model {
             name: ArrayLongString::from_str("My Compnay").unwrap(),
             currency_code: ArrayCodeString::from_str("USD").unwrap(),
         };
-        let general_ledger = store
-            .init(&general_ledger)
+        let general_ledger = GeneralLedgerService::update_general_ledger(&engine, &general_ledger)
             .await
             .expect("failed to update general ledger");
         let journal = journal::Model {
             name: "General Journal".into(),
             code: "G".into(),
         };
-        let journal = JournalService::create(&store, &journal).await.unwrap();
+        let journal = engine.create_journal(&journal).await.unwrap();
 
         Self {
-            store,
+            engine,
             general_ledger,
             journal,
             db_name,
@@ -789,7 +810,7 @@ impl TestState {
         name: &'static str,
         typ: LedgerType,
         parent_id: Option<AccountId>,
-    ) -> Result<ledger::ActiveModel, OrmError> {
+    ) -> Result<ledger::ActiveModel, ServiceError> {
         let account = ledger::Model {
             ledger_no: ArrayShortString::from_str(number).unwrap(),
             ledger_type: typ,
@@ -798,20 +819,20 @@ impl TestState {
             currency_code: None,
         };
 
-        LedgerService::create(&self.store, &account).await
+        GeneralLedgerService::create_ledger(&self.engine, &account).await
     }
 
     pub async fn create_journal(
         &self,
         code: &'static str,
         name: &'static str,
-    ) -> Result<journal::ActiveModel, OrmError> {
+    ) -> Result<journal::ActiveModel, ServiceError> {
         let model = journal::Model {
             name: name.into(),
             code: code.into(),
         };
 
-        JournalService::create(&self.store, &model).await
+        GeneralLedgerService::create_journal(&self.engine, &model).await
     }
 
     pub async fn create_journal_xact(
@@ -821,10 +842,10 @@ impl TestState {
         account_cr_id: AccountId,
         desc: &str,
         journal_id: Option<JournalId>,
-    ) -> Result<journal_transaction::ActiveModel, OrmError> {
+    ) -> Result<journal::transaction::ActiveModel, ServiceError> {
         let timestamp = timestamp();
         let journal_id: JournalId = journal_id.unwrap_or(self.journal.id);
-        let line1 = journal_transaction_line::Model {
+        let line1 = journal::transaction::line::Model {
             journal_id: journal_id,
             timestamp,
             ledger_id: Some(account_dr_id),
@@ -834,7 +855,7 @@ impl TestState {
             state: TransactionState::Pending,
             posting_ref: None,
         };
-        let line2 = journal_transaction_line::Model {
+        let line2 = journal::transaction::line::Model {
             journal_id: journal_id,
             timestamp,
             ledger_id: Some(account_cr_id),
@@ -844,19 +865,19 @@ impl TestState {
             state: TransactionState::Pending,
             posting_ref: None,
         };
-        let model = journal_transaction::Model {
+        let model = journal::transaction::Model {
             journal_id,
             timestamp,
             explanation: ArrayLongString::from(desc),
             lines: vec![line1, line2],
         };
 
-        JournalTransactionService::create(&self.store, &model).await
+        self.engine.create_journal_transaction(&model).await
     }
 
     pub fn simple_xact_model(&self) -> SimpleJournalTransaction {
         let timestamp = timestamp();
-        let line1 = journal_transaction_line::Model {
+        let line1 = journal::transaction::line::Model {
             journal_id: self.journal.id,
             timestamp,
             ledger_id: None,
@@ -866,7 +887,7 @@ impl TestState {
             amount: Decimal::ZERO,
             posting_ref: None,
         };
-        let line2 = journal_transaction_line::Model {
+        let line2 = journal::transaction::line::Model {
             journal_id: self.journal.id,
             timestamp,
             ledger_id: None,
@@ -876,11 +897,11 @@ impl TestState {
             amount: Decimal::ZERO,
             posting_ref: None,
         };
-        let jx = journal_transaction::Model {
+        let jx = journal::transaction::Model {
             journal_id: self.journal.id,
             timestamp,
             explanation: "Withdrew cash for lunch".into(),
-            lines: Vec::<journal_transaction_line::Model>::new(),
+            lines: Vec::<journal::transaction::line::Model>::new(),
         };
 
         SimpleJournalTransaction {
@@ -893,8 +914,8 @@ impl TestState {
 }
 
 pub struct SimpleJournalTransaction {
-    jx: journal_transaction::Model,
-    line1: journal_transaction_line::Model,
-    line2: journal_transaction_line::Model,
+    jx: journal::transaction::Model,
+    line1: journal::transaction::line::Model,
+    line2: journal::transaction::line::Model,
     timestamp: NaiveDateTime,
 }

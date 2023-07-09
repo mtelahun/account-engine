@@ -14,7 +14,7 @@ pub mod xact_type;
 
 const DEFAULT_CODE_LEN: usize = 3;
 const DEFAULT_LONGSTRING_LEN: usize = 256;
-const DEFAULT_SHORTSTRING_LEN: usize = 64;
+const DEFAULT_SHORTSTRING_LEN: usize = 24;
 
 // Re-export
 pub use array_code_string::ArrayCodeString;

@@ -1,5 +1,5 @@
 -- Add migration script here
-CREATE TABLE ledger_line(
+CREATE TABLE ledger_transaction(
     ledger_id AccountId NOT NULL,
     timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     ledger_transaction_type_code CHAR(2) NOT NULL,
@@ -14,24 +14,24 @@ CREATE TABLE ledger_line(
             REFERENCES journal_transaction_record(journal_id, timestamp)
 );
 
-CREATE TABLE ledger_transaction(
+CREATE TABLE ledger_transaction_ledger(
     ledger_id AccountId NOT NULL,
     timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     ledger_dr_id AccountId NOT NULL,
-    CONSTRAINT fk_ledger_line
+    CONSTRAINT fk_ledger_transaction
         FOREIGN KEY(ledger_id, timestamp)
-            REFERENCES ledger_line(ledger_id, timestamp)
+            REFERENCES ledger_transaction(ledger_id, timestamp)
 );
 
-CREATE TABLE account_transaction(
+CREATE TABLE ledger_transaction_account(
     ledger_id AccountId NOT NULL,
     timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     account_id AccountId NOT NULL,
     transaction_type_code CHAR(2) NOT NULL,
     transaction_type_external_code CHAR(2) NOT NULL,
-    CONSTRAINT fk_ledger_line
+    CONSTRAINT fk_ledger_transaction
         FOREIGN KEY(ledger_id, timestamp)
-            REFERENCES ledger_line(ledger_id, timestamp),
+            REFERENCES ledger_transaction(ledger_id, timestamp),
     CONSTRAINT fk_account_id
         FOREIGN KEY(account_id)
             REFERENCES external_account(id),

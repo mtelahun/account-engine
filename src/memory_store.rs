@@ -14,7 +14,7 @@ use crate::{
         accounting_period, general_ledger, interim_accounting_period, journal_entry,
         journal_transaction, journal_transaction_line, journal_transaction_line_account,
         journal_transaction_line_ledger, journal_transaction_record, jrnl::journal, ledger,
-        ledger_intermediate, ledger_leaf, ledger_line, ledger_transaction, ledger_xact_type,
+        ledger_intermediate, ledger_leaf, ledger_line, ledger_xact_type, transaction::ledger,
         InterimType, LedgerKey, LedgerType, PostingRef, TransactionState,
     },
     orm::{error::OrmError, AccountRepository},
@@ -64,7 +64,7 @@ pub struct Inner {
     journal_xact_line: HashMap<JournalTransactionId, JournalTxLines>,
     journal_xact_line_account: HashMap<JournalTransactionId, JournalTxAccountLines>,
     journal_entry: HashMap<LedgerKey, ledger_line::ActiveModel>,
-    ledger_xact: HashMap<LedgerKey, ledger_transaction::ActiveModel>,
+    ledger_xact: HashMap<LedgerKey, transaction::ledger::ActiveModel>,
     // _ext_account_txs: HashMap<LedgerKey, ExternalTransaction>,
     ledger_xact_type: HashMap<LedgerXactTypeCode, ledger_xact_type::ActiveModel>,
 }
@@ -130,8 +130,8 @@ impl MemoryStore {
     pub async fn ledger_transactions_by_account_id(
         &self,
         account_id: AccountId,
-    ) -> Vec<ledger_transaction::ActiveModel> {
-        let mut res = Vec::<ledger_transaction::ActiveModel>::new();
+    ) -> Vec<transaction::ledger::ActiveModel> {
+        let mut res = Vec::<transaction::ledger::ActiveModel>::new();
         let inner = self.inner.read().await;
         for tx in inner.ledger_xact.values() {
             if tx.ledger_dr_id == account_id {
@@ -192,7 +192,7 @@ impl MemoryStore {
     async fn ledger_transaction_by_key(
         &self,
         key: LedgerKey,
-    ) -> Option<ledger_transaction::ActiveModel> {
+    ) -> Option<transaction::ledger::ActiveModel> {
         let inner = self.inner.read().await;
         for tx in inner.ledger_xact.values() {
             if tx.ledger_id == key.ledger_id && tx.timestamp == key.timestamp {
@@ -222,7 +222,7 @@ impl MemoryStore {
         let xact_lines_copy = xact_lines.clone();
 
         let mut entry_list = HashMap::<LedgerKey, ledger_line::ActiveModel>::new();
-        let mut ledger_xact_list = HashMap::<LedgerKey, ledger_transaction::ActiveModel>::new();
+        let mut ledger_xact_list = HashMap::<LedgerKey, transaction::ledger::ActiveModel>::new();
         let mut ledger_posted_list =
             Vec::<(LedgerKey, &journal_transaction_line_ledger::ActiveModel)>::new();
         let cr_xact_lines = xact_lines_copy
@@ -245,7 +245,7 @@ impl MemoryStore {
                 amount: cr.amount,
                 journal_ref: jxact_id,
             };
-            let tx_dr = ledger_transaction::ActiveModel {
+            let tx_dr = transaction::ledger::ActiveModel {
                 ledger_id: key.ledger_id,
                 timestamp: key.timestamp,
                 ledger_dr_id: dr.ledger_id,
@@ -308,7 +308,7 @@ impl Inner {
             journal_xact_line_account: HashMap::<JournalTransactionId, JournalTxAccountLines>::new(
             ),
             journal_entry: HashMap::<LedgerKey, ledger_line::ActiveModel>::new(),
-            ledger_xact: HashMap::<LedgerKey, ledger_transaction::ActiveModel>::new(),
+            ledger_xact: HashMap::<LedgerKey, transaction::ledger::ActiveModel>::new(),
             // _ext_account_txs: HashMap::<LedgerKey, ExternalTransaction>::new(),
             ledger_xact_type: HashMap::<LedgerXactTypeCode, ledger_xact_type::ActiveModel>::new(),
         };

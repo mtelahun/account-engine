@@ -19,9 +19,8 @@ use crate::{
         accounting_period, general_ledger, interim_accounting_period, journal, journal_entry,
         journal_transaction, journal_transaction_line, journal_transaction_line_account,
         journal_transaction_line_ledger, journal_transaction_record, ledger, ledger_intermediate,
-        ledger_leaf, ledger_line, ledger_transaction, ledger_xact_type,
-        ledgers::account::ledger_derived, InterimType, LedgerKey, LedgerType, PostingRef,
-        TransactionState,
+        ledger_leaf, ledger_line, ledger_xact_type, ledgers::account::ledger_derived,
+        transaction::ledger, InterimType, LedgerKey, LedgerType, PostingRef, TransactionState,
     },
     orm::{AccountRepository, OrmError, RepositoryEntity},
 };
@@ -717,13 +716,13 @@ impl PgStore {
 
     pub async fn insert_ledger_transaction(
         &self,
-        model: &ledger_transaction::Model,
-    ) -> Result<ledger_transaction::ActiveModel, OrmError> {
+        model: &transaction::ledger::Model,
+    ) -> Result<transaction::ledger::ActiveModel, OrmError> {
         let conn = self.get_connection().await?;
         let sql = format!(
             "INSERT INTO {}(ledger_id, timestamp, ledger_dr_id)
                 VALUES($1, $2, $3) RETURNING *",
-            ledger_transaction::ActiveModel::NAME
+            transaction::ledger::ActiveModel::NAME
         );
         let res = conn
             .query_one(
@@ -733,7 +732,7 @@ impl PgStore {
             .await
             .map_err(|e| OrmError::Internal(e.to_string()))?;
 
-        Ok(ledger_transaction::ActiveModel::from(res))
+        Ok(transaction::ledger::ActiveModel::from(res))
     }
 
     pub async fn find_ledger_line(
@@ -801,12 +800,12 @@ impl PgStore {
     pub async fn find_ledger_transaction(
         &self,
         ids: &Option<Vec<LedgerKey>>,
-    ) -> Result<Vec<ledger_transaction::ActiveModel>, OrmError> {
+    ) -> Result<Vec<transaction::ledger::ActiveModel>, OrmError> {
         let search_one = format!(
             "SELECT * FROM {} WHERE ledger_id=$1::AccountId AND timestamp=$2",
-            ledger_transaction::ActiveModel::NAME
+            transaction::ledger::ActiveModel::NAME
         );
-        let search_all = format!("SELECT * FROM {}", ledger_transaction::ActiveModel::NAME);
+        let search_all = format!("SELECT * FROM {}", transaction::ledger::ActiveModel::NAME);
         let conn = self.get_connection().await?;
         let rows: Vec<Row> = match ids {
             Some(ids) => {
@@ -828,9 +827,9 @@ impl PgStore {
                 .await
                 .map_err(|e| OrmError::Internal(e.to_string()))?,
         };
-        let mut records = Vec::<ledger_transaction::ActiveModel>::new();
+        let mut records = Vec::<transaction::ledger::ActiveModel>::new();
         for row in rows {
-            let am = ledger_transaction::ActiveModel::from(row);
+            let am = transaction::ledger::ActiveModel::from(row);
             records.push(am);
         }
 
@@ -840,10 +839,10 @@ impl PgStore {
     pub async fn find_ledger_transaction_by_id(
         &self,
         ledger_ids: &Vec<AccountId>,
-    ) -> Result<Vec<ledger_transaction::ActiveModel>, OrmError> {
+    ) -> Result<Vec<transaction::ledger::ActiveModel>, OrmError> {
         let search_one = format!(
             "SELECT * FROM {} WHERE ledger_id = any ($1::AccountId[])",
-            ledger_transaction::ActiveModel::NAME
+            transaction::ledger::ActiveModel::NAME
         );
         let conn = self.get_connection().await?;
         let rows = conn
@@ -851,9 +850,9 @@ impl PgStore {
             .await
             .map_err(|e| OrmError::Internal(e.to_string()))?;
 
-        let mut records = Vec::<ledger_transaction::ActiveModel>::new();
+        let mut records = Vec::<transaction::ledger::ActiveModel>::new();
         for row in rows {
-            let am = ledger_transaction::ActiveModel::from(row);
+            let am = transaction::ledger::ActiveModel::from(row);
             records.push(am);
         }
 
@@ -863,10 +862,10 @@ impl PgStore {
     pub async fn find_ledger_transaction_by_dr(
         &self,
         ledger_ids: &Vec<AccountId>,
-    ) -> Result<Vec<ledger_transaction::ActiveModel>, OrmError> {
+    ) -> Result<Vec<transaction::ledger::ActiveModel>, OrmError> {
         let search_one = format!(
             "SELECT * FROM {} WHERE ledger_dr_id = any ($1::AccountId[])",
-            ledger_transaction::ActiveModel::NAME
+            transaction::ledger::ActiveModel::NAME
         );
         let conn = self.get_connection().await?;
         let rows = conn
@@ -874,9 +873,9 @@ impl PgStore {
             .await
             .map_err(|e| OrmError::Internal(e.to_string()))?;
 
-        let mut records = Vec::<ledger_transaction::ActiveModel>::new();
+        let mut records = Vec::<transaction::ledger::ActiveModel>::new();
         for row in rows {
-            let am = ledger_transaction::ActiveModel::from(row);
+            let am = transaction::ledger::ActiveModel::from(row);
             records.push(am);
         }
 
@@ -990,13 +989,13 @@ impl PgStore {
     pub async fn ledger_transaction_by_id(
         &self,
         account_id: AccountId,
-    ) -> Vec<ledger_transaction::ActiveModel> {
+    ) -> Vec<transaction::ledger::ActiveModel> {
         let res = self.find_ledger_transaction_by_id(&vec![account_id]).await;
         if let Err(res) = res {
             // TODO: Log error
             eprintln!("ledger_transaction_by_id failed: {res}");
 
-            return Vec::<ledger_transaction::ActiveModel>::new();
+            return Vec::<transaction::ledger::ActiveModel>::new();
         }
 
         res.unwrap()
@@ -1005,13 +1004,13 @@ impl PgStore {
     pub async fn ledger_transaction_by_dr(
         &self,
         account_id: AccountId,
-    ) -> Vec<ledger_transaction::ActiveModel> {
+    ) -> Vec<transaction::ledger::ActiveModel> {
         let res = self.find_ledger_transaction_by_dr(&vec![account_id]).await;
         if let Err(res) = res {
             // TODO: Log error
             eprintln!("ledger_transaction_by_dr failed: {res}");
 
-            return Vec::<ledger_transaction::ActiveModel>::new();
+            return Vec::<transaction::ledger::ActiveModel>::new();
         }
 
         res.unwrap()
@@ -1047,7 +1046,7 @@ impl PgStore {
                 amount: cr.amount,
                 journal_ref: jxact_id,
             };
-            let tx_dr = ledger_transaction::Model {
+            let tx_dr = transaction::ledger::Model {
                 ledger_id: key.ledger_id,
                 timestamp: key.timestamp,
                 ledger_dr_id: dr.ledger_id,

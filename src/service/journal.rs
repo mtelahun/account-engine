@@ -6,8 +6,13 @@ use crate::{
     domain::{
         ids::JournalId, ledger_xact_type_code, AccountId, JournalTransactionId, LedgerXactTypeCode,
     },
-    entity::{account_engine::AccountEngine, journal, ledger, ledger_xact_type, TransactionState},
-    resource::{postgres::repository::PostgresRepository, OrmError, ResourceOperations},
+    repository::{
+        memory_store::repository::MemoryRepository, postgres::repository::PostgresRepository,
+        OrmError, ResourceOperations,
+    },
+    resource::{
+        account_engine::AccountEngine, journal, ledger, ledger_xact_type, TransactionState,
+    },
     Repository,
 };
 
@@ -31,6 +36,10 @@ where
             journal::transaction::line::account::Model,
             journal::transaction::line::account::ActiveModel,
             JournalTransactionId,
+        > + ResourceOperations<
+            ledger_xact_type::Model,
+            ledger_xact_type::ActiveModel,
+            LedgerXactTypeCode,
         > + Send
         + Sync
         + 'static,
@@ -202,8 +211,12 @@ where
 
     async fn get_journal_entry_type(
         &self,
-        jxact_id: JournalTransactionId,
-    ) -> Result<ledger_xact_type::ActiveModel, OrmError>;
+        _jxact_id: JournalTransactionId,
+    ) -> Result<ledger_xact_type::ActiveModel, OrmError> {
+        let ll_code = LedgerXactTypeCode::from_str(ledger_xact_type_code::XACT_LEDGER).unwrap();
+
+        Ok(self.repository().get(Some(&vec![ll_code])).await?[0])
+    }
 }
 
 #[async_trait]
@@ -211,13 +224,11 @@ impl JournalService<PostgresRepository> for AccountEngine<PostgresRepository> {
     fn repository(&self) -> &PostgresRepository {
         &self.repository
     }
+}
 
-    async fn get_journal_entry_type(
-        &self,
-        _jxact_id: JournalTransactionId,
-    ) -> Result<ledger_xact_type::ActiveModel, OrmError> {
-        let ll_code = LedgerXactTypeCode::from_str(ledger_xact_type_code::XACT_LEDGER).unwrap();
-
-        Ok(self.repository.get(Some(&vec![ll_code])).await?[0])
+#[async_trait]
+impl JournalService<MemoryRepository> for AccountEngine<MemoryRepository> {
+    fn repository(&self) -> &MemoryRepository {
+        &self.repository
     }
 }

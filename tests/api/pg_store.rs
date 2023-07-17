@@ -4,11 +4,11 @@ use account_engine::{
     domain::{
         ids::JournalId, AccountId, ArrayCodeString, ArrayLongString, ArrayShortString, XactType,
     },
-    entity::{
+    repository::{postgres::repository::PostgresRepository, OrmError},
+    resource::{
         account_engine::AccountEngine, accounting_period, general_ledger, journal, ledger,
         InterimType, LedgerType, TransactionState,
     },
-    resource::{postgres::repository::PostgresRepository, OrmError},
     service::ServiceError,
     service::{
         AccountingPeriodService, GeneralLedgerService, JournalService, JournalTransactionService,

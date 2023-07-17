@@ -1,11 +1,11 @@
 use async_trait::async_trait;
-use domain::{AccountId, JournalTransactionId};
-use entity::{
+use domain::{AccountId, ArrayShortString, JournalTransactionId};
+use repository::OrmError;
+use resource::{
     accounting_period, journal,
     ledger::{self, transaction},
     organization, LedgerKey,
 };
-use resource::OrmError;
 
 #[async_trait]
 pub trait Repository {
@@ -19,10 +19,10 @@ pub trait Repository {
         line: &journal::transaction::line::ledger::ActiveModel,
     ) -> Result<u64, OrmError>;
 
-    async fn find_ledger_by_model(
+    async fn find_ledger_by_no(
         &self,
-        model: &ledger::Model,
-    ) -> Result<Vec<ledger::ActiveModel>, OrmError>;
+        no: ArrayShortString,
+    ) -> Result<Option<ledger::ActiveModel>, OrmError>;
 
     async fn find_ledger_line(
         &self,
@@ -51,15 +51,13 @@ pub trait Repository {
         journal_code: &str,
     ) -> Result<Vec<journal::ActiveModel>, OrmError>;
 
-    async fn find_period_by_year(
+    async fn find_period_by_fiscal_year(
         &self,
-        model: &accounting_period::Model,
-    ) -> Result<Vec<accounting_period::ActiveModel>, OrmError>;
+        fy: i32,
+    ) -> Result<Option<accounting_period::ActiveModel>, OrmError>;
 }
 
 pub mod domain;
-pub mod entity;
-// pub mod memory_store;
-// pub mod postgres;
+pub mod repository;
 pub mod resource;
 pub mod service;

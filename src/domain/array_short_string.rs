@@ -57,6 +57,12 @@ impl std::str::FromStr for ArrayShortString {
     }
 }
 
+impl From<&str> for ArrayShortString {
+    fn from(value: &str) -> Self {
+        ArrayShortString::from(value.to_string())
+    }
+}
+
 impl From<String> for ArrayShortString {
     fn from(value: String) -> Self {
         let mut value = value;
@@ -79,6 +85,24 @@ impl Deref for ArrayShortString {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl PartialEq<ArrayShortString> for str {
+    fn eq(&self, other: &ArrayShortString) -> bool {
+        *self == *other.as_str()
+    }
+}
+
+impl PartialEq<str> for ArrayShortString {
+    fn eq(&self, other: &str) -> bool {
+        self == other
+    }
+}
+
+impl PartialEq<&str> for ArrayShortString {
+    fn eq(&self, other: &&str) -> bool {
+        self == other
     }
 }
 

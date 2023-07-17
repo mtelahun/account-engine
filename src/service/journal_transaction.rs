@@ -3,11 +3,15 @@ use std::iter::zip;
 use async_trait::async_trait;
 
 use crate::{
-    domain::{ids::JournalId, AccountId, JournalTransactionId, XactType},
-    entity::{
-        account_engine::AccountEngine, journal, ledger, LedgerKey, PostingRef, TransactionState,
+    domain::{ids::JournalId, AccountId, JournalTransactionId, LedgerXactTypeCode, XactType},
+    repository::{
+        memory_store::repository::MemoryRepository, postgres::repository::PostgresRepository,
+        ResourceOperations,
     },
-    resource::{postgres::repository::PostgresRepository, ResourceOperations},
+    resource::{
+        account_engine::AccountEngine, journal, ledger, ledger_xact_type, LedgerKey, PostingRef,
+        TransactionState,
+    },
     Repository,
 };
 
@@ -36,6 +40,10 @@ where
             ledger::transaction::ledger::Model,
             ledger::transaction::ledger::ActiveModel,
             LedgerKey,
+        > + ResourceOperations<
+            ledger_xact_type::Model,
+            ledger_xact_type::ActiveModel,
+            LedgerXactTypeCode,
         > + Send
         + Sync
         + 'static,
@@ -109,3 +117,5 @@ where
 }
 
 impl JournalTransactionService<PostgresRepository> for AccountEngine<PostgresRepository> {}
+
+impl JournalTransactionService<MemoryRepository> for AccountEngine<MemoryRepository> {}

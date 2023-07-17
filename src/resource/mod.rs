@@ -1,32 +1,18 @@
-use async_trait::async_trait;
+pub mod account_engine;
+pub mod account_transaction;
+pub mod account_type;
+pub mod accounting_period;
+pub mod external;
+pub mod external_xact_type;
+pub mod general_ledger;
+pub mod journal;
+pub mod ledger;
+pub mod ledger_xact_type;
+pub mod organization;
+pub mod subsidiary_ledger;
 
-pub mod error;
-pub mod postgres;
-
-pub use error::OrmError;
-
-pub trait Resource {
-    const NAME: &'static str;
-}
-
-#[async_trait]
-pub trait ResourceOperations<M, AM, I>
-where
-    M: Send + Sync,
-    AM: Resource + Send + Sync,
-    I: Send + Sync,
-{
-    async fn insert(&self, model: &M) -> Result<AM, OrmError>;
-
-    async fn get(&self, ids: Option<&Vec<I>>) -> Result<Vec<AM>, OrmError>;
-
-    async fn search(&self, domain: &str) -> Result<Vec<AM>, OrmError>;
-
-    async fn save(&self, model: &AM) -> Result<u64, OrmError>;
-
-    async fn delete(&self, id: I) -> Result<u64, OrmError>;
-
-    async fn archive(&self, id: I) -> Result<u64, OrmError>;
-
-    async fn unarchive(&self, id: I) -> Result<u64, OrmError>;
-}
+// Re-exports
+pub use accounting_period::interim_period::InterimType;
+pub use journal::transaction::{PostingRef, TransactionState};
+pub use ledger::journal_entry::LedgerKey;
+pub use ledger::LedgerType;

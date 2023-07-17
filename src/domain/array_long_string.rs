@@ -59,9 +59,7 @@ impl std::str::FromStr for ArrayLongString {
 
 impl From<&str> for ArrayLongString {
     fn from(value: &str) -> Self {
-        let s = value.to_string();
-
-        Self::from(s)
+        Self::from(value.to_string())
     }
 }
 
@@ -87,6 +85,18 @@ impl Deref for ArrayLongString {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl PartialEq<ArrayLongString> for str {
+    fn eq(&self, other: &ArrayLongString) -> bool {
+        *self == *other.as_str()
+    }
+}
+
+impl PartialEq<str> for ArrayLongString {
+    fn eq(&self, other: &str) -> bool {
+        self == other
     }
 }
 

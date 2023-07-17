@@ -2,12 +2,14 @@ use async_trait::async_trait;
 
 use crate::{
     domain::{ids::InterimPeriodId, PeriodId},
-    entity::{
+    repository::{
+        memory_store::repository::MemoryRepository, postgres::repository::PostgresRepository,
+        ResourceOperations,
+    },
+    resource::{
         account_engine::AccountEngine,
         accounting_period::{self, interim_period},
-        InterimType,
     },
-    resource::{postgres::repository::PostgresRepository, OrmError, ResourceOperations},
     Repository,
 };
 
@@ -24,11 +26,6 @@ where
         + 'static,
 {
     fn repository(&self) -> &R;
-
-    async fn create(
-        &self,
-        model: &accounting_period::Model,
-    ) -> Result<accounting_period::ActiveModel, OrmError>;
 
     async fn get_interim_periods(
         &self,
@@ -48,29 +45,11 @@ impl AccountingPeriodService<PostgresRepository> for AccountEngine<PostgresRepos
     fn repository(&self) -> &PostgresRepository {
         &self.repository
     }
+}
 
-    async fn create(
-        &self,
-        model: &accounting_period::Model,
-    ) -> Result<accounting_period::ActiveModel, OrmError> {
-        let periods = self.repository.find_period_by_year(model).await?;
-        if periods.is_empty() {
-            let active_model = self.repository.insert(model).await?;
-
-            let _ = match model.period_type {
-                InterimType::CalendarMonth => {
-                    active_model.create_interim_calendar(&self.repository).await
-                }
-                InterimType::FourWeek => todo!(),
-                InterimType::FourFourFiveWeek => todo!(),
-            }
-            .map_err(OrmError::Internal)?;
-
-            return Ok(active_model);
-        }
-
-        Err(OrmError::DuplicateRecord(
-            "duplicate accounting period".into(),
-        ))
+#[async_trait]
+impl AccountingPeriodService<MemoryRepository> for AccountEngine<MemoryRepository> {
+    fn repository(&self) -> &MemoryRepository {
+        &self.repository
     }
 }

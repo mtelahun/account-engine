@@ -56,6 +56,12 @@ impl std::str::FromStr for ArrayCodeString {
     }
 }
 
+impl From<&str> for ArrayCodeString {
+    fn from(value: &str) -> Self {
+        ArrayCodeString::from(value.to_string())
+    }
+}
+
 impl From<String> for ArrayCodeString {
     fn from(value: String) -> Self {
         let mut value = value;
@@ -78,6 +84,18 @@ impl Deref for ArrayCodeString {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl PartialEq<ArrayCodeString> for str {
+    fn eq(&self, other: &ArrayCodeString) -> bool {
+        *self == *other.as_str()
+    }
+}
+
+impl PartialEq<str> for ArrayCodeString {
+    fn eq(&self, other: &str) -> bool {
+        self == other
     }
 }
 

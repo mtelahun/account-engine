@@ -1,19 +1,20 @@
-use std::str::FromStr;
-
 use async_trait::async_trait;
 
 use crate::{
     domain::{
         ids::{InterimPeriodId, JournalId},
-        AccountId, ArrayShortString, GeneralLedgerId, PeriodId,
+        AccountId, GeneralLedgerId, PeriodId,
     },
-    entity::{
+    repository::{
+        memory_store::repository::MemoryRepository, postgres::repository::PostgresRepository,
+        ResourceOperations,
+    },
+    resource::{
         account_engine::AccountEngine,
         accounting_period, general_ledger, journal,
         ledger::{self, LedgerType},
         InterimType,
     },
-    resource::{postgres::repository::PostgresRepository, ResourceOperations},
     Repository,
 };
 
@@ -77,12 +78,11 @@ where
             ));
         }
 
-        if model.ledger_no != ArrayShortString::from_str("0").unwrap()
-            && !self
-                .repository()
-                .find_ledger_by_model(model)
-                .await?
-                .is_empty()
+        if self
+            .repository()
+            .find_ledger_by_no(model.ledger_no)
+            .await?
+            .is_some()
         {
             return Err(ServiceError::Validation(format!(
                 "duplicate ledger number: {}",
@@ -128,8 +128,8 @@ where
         let id = JournalId::new();
         let journal = journal::ActiveModel {
             id,
-            name: model.name.clone(),
-            code: model.code.clone(),
+            name: model.name,
+            code: model.code,
         };
         self.repository().insert(model).await?;
 
@@ -159,7 +159,36 @@ where
     async fn create_period(
         &self,
         model: &accounting_period::Model,
-    ) -> Result<accounting_period::ActiveModel, ServiceError>;
+    ) -> Result<accounting_period::ActiveModel, ServiceError> {
+        let period = self
+            .repository()
+            .find_period_by_fiscal_year(model.fiscal_year)
+            .await?;
+        if period.is_some() {
+            return Err(ServiceError::Validation(
+                "duplicate accounting period".into(),
+            ));
+        }
+
+        let active_model = self.repository().insert(model).await?;
+        let _ = match model.period_type {
+            InterimType::CalendarMonth => {
+                active_model
+                    .create_interim_calendar(self.repository())
+                    .await
+            }
+            InterimType::FourWeek => todo!(),
+            InterimType::FourFourFiveWeek => todo!(),
+        }
+        .map_err(|s| {
+            ServiceError::Unknown(format!(
+                "failed to create interim periods for fiscal year {}: {s}",
+                model.fiscal_year
+            ))
+        })?;
+
+        Ok(active_model)
+    }
 
     async fn get_periods(
         &self,
@@ -179,31 +208,11 @@ impl GeneralLedgerService<PostgresRepository> for AccountEngine<PostgresReposito
     fn repository(&self) -> &PostgresRepository {
         &self.repository
     }
+}
 
-    async fn create_period(
-        &self,
-        model: &accounting_period::Model,
-    ) -> Result<accounting_period::ActiveModel, ServiceError> {
-        let periods = self.repository().find_period_by_year(model).await?;
-        if periods.is_empty() {
-            let active_model = self.repository().insert(model).await?;
-
-            let _ = match model.period_type {
-                InterimType::CalendarMonth => {
-                    active_model
-                        .create_interim_calendar(self.repository())
-                        .await
-                }
-                InterimType::FourWeek => todo!(),
-                InterimType::FourFourFiveWeek => todo!(),
-            }
-            .map_err(|e| ServiceError::Unknown(format!("failed to create interim periods: {e}")))?;
-
-            return Ok(active_model);
-        }
-
-        Err(ServiceError::Validation(
-            "duplicate accounting period".into(),
-        ))
+#[async_trait]
+impl GeneralLedgerService<MemoryRepository> for AccountEngine<MemoryRepository> {
+    fn repository(&self) -> &MemoryRepository {
+        &self.repository
     }
 }

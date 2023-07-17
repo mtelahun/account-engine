@@ -1,13 +1,13 @@
-use std::str::FromStr;
-
 use async_trait::async_trait;
 use journal_entry::LedgerKey;
-use ledger::LedgerType;
 
 use crate::{
-    domain::{AccountId, ArrayShortString, XactType},
-    entity::{account_engine::AccountEngine, ledger, ledger::journal_entry, PostingRef},
-    resource::{postgres::repository::PostgresRepository, ResourceOperations},
+    domain::{AccountId, XactType},
+    repository::{
+        memory_store::repository::MemoryRepository, postgres::repository::PostgresRepository,
+        ResourceOperations,
+    },
+    resource::{account_engine::AccountEngine, ledger, ledger::journal_entry, PostingRef},
     Repository,
 };
 
@@ -27,41 +27,6 @@ where
         + Send,
 {
     fn repository(&self) -> &R;
-
-    async fn create(&self, model: &ledger::Model) -> Result<ledger::ActiveModel, ServiceError> {
-        let parent: Vec<ledger::ActiveModel> = match model.parent_id {
-            Some(id) => self.repository().get(Some(&vec![id])).await?,
-            None => return Err(ServiceError::Validation("ledger must have parent".into())),
-        };
-        if parent[0].ledger_type != LedgerType::Intermediate {
-            return Err(ServiceError::Validation(
-                "parent ledger is not an Intermediate Ledger".into(),
-            ));
-        }
-
-        if model.ledger_no != ArrayShortString::from_str("0").unwrap()
-            && !self
-                .repository()
-                .find_ledger_by_model(model)
-                .await?
-                .is_empty()
-        {
-            return Err(ServiceError::Validation(format!(
-                "duplicate ledger number: {}",
-                model.ledger_no
-            )));
-        }
-        let ledger = self.repository().insert(model).await?;
-        if model.ledger_type == LedgerType::Intermediate {
-            let intermediate = ledger::intermediate::Model { id: ledger.id };
-            let _ = self.repository().insert(&intermediate).await?;
-        } else {
-            let account = ledger::leaf::Model { id: ledger.id };
-            let _ = self.repository().insert(&account).await?;
-        }
-
-        Ok(ledger)
-    }
 
     async fn journal_entries(
         &self,
@@ -152,6 +117,13 @@ where
 #[async_trait]
 impl LedgerService<PostgresRepository> for AccountEngine<PostgresRepository> {
     fn repository(&self) -> &PostgresRepository {
+        &self.repository
+    }
+}
+
+#[async_trait]
+impl LedgerService<MemoryRepository> for AccountEngine<MemoryRepository> {
+    fn repository(&self) -> &MemoryRepository {
         &self.repository
     }
 }

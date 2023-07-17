@@ -5,16 +5,13 @@ use crate::{
         ids::{InterimPeriodId, JournalId},
         AccountId, GeneralLedgerId, PeriodId,
     },
-    repository::{
-        memory_store::repository::MemoryRepository, postgres::repository::PostgresRepository,
-        ResourceOperations,
-    },
     resource::{
         account_engine::AccountEngine,
         accounting_period, general_ledger, journal,
         ledger::{self, LedgerType},
         InterimType,
     },
+    store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
     Repository,
 };
 
@@ -204,15 +201,15 @@ where
 }
 
 #[async_trait]
-impl GeneralLedgerService<PostgresRepository> for AccountEngine<PostgresRepository> {
-    fn repository(&self) -> &PostgresRepository {
+impl GeneralLedgerService<PostgresStore> for AccountEngine<PostgresStore> {
+    fn repository(&self) -> &PostgresStore {
         &self.repository
     }
 }
 
 #[async_trait]
-impl GeneralLedgerService<MemoryRepository> for AccountEngine<MemoryRepository> {
-    fn repository(&self) -> &MemoryRepository {
+impl GeneralLedgerService<MemoryStore> for AccountEngine<MemoryStore> {
+    fn repository(&self) -> &MemoryStore {
         &self.repository
     }
 }

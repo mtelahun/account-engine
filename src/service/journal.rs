@@ -6,12 +6,11 @@ use crate::{
     domain::{
         ids::JournalId, ledger_xact_type_code, AccountId, JournalTransactionId, LedgerXactTypeCode,
     },
-    repository::{
-        memory_store::repository::MemoryRepository, postgres::repository::PostgresRepository,
-        OrmError, ResourceOperations,
-    },
     resource::{
         account_engine::AccountEngine, journal, ledger, ledger_xact_type, TransactionState,
+    },
+    store::{
+        memory::store::MemoryStore, postgres::store::PostgresStore, OrmError, ResourceOperations,
     },
     Repository,
 };
@@ -220,15 +219,15 @@ where
 }
 
 #[async_trait]
-impl JournalService<PostgresRepository> for AccountEngine<PostgresRepository> {
-    fn repository(&self) -> &PostgresRepository {
+impl JournalService<PostgresStore> for AccountEngine<PostgresStore> {
+    fn repository(&self) -> &PostgresStore {
         &self.repository
     }
 }
 
 #[async_trait]
-impl JournalService<MemoryRepository> for AccountEngine<MemoryRepository> {
-    fn repository(&self) -> &MemoryRepository {
+impl JournalService<MemoryStore> for AccountEngine<MemoryStore> {
+    fn repository(&self) -> &MemoryStore {
         &self.repository
     }
 }

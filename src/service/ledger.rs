@@ -3,11 +3,8 @@ use journal_entry::LedgerKey;
 
 use crate::{
     domain::{AccountId, XactType},
-    repository::{
-        memory_store::repository::MemoryRepository, postgres::repository::PostgresRepository,
-        ResourceOperations,
-    },
     resource::{account_engine::AccountEngine, ledger, ledger::journal_entry, PostingRef},
+    store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
     Repository,
 };
 
@@ -115,15 +112,15 @@ where
 }
 
 #[async_trait]
-impl LedgerService<PostgresRepository> for AccountEngine<PostgresRepository> {
-    fn repository(&self) -> &PostgresRepository {
+impl LedgerService<PostgresStore> for AccountEngine<PostgresStore> {
+    fn repository(&self) -> &PostgresStore {
         &self.repository
     }
 }
 
 #[async_trait]
-impl LedgerService<MemoryRepository> for AccountEngine<MemoryRepository> {
-    fn repository(&self) -> &MemoryRepository {
+impl LedgerService<MemoryStore> for AccountEngine<MemoryStore> {
+    fn repository(&self) -> &MemoryStore {
         &self.repository
     }
 }

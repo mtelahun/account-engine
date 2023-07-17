@@ -4,7 +4,6 @@ use account_engine::{
     domain::{
         ids::JournalId, AccountId, ArrayCodeString, ArrayLongString, ArrayShortString, XactType,
     },
-    repository::{memory_store::repository::MemoryRepository, OrmError},
     resource::{
         account_engine::AccountEngine, accounting_period, general_ledger, journal, ledger,
         InterimType, LedgerType, TransactionState,
@@ -13,6 +12,7 @@ use account_engine::{
         AccountingPeriodService, GeneralLedgerService, JournalService, JournalTransactionService,
         LedgerService, ServiceError,
     },
+    store::{memory::store::MemoryStore, OrmError},
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
@@ -874,14 +874,14 @@ async fn _post_journal_transaction_happy_path() {
 }
 
 pub struct TestState {
-    pub engine: AccountEngine<MemoryRepository>,
+    pub engine: AccountEngine<MemoryStore>,
     pub general_ledger: general_ledger::ActiveModel,
     pub journal: journal::ActiveModel,
 }
 
 impl TestState {
     pub async fn new() -> TestState {
-        let store = MemoryRepository::new_schema("", "")
+        let store = MemoryStore::new_schema("", "")
             .await
             .expect("failed to create MemoryRepository");
         let engine = AccountEngine::new(store)

@@ -3,7 +3,7 @@ use crate::{
         ids::JournalId, AccountId, GeneralLedgerId, JournalTransactionId, LedgerXactTypeCode,
         PeriodId,
     },
-    repository::ResourceOperations,
+    store::ResourceOperations,
     OrmError, Repository,
 };
 

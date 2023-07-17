@@ -4,7 +4,7 @@ use postgres_types::{FromSql, ToSql};
 
 use crate::{
     domain::ids::{InterimPeriodId, PeriodId},
-    repository::ResourceOperations,
+    store::ResourceOperations,
 };
 
 pub mod interim_period;

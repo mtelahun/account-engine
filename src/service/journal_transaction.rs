@@ -4,14 +4,11 @@ use async_trait::async_trait;
 
 use crate::{
     domain::{ids::JournalId, AccountId, JournalTransactionId, LedgerXactTypeCode, XactType},
-    repository::{
-        memory_store::repository::MemoryRepository, postgres::repository::PostgresRepository,
-        ResourceOperations,
-    },
     resource::{
         account_engine::AccountEngine, journal, ledger, ledger_xact_type, LedgerKey, PostingRef,
         TransactionState,
     },
+    store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
     Repository,
 };
 
@@ -116,6 +113,6 @@ where
     }
 }
 
-impl JournalTransactionService<PostgresRepository> for AccountEngine<PostgresRepository> {}
+impl JournalTransactionService<PostgresStore> for AccountEngine<PostgresStore> {}
 
-impl JournalTransactionService<MemoryRepository> for AccountEngine<MemoryRepository> {}
+impl JournalTransactionService<MemoryStore> for AccountEngine<MemoryStore> {}

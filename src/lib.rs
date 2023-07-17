@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 use domain::{AccountId, ArrayShortString, JournalTransactionId};
-use repository::OrmError;
 use resource::{
     accounting_period, journal,
     ledger::{self, transaction},
     organization, LedgerKey,
 };
+use store::OrmError;
 
 #[async_trait]
 pub trait Repository {
@@ -58,6 +58,6 @@ pub trait Repository {
 }
 
 pub mod domain;
-pub mod repository;
 pub mod resource;
 pub mod service;
+pub mod store;

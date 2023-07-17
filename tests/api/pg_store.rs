@@ -4,7 +4,6 @@ use account_engine::{
     domain::{
         ids::JournalId, AccountId, ArrayCodeString, ArrayLongString, ArrayShortString, XactType,
     },
-    repository::{postgres::repository::PostgresRepository, OrmError},
     resource::{
         account_engine::AccountEngine, accounting_period, general_ledger, journal, ledger,
         InterimType, LedgerType, TransactionState,
@@ -14,6 +13,7 @@ use account_engine::{
         AccountingPeriodService, GeneralLedgerService, JournalService, JournalTransactionService,
         LedgerService,
     },
+    store::{postgres::store::PostgresStore, OrmError},
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
@@ -766,7 +766,7 @@ async fn post_journal_transaction_happy_path() {
 
 pub struct TestState {
     pub db_name: String,
-    pub engine: AccountEngine<PostgresRepository>,
+    pub engine: AccountEngine<PostgresStore>,
     pub general_ledger: general_ledger::ActiveModel,
     pub journal: journal::ActiveModel,
 }
@@ -775,7 +775,7 @@ impl TestState {
     pub async fn new() -> TestState {
         let db_name = uuid::Uuid::new_v4().to_string();
         let postgres_url = format!("postgres://postgres:password@localhost:5432");
-        let store = PostgresRepository::new_schema(&db_name, &postgres_url)
+        let store = PostgresStore::new_schema(&db_name, &postgres_url)
             .await
             .expect("failed to connect to newly created database: {db_name}");
         let engine = AccountEngine::new(store)

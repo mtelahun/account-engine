@@ -2,14 +2,11 @@ use async_trait::async_trait;
 
 use crate::{
     domain::{ids::InterimPeriodId, PeriodId},
-    repository::{
-        memory_store::repository::MemoryRepository, postgres::repository::PostgresRepository,
-        ResourceOperations,
-    },
     resource::{
         account_engine::AccountEngine,
         accounting_period::{self, interim_period},
     },
+    store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
     Repository,
 };
 
@@ -41,15 +38,15 @@ where
 }
 
 #[async_trait]
-impl AccountingPeriodService<PostgresRepository> for AccountEngine<PostgresRepository> {
-    fn repository(&self) -> &PostgresRepository {
+impl AccountingPeriodService<PostgresStore> for AccountEngine<PostgresStore> {
+    fn repository(&self) -> &PostgresStore {
         &self.repository
     }
 }
 
 #[async_trait]
-impl AccountingPeriodService<MemoryRepository> for AccountEngine<MemoryRepository> {
-    fn repository(&self) -> &MemoryRepository {
+impl AccountingPeriodService<MemoryStore> for AccountEngine<MemoryStore> {
+    fn repository(&self) -> &MemoryStore {
         &self.repository
     }
 }

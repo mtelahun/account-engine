@@ -3,12 +3,12 @@ use domain::{AccountId, ArrayShortString, JournalTransactionId};
 use resource::{
     accounting_period, journal,
     ledger::{self, transaction},
-    organization, LedgerKey,
+    organization,
 };
 use store::OrmError;
 
 #[async_trait]
-pub trait Repository {
+pub trait Store {
     async fn create_schema(&self) -> Result<(), OrmError>;
 
     async fn organization(&self) -> Result<organization::ActiveModel, OrmError>;
@@ -24,27 +24,15 @@ pub trait Repository {
         no: ArrayShortString,
     ) -> Result<Option<ledger::ActiveModel>, OrmError>;
 
-    async fn find_ledger_line(
+    async fn journal_entries_by_ledger(
         &self,
-        ids: &Option<Vec<LedgerKey>>,
+        ids: &[AccountId],
     ) -> Result<Vec<ledger::transaction::ActiveModel>, OrmError>;
 
-    async fn find_ledger_transaction(
+    async fn journal_entry_ledgers_by_ledger(
         &self,
-        ids: &Option<Vec<LedgerKey>>,
+        ids: &[AccountId],
     ) -> Result<Vec<transaction::ledger::ActiveModel>, OrmError>;
-
-    async fn ledger_line_by_key(&self, key: LedgerKey) -> Option<ledger::transaction::ActiveModel>;
-
-    async fn ledger_transactions_by_ledger_id(
-        &self,
-        account_id: AccountId,
-    ) -> Vec<ledger::transaction::ActiveModel>;
-
-    async fn ledger_transaction_by_dr(
-        &self,
-        account_id: AccountId,
-    ) -> Vec<transaction::ledger::ActiveModel>;
 
     async fn find_journal_by_code<'a>(
         &self,

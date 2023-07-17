@@ -4,16 +4,16 @@ use std::time::Duration;
 use async_trait::async_trait;
 use mobc::{Connection, Pool};
 use mobc_postgres::PgConnectionManager;
-use tokio_postgres::{Config, NoTls, Row};
+use tokio_postgres::{Config, NoTls};
 
 use crate::domain::{AccountId, ArrayShortString, JournalTransactionId};
 use crate::resource::{
     accounting_period, journal,
     ledger::{self, transaction},
-    organization, LedgerKey, TransactionState,
+    organization, TransactionState,
 };
 use crate::store::{OrmError, Resource};
-use crate::Repository;
+use crate::Store;
 
 const MAX_OPEN_CONNECTIONS: u64 = 32;
 const MAX_IDLE_CONNECTIONS: u64 = 8;
@@ -82,65 +82,10 @@ impl PostgresStore {
             .await
             .map_err(|e| OrmError::Internal(e.to_string()))
     }
-
-    pub async fn find_ledger_line_by_id(
-        &self,
-        ledger_ids: &Vec<AccountId>,
-    ) -> Result<Vec<ledger::transaction::ActiveModel>, OrmError> {
-        let search_one = format!(
-            "SELECT * FROM {} WHERE ledger_id = any ($1::AccountId[])",
-            ledger::transaction::ActiveModel::NAME
-        );
-        let conn = self.get_connection().await?;
-        let rows = conn
-            .query(search_one.as_str(), &[ledger_ids])
-            .await
-            .map_err(|e| OrmError::Internal(e.to_string()))?;
-
-        let mut records = Vec::<ledger::transaction::ActiveModel>::new();
-        for row in rows {
-            let am = ledger::transaction::ActiveModel::from(row);
-            records.push(am);
-        }
-
-        Ok(records)
-    }
-
-    pub(crate) async fn find_ledger_transaction_by_dr(
-        &self,
-        ledger_ids: &Vec<AccountId>,
-    ) -> Result<Vec<transaction::ledger::ActiveModel>, OrmError> {
-        let search_one = format!(
-            "SELECT * FROM {} WHERE ledger_dr_id = any ($1::AccountId[])",
-            transaction::ledger::ActiveModel::NAME
-        );
-        let conn = self.get_connection().await?;
-        let rows = conn
-            .query(search_one.as_str(), &[&ledger_ids])
-            .await
-            .map_err(|e| OrmError::Internal(e.to_string()))?;
-
-        let mut records = Vec::<transaction::ledger::ActiveModel>::new();
-        for row in rows {
-            let am = transaction::ledger::ActiveModel::from(row);
-            records.push(am);
-        }
-
-        Ok(records)
-    }
-
-    // pub(crate) async fn get_journal_entry_type(
-    //     &self,
-    //     _jxact_id: JournalTransactionId,
-    // ) -> Result<ledger_xact_type::ActiveModel, OrmError> {
-    //     let ll_code = LedgerXactTypeCode::from_str(ledger_xact_type_code::XACT_LEDGER).unwrap();
-
-    //     Ok(self.get(Some(&vec![ll_code])).await?[0])
-    // }
 }
 
 #[async_trait]
-impl Repository for PostgresStore {
+impl Store for PostgresStore {
     async fn create_schema(&self) -> Result<(), OrmError> {
         Self::migrate_db(&self.name, &self.uri).await;
 
@@ -206,36 +151,20 @@ impl Repository for PostgresStore {
         Ok(None)
     }
 
-    async fn find_ledger_line(
+    async fn journal_entries_by_ledger(
         &self,
-        ids: &Option<Vec<LedgerKey>>,
+        ids: &[AccountId],
     ) -> Result<Vec<ledger::transaction::ActiveModel>, OrmError> {
         let search_one = format!(
-            "SELECT * FROM {} WHERE ledger_id=$1::AccountId AND timestamp=$2",
+            "SELECT * FROM {} WHERE ledger_id = any ($1::AccountId[])",
             ledger::transaction::ActiveModel::NAME
         );
-        let search_all = format!("SELECT * FROM {}", ledger::transaction::ActiveModel::NAME);
         let conn = self.get_connection().await?;
-        let rows: Vec<Row> = match ids {
-            Some(ids) => {
-                let mut temp_ids = Vec::<tokio_postgres::Row>::new();
-                for id in ids {
-                    let mut res = conn
-                        .query(search_one.as_str(), &[&id.ledger_id, &id.timestamp])
-                        .await
-                        .map_err(|e| OrmError::Internal(e.to_string()))?;
-                    if !res.is_empty() {
-                        temp_ids.append(&mut res);
-                    }
-                }
+        let rows = conn
+            .query(search_one.as_str(), &[&ids])
+            .await
+            .map_err(|e| OrmError::Internal(e.to_string()))?;
 
-                temp_ids
-            }
-            None => conn
-                .query(search_all.as_str(), &[])
-                .await
-                .map_err(|e| OrmError::Internal(e.to_string()))?,
-        };
         let mut records = Vec::<ledger::transaction::ActiveModel>::new();
         for row in rows {
             let am = ledger::transaction::ActiveModel::from(row);
@@ -245,36 +174,20 @@ impl Repository for PostgresStore {
         Ok(records)
     }
 
-    async fn find_ledger_transaction(
+    async fn journal_entry_ledgers_by_ledger(
         &self,
-        ids: &Option<Vec<LedgerKey>>,
+        ids: &[AccountId],
     ) -> Result<Vec<transaction::ledger::ActiveModel>, OrmError> {
         let search_one = format!(
-            "SELECT * FROM {} WHERE ledger_id=$1::AccountId AND timestamp=$2",
+            "SELECT * FROM {} WHERE ledger_dr_id = any ($1::AccountId[])",
             transaction::ledger::ActiveModel::NAME
         );
-        let search_all = format!("SELECT * FROM {}", transaction::ledger::ActiveModel::NAME);
         let conn = self.get_connection().await?;
-        let rows: Vec<Row> = match ids {
-            Some(ids) => {
-                let mut temp_ids = Vec::<tokio_postgres::Row>::new();
-                for id in ids {
-                    let mut res = conn
-                        .query(search_one.as_str(), &[&id.ledger_id, &id.timestamp])
-                        .await
-                        .map_err(|e| OrmError::Internal(e.to_string()))?;
-                    if !res.is_empty() {
-                        temp_ids.append(&mut res);
-                    }
-                }
+        let rows = conn
+            .query(search_one.as_str(), &[&ids])
+            .await
+            .map_err(|e| OrmError::Internal(e.to_string()))?;
 
-                temp_ids
-            }
-            None => conn
-                .query(search_all.as_str(), &[])
-                .await
-                .map_err(|e| OrmError::Internal(e.to_string()))?,
-        };
         let mut records = Vec::<transaction::ledger::ActiveModel>::new();
         for row in rows {
             let am = transaction::ledger::ActiveModel::from(row);
@@ -282,48 +195,6 @@ impl Repository for PostgresStore {
         }
 
         Ok(records)
-    }
-
-    async fn ledger_line_by_key(&self, key: LedgerKey) -> Option<ledger::transaction::ActiveModel> {
-        let res = self.find_ledger_line(&Some(vec![key])).await;
-        if let Err(res) = res {
-            // TODO: Log error
-            eprintln!("ledger_line_by_key failed: {res}");
-
-            return None;
-        }
-
-        Some(res.unwrap()[0])
-    }
-
-    async fn ledger_transactions_by_ledger_id(
-        &self,
-        account_id: AccountId,
-    ) -> Vec<ledger::transaction::ActiveModel> {
-        let res = self.find_ledger_line_by_id(&vec![account_id]).await;
-        if let Err(res) = res {
-            // TODO: Log error
-            eprintln!("find_ledger_line_by_id failed: {}", res);
-
-            return Vec::<ledger::transaction::ActiveModel>::new();
-        }
-
-        res.unwrap()
-    }
-
-    async fn ledger_transaction_by_dr(
-        &self,
-        account_id: AccountId,
-    ) -> Vec<transaction::ledger::ActiveModel> {
-        let res = self.find_ledger_transaction_by_dr(&vec![account_id]).await;
-        if let Err(res) = res {
-            // TODO: Log error
-            eprintln!("ledger_transaction_by_dr failed: {res}");
-
-            return Vec::<transaction::ledger::ActiveModel>::new();
-        }
-
-        res.unwrap()
     }
 
     async fn find_journal_by_code<'a>(

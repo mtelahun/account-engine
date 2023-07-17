@@ -16,7 +16,7 @@ use crate::{
         ledger_xact_type, organization,
     },
     store::OrmError,
-    Repository,
+    Store,
 };
 
 #[derive(Clone, Debug, Default)]
@@ -25,7 +25,7 @@ pub struct MemoryStore {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct Inner {
+pub(crate) struct Inner {
     _name: String,
     _uri: String,
     pub(crate) general_ledger: HashMap<GeneralLedgerId, general_ledger::ActiveModel>,
@@ -138,7 +138,7 @@ impl Inner {
 }
 
 #[async_trait]
-impl Repository for MemoryStore {
+impl Store for MemoryStore {
     async fn create_schema(&self) -> Result<(), OrmError> {
         Ok(())
     }
@@ -194,102 +194,34 @@ impl Repository for MemoryStore {
         }
     }
 
-    async fn find_ledger_line(
+    async fn journal_entries_by_ledger(
         &self,
-        ids: &Option<Vec<LedgerKey>>,
+        ids: &[AccountId],
     ) -> Result<Vec<ledger::transaction::ActiveModel>, OrmError> {
-        let mut journal_entries = Vec::<ledger::transaction::ActiveModel>::new();
-        let inner = self.inner.read().await;
-        let journal_entries = match ids {
-            Some(ids) => {
-                let entries: Vec<ledger::transaction::ActiveModel> = inner
-                    .journal_entry
-                    .iter()
-                    .filter_map(|(key, tx)| if ids.contains(key) { Some(*tx) } else { None })
-                    .collect();
-
-                entries
-            }
-            None => {
-                for (_k, v) in inner.journal_entry.iter() {
-                    journal_entries.push(*v)
-                }
-
-                journal_entries
-            }
-        };
-
-        Ok(journal_entries)
-    }
-
-    async fn find_ledger_transaction(
-        &self,
-        ids: &Option<Vec<LedgerKey>>,
-    ) -> Result<Vec<ledger::transaction::ledger::ActiveModel>, OrmError> {
-        let mut journal_entries = Vec::<ledger::transaction::ledger::ActiveModel>::new();
-        let inner = self.inner.read().await;
-        let xact_entries = match ids {
-            Some(ids) => {
-                let entries: Vec<ledger::transaction::ledger::ActiveModel> = inner
-                    .ledger_xact
-                    .iter()
-                    .filter_map(|(key, tx)| if ids.contains(key) { Some(*tx) } else { None })
-                    .collect();
-
-                entries
-            }
-            None => {
-                for (_k, v) in inner.ledger_xact.iter() {
-                    journal_entries.push(*v)
-                }
-
-                journal_entries
-            }
-        };
-
-        Ok(xact_entries)
-    }
-
-    async fn ledger_line_by_key(&self, key: LedgerKey) -> Option<ledger::transaction::ActiveModel> {
-        let res = self.find_ledger_line(&Some(vec![key])).await;
-        if let Err(res) = res {
-            // TODO: Log error
-            eprintln!("ledger_line_by_key failed: {res}");
-
-            return None;
-        }
-
-        Some(res.unwrap()[0])
-    }
-
-    async fn ledger_transactions_by_ledger_id(
-        &self,
-        id: AccountId,
-    ) -> Vec<ledger::transaction::ActiveModel> {
         let inner = self.inner.read().await;
         let entries: Vec<ledger::transaction::ActiveModel> = inner
             .journal_entry
             .iter()
-            .filter(|(_, value)| value.ledger_id == id)
+            .filter(|(_, value)| ids.contains(&value.ledger_id))
             .map(|(_, am)| *am)
             .collect();
 
-        entries
+        Ok(entries)
     }
 
-    async fn ledger_transaction_by_dr(
+    async fn journal_entry_ledgers_by_ledger(
         &self,
-        id: AccountId,
-    ) -> Vec<ledger::transaction::ledger::ActiveModel> {
+        ids: &[AccountId],
+    ) -> Result<Vec<ledger::transaction::ledger::ActiveModel>, OrmError> {
         let inner = self.inner.read().await;
         let xacts: Vec<ledger::transaction::ledger::ActiveModel> = inner
             .ledger_xact
             .iter()
-            .filter(|(_, value)| value.ledger_dr_id == id)
+            .filter(|(_, value)| ids.contains(&value.ledger_dr_id))
             .map(|(_, am)| *am)
             .collect();
 
-        xacts
+        Ok(xacts)
     }
 
     async fn find_journal_by_code<'a>(

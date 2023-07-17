@@ -5,7 +5,7 @@ use crate::{
     domain::{AccountId, XactType},
     resource::{account_engine::AccountEngine, ledger, ledger::journal_entry, PostingRef},
     store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
-    Repository,
+    Store,
 };
 
 use super::ServiceError;
@@ -13,25 +13,30 @@ use super::ServiceError;
 #[async_trait]
 pub trait LedgerService<R>
 where
-    R: Repository
+    R: Store
         + ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>
         + ResourceOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, AccountId>
         + ResourceOperations<
             ledger::intermediate::Model,
             ledger::intermediate::ActiveModel,
             AccountId,
+        > + ResourceOperations<ledger::transaction::Model, ledger::transaction::ActiveModel, LedgerKey>
+        + ResourceOperations<
+            ledger::transaction::ledger::Model,
+            ledger::transaction::ledger::ActiveModel,
+            LedgerKey,
         > + Sync
         + Send,
 {
-    fn repository(&self) -> &R;
+    fn store(&self) -> &R;
 
     async fn journal_entries(
         &self,
         id: AccountId,
     ) -> Result<Vec<ledger::journal_entry::ActiveModel>, ServiceError> {
         let mut res = Vec::<ledger::journal_entry::ActiveModel>::new();
-        let entries = self.repository().ledger_transactions_by_ledger_id(id).await;
-        let xacts = self.repository().ledger_transaction_by_dr(id).await;
+        let entries = self.store().journal_entries_by_ledger(&[id]).await?;
+        let xacts = self.store().journal_entry_ledgers_by_ledger(&[id]).await?;
         for e in entries {
             res.push(ledger::journal_entry::ActiveModel {
                 ledger_id: e.ledger_id,
@@ -46,7 +51,7 @@ where
                 ledger_id: t.ledger_id,
                 timestamp: t.timestamp,
             };
-            let counterpart = self.repository().ledger_line_by_key(key).await;
+            let counterpart = self.journal_entry_by_key(key).await?;
             if let Some(counterpart) = counterpart {
                 res.push(ledger::journal_entry::ActiveModel {
                     ledger_id: t.ledger_dr_id,
@@ -68,10 +73,8 @@ where
         &self,
         posting_ref: PostingRef,
     ) -> Result<Option<ledger::journal_entry::ActiveModel>, ServiceError> {
-        let entry = self
-            .repository()
-            .find_ledger_line(&Some(vec![posting_ref.key]))
-            .await?;
+        let entry: Vec<ledger::transaction::ActiveModel> =
+            self.store().get(Some(&vec![posting_ref.key])).await?;
         for e in entry.iter() {
             if e.ledger_id == posting_ref.account_id {
                 return Ok(Some(ledger::journal_entry::ActiveModel {
@@ -83,44 +86,54 @@ where
                 }));
             }
         }
-        let xact = self
-            .repository()
-            .find_ledger_transaction(&Some(vec![posting_ref.key]))
-            .await?;
+        let xact: Vec<ledger::transaction::ledger::ActiveModel> =
+            self.store().get(Some(&vec![posting_ref.key])).await?;
         for t in xact {
             if t.ledger_dr_id == posting_ref.account_id {
-                let counterpart = self
-                    .repository()
-                    .ledger_line_by_key(LedgerKey {
+                if let Some(counterpart) = self
+                    .journal_entry_by_key(LedgerKey {
                         ledger_id: t.ledger_id,
                         timestamp: t.timestamp,
                     })
-                    .await
-                    .unwrap();
-                return Ok(Some(ledger::journal_entry::ActiveModel {
-                    ledger_id: t.ledger_dr_id,
-                    timestamp: t.timestamp,
-                    xact_type: XactType::Dr,
-                    amount: counterpart.amount,
-                    journal_ref: counterpart.journal_ref,
-                }));
+                    .await?
+                {
+                    return Ok(Some(ledger::journal_entry::ActiveModel {
+                        ledger_id: t.ledger_dr_id,
+                        timestamp: t.timestamp,
+                        xact_type: XactType::Dr,
+                        amount: counterpart.amount,
+                        journal_ref: counterpart.journal_ref,
+                    }));
+                }
             }
         }
 
         Ok(None)
     }
+
+    async fn journal_entry_by_key(
+        &self,
+        key: LedgerKey,
+    ) -> Result<Option<ledger::transaction::ActiveModel>, ServiceError> {
+        let res: Vec<ledger::transaction::ActiveModel> = self.store().get(Some(&vec![key])).await?;
+
+        match res.len() {
+            0 => return Ok(None),
+            _ => return Ok(Some(res[0])),
+        }
+    }
 }
 
 #[async_trait]
 impl LedgerService<PostgresStore> for AccountEngine<PostgresStore> {
-    fn repository(&self) -> &PostgresStore {
+    fn store(&self) -> &PostgresStore {
         &self.repository
     }
 }
 
 #[async_trait]
 impl LedgerService<MemoryStore> for AccountEngine<MemoryStore> {
-    fn repository(&self) -> &MemoryStore {
+    fn store(&self) -> &MemoryStore {
         &self.repository
     }
 }

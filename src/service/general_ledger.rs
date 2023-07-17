@@ -12,7 +12,7 @@ use crate::{
         InterimType,
     },
     store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
-    Repository,
+    Store,
 };
 
 use super::ServiceError;
@@ -20,7 +20,7 @@ use super::ServiceError;
 #[async_trait]
 pub trait GeneralLedgerService<R>
 where
-    R: Repository
+    R: Store
         + ResourceOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
         + ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>
         + ResourceOperations<
@@ -38,10 +38,10 @@ where
         + Sync
         + 'static,
 {
-    fn repository(&self) -> &R;
+    fn store(&self) -> &R;
 
     async fn get_general_ledger(&self) -> Result<general_ledger::ActiveModel, ServiceError> {
-        let gl: Vec<general_ledger::ActiveModel> = self.repository().get(None).await?;
+        let gl: Vec<general_ledger::ActiveModel> = self.store().get(None).await?;
 
         Ok(gl[0])
     }
@@ -50,13 +50,13 @@ where
         &self,
         model: &general_ledger::Model,
     ) -> Result<general_ledger::ActiveModel, ServiceError> {
-        let root: Vec<ledger::ActiveModel> = self.repository().get(None).await?;
-        let gl: Vec<general_ledger::ActiveModel> = self.repository().get(None).await?;
+        let root: Vec<ledger::ActiveModel> = self.store().get(None).await?;
+        let gl: Vec<general_ledger::ActiveModel> = self.store().get(None).await?;
         let mut gl = gl[0];
         gl.name = model.name;
         gl.currency_code = model.currency_code;
         gl.root = root[0].id;
-        let _ = self.repository().save(&gl).await?;
+        let _ = self.store().save(&gl).await?;
 
         Ok(gl)
     }
@@ -66,7 +66,7 @@ where
         model: &ledger::Model,
     ) -> Result<ledger::ActiveModel, ServiceError> {
         let parent: Vec<ledger::ActiveModel> = match model.parent_id {
-            Some(id) => self.repository().get(Some(&vec![id])).await?,
+            Some(id) => self.store().get(Some(&vec![id])).await?,
             None => return Err(ServiceError::Validation("ledger must have parent".into())),
         };
         if parent[0].ledger_type != LedgerType::Intermediate {
@@ -76,7 +76,7 @@ where
         }
 
         if self
-            .repository()
+            .store()
             .find_ledger_by_no(model.ledger_no)
             .await?
             .is_some()
@@ -86,13 +86,13 @@ where
                 model.ledger_no
             )));
         }
-        let ledger = self.repository().insert(model).await?;
+        let ledger = self.store().insert(model).await?;
         if model.ledger_type == LedgerType::Intermediate {
             let intermediate = ledger::intermediate::Model { id: ledger.id };
-            let _ = self.repository().insert(&intermediate).await?;
+            let _ = self.store().insert(&intermediate).await?;
         } else {
             let account = ledger::leaf::Model { id: ledger.id };
-            let _ = self.repository().insert(&account).await?;
+            let _ = self.store().insert(&account).await?;
         }
 
         Ok(ledger)
@@ -104,7 +104,7 @@ where
     ) -> Result<Vec<ledger::ActiveModel>, ServiceError> {
         Ok(
             <R as ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>>::get(
-                self.repository(),
+                self.store(),
                 ids,
             )
             .await?,
@@ -128,7 +128,7 @@ where
             name: model.name,
             code: model.code,
         };
-        self.repository().insert(model).await?;
+        self.store().insert(model).await?;
 
         Ok(journal)
     }
@@ -139,7 +139,7 @@ where
     ) -> Result<Vec<journal::ActiveModel>, ServiceError> {
         Ok(
             <R as ResourceOperations<journal::Model, journal::ActiveModel, JournalId>>::get(
-                self.repository(),
+                self.store(),
                 ids,
             )
             .await?,
@@ -158,7 +158,7 @@ where
         model: &accounting_period::Model,
     ) -> Result<accounting_period::ActiveModel, ServiceError> {
         let period = self
-            .repository()
+            .store()
             .find_period_by_fiscal_year(model.fiscal_year)
             .await?;
         if period.is_some() {
@@ -167,13 +167,9 @@ where
             ));
         }
 
-        let active_model = self.repository().insert(model).await?;
+        let active_model = self.store().insert(model).await?;
         let _ = match model.period_type {
-            InterimType::CalendarMonth => {
-                active_model
-                    .create_interim_calendar(self.repository())
-                    .await
-            }
+            InterimType::CalendarMonth => active_model.create_interim_calendar(self.store()).await,
             InterimType::FourWeek => todo!(),
             InterimType::FourFourFiveWeek => todo!(),
         }
@@ -195,21 +191,21 @@ where
             accounting_period::Model,
             accounting_period::ActiveModel,
             PeriodId,
-        >>::get(self.repository(), ids)
+        >>::get(self.store(), ids)
         .await?)
     }
 }
 
 #[async_trait]
 impl GeneralLedgerService<PostgresStore> for AccountEngine<PostgresStore> {
-    fn repository(&self) -> &PostgresStore {
+    fn store(&self) -> &PostgresStore {
         &self.repository
     }
 }
 
 #[async_trait]
 impl GeneralLedgerService<MemoryStore> for AccountEngine<MemoryStore> {
-    fn repository(&self) -> &MemoryStore {
+    fn store(&self) -> &MemoryStore {
         &self.repository
     }
 }

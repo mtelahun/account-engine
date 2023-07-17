@@ -3,8 +3,9 @@ use crate::{
         ids::JournalId, AccountId, GeneralLedgerId, JournalTransactionId, LedgerXactTypeCode,
         PeriodId,
     },
+    service::ServiceError,
     store::ResourceOperations,
-    OrmError, Repository,
+    Store,
 };
 
 use super::{
@@ -13,7 +14,7 @@ use super::{
 
 pub struct AccountEngine<R>
 where
-    R: Repository
+    R: Store
         + ResourceOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
         + ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>
         + ResourceOperations<ledger::transaction::Model, ledger::transaction::ActiveModel, LedgerKey>
@@ -40,17 +41,12 @@ where
             LedgerXactTypeCode,
         >,
 {
-    // pub (crate) organization: organization::ActiveModel,
-    // pub (crate) general_ledger: general_ledger::ActiveModel,
-    // pub (crate) journals: Vec<journal::ActiveModel>,
-    // subsidiary_ledgers: Vec<SubsidiaryLedger>,
-    // external_entities: Vec<ExternalEntity>,
     pub(crate) repository: R,
 }
 
 impl<R> AccountEngine<R>
 where
-    R: Repository
+    R: Store
         + ResourceOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
         + ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>
         + ResourceOperations<ledger::transaction::Model, ledger::transaction::ActiveModel, LedgerKey>
@@ -81,18 +77,7 @@ where
         + 'static,
 {
     pub async fn new(r: R) -> Result<Self, EngineError> {
-        // let organization = r.organization().await?;
-        // let general_ledger: Vec<general_ledger::ActiveModel> = r.get(None)
-        //     .await?;
-        // let general_ledger = general_ledger[0];
-        // let journals: Vec<journal::ActiveModel> = r.get(None).await?;
-
-        Ok(Self {
-            // organization,
-            // general_ledger,
-            // journals,
-            repository: r,
-        })
+        Ok(Self { repository: r })
     }
 
     pub async fn organization(&self) -> Result<organization::ActiveModel, EngineError> {
@@ -102,7 +87,7 @@ where
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum EngineError {
-    Repository(OrmError),
+    Repository(ServiceError),
     Unknown,
 }
 
@@ -126,8 +111,8 @@ impl std::fmt::Display for EngineError {
     }
 }
 
-impl From<OrmError> for EngineError {
-    fn from(value: OrmError) -> Self {
+impl From<ServiceError> for EngineError {
+    fn from(value: ServiceError) -> Self {
         EngineError::Repository(value)
     }
 }

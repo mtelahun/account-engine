@@ -12,7 +12,7 @@ use crate::{
     store::{
         memory::store::MemoryStore, postgres::store::PostgresStore, OrmError, ResourceOperations,
     },
-    Repository,
+    Store,
 };
 
 use super::ServiceError;
@@ -20,7 +20,7 @@ use super::ServiceError;
 #[async_trait]
 pub trait JournalService<R>
 where
-    R: Repository
+    R: Store
         + ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>
         + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
         + ResourceOperations<
@@ -43,7 +43,7 @@ where
         + Sync
         + 'static,
 {
-    fn repository(&self) -> &R;
+    fn store(&self) -> &R;
 
     async fn create_journal_transaction(
         &self,
@@ -63,7 +63,7 @@ where
                 )));
             } else if line.ledger_id.is_some() {
                 if <R as ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>>::get(
-                    self.repository(),
+                    self.store(),
                     Some(&vec![line.ledger_id.unwrap()]),
                 )
                 .await?
@@ -97,7 +97,7 @@ where
             journal::transaction::record::Model,
             journal::transaction::record::ActiveModel,
             JournalTransactionId,
-        >>::insert(self.repository(), &jtx)
+        >>::insert(self.store(), &jtx)
         .await?;
 
         let mut res_tx_lines = Vec::<journal::transaction::line::ActiveModel>::new();
@@ -116,7 +116,7 @@ where
                     journal::transaction::line::ledger::Model,
                     journal::transaction::line::ledger::ActiveModel,
                     JournalTransactionId,
-                >>::insert(self.repository(), &jtx_line)
+                >>::insert(self.store(), &jtx_line)
                 .await?;
                 res_tx_lines.push(journal::transaction::line::ActiveModel {
                     journal_id: jtx_line.journal_id,
@@ -142,7 +142,7 @@ where
                     journal::transaction::line::account::Model,
                     journal::transaction::line::account::ActiveModel,
                     JournalTransactionId,
-                >>::insert(self.repository(), &jtx_line)
+                >>::insert(self.store(), &jtx_line)
                 .await?;
                 res_tx_lines.push(journal::transaction::line::ActiveModel {
                     journal_id: jtx_line.journal_id,
@@ -173,13 +173,13 @@ where
             journal::transaction::record::Model,
             journal::transaction::record::ActiveModel,
             JournalTransactionId,
-        >>::get(self.repository(), ids)
+        >>::get(self.store(), ids)
         .await?;
         let record_lines = <R as ResourceOperations<
             journal::transaction::line::ledger::Model,
             journal::transaction::line::ledger::ActiveModel,
             JournalTransactionId,
-        >>::get(self.repository(), ids)
+        >>::get(self.store(), ids)
         .await?;
 
         if !xacts.is_empty() {
@@ -214,20 +214,20 @@ where
     ) -> Result<ledger_xact_type::ActiveModel, OrmError> {
         let ll_code = LedgerXactTypeCode::from_str(ledger_xact_type_code::XACT_LEDGER).unwrap();
 
-        Ok(self.repository().get(Some(&vec![ll_code])).await?[0])
+        Ok(self.store().get(Some(&vec![ll_code])).await?[0])
     }
 }
 
 #[async_trait]
 impl JournalService<PostgresStore> for AccountEngine<PostgresStore> {
-    fn repository(&self) -> &PostgresStore {
+    fn store(&self) -> &PostgresStore {
         &self.repository
     }
 }
 
 #[async_trait]
 impl JournalService<MemoryStore> for AccountEngine<MemoryStore> {
-    fn repository(&self) -> &MemoryStore {
+    fn store(&self) -> &MemoryStore {
         &self.repository
     }
 }

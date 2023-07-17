@@ -9,7 +9,7 @@ use crate::{
         TransactionState,
     },
     store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
-    Repository,
+    Store,
 };
 
 use super::{JournalService, ServiceError};
@@ -17,7 +17,7 @@ use super::{JournalService, ServiceError};
 #[async_trait]
 pub trait JournalTransactionService<R>: JournalService<R>
 where
-    R: Repository
+    R: Store
         + ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>
         + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
         + ResourceOperations<
@@ -52,7 +52,7 @@ where
             journal::transaction::line::ledger::Model,
             journal::transaction::line::ledger::ActiveModel,
             JournalTransactionId,
-        >>::get(self.repository(), Some(&vec![id]))
+        >>::get(self.store(), Some(&vec![id]))
         .await?;
         let cr_xact_lines = jxact_lines
             .iter()
@@ -81,8 +81,8 @@ where
                 ledger_dr_id: dr.ledger_id,
             };
 
-            let _ = self.repository().insert(&entry).await?;
-            let _ = self.repository().insert(&tx_dr).await?;
+            let _ = self.store().insert(&entry).await?;
+            let _ = self.store().insert(&tx_dr).await?;
             let mut cr = *cr;
             cr.state = TransactionState::Posted;
             cr.posting_ref = Some(PostingRef {
@@ -102,7 +102,7 @@ where
         for line in jxact_lines.iter_mut() {
             for post_line in ledger_posted_list.iter() {
                 if line.id() == post_line.id() {
-                    self.repository()
+                    self.store()
                         .update_journal_transaction_line_ledger_posting_ref(id, post_line)
                         .await?;
                 }

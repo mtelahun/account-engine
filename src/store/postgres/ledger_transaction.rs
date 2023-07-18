@@ -88,8 +88,16 @@ impl ResourceOperations<ledger::transaction::Model, ledger::transaction::ActiveM
         todo!()
     }
 
-    async fn delete(&self, _id: LedgerKey) -> Result<u64, OrmError> {
-        todo!()
+    async fn delete(&self, id: LedgerKey) -> Result<u64, OrmError> {
+        let conn = self.get_connection().await?;
+        let query = format!(
+            "DELETE FROM {} WHERE id = $1",
+            ledger::transaction::ActiveModel::NAME
+        );
+
+        conn.execute(query.as_str(), &[&id])
+            .await
+            .map_err(|e| OrmError::Internal(e.to_string()))
     }
 
     async fn archive(&self, id: LedgerKey) -> Result<u64, OrmError> {

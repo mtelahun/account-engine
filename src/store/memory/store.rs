@@ -5,15 +5,17 @@ use tokio::sync::RwLock;
 
 use crate::{
     domain::{
+        entity_code::EntityCode,
         ids::{InterimPeriodId, JournalId},
-        AccountId, ArrayCodeString, ArrayLongString, ArrayShortString, GeneralLedgerId,
-        JournalTransactionId, LedgerXactTypeCode, PeriodId,
+        AccountId, ArrayCodeString, ArrayLongString, ArrayShortString, ExternalAccountTypeCode,
+        ExternalXactTypeCode, GeneralLedgerId, JournalTransactionId, LedgerXactTypeCode, PeriodId,
+        SubLedgerId,
     },
     resource::{
-        accounting_period, general_ledger,
+        accounting_period, external, general_ledger,
         journal::{self, transaction::TransactionState},
         ledger::{self, journal_entry::LedgerKey, LedgerType},
-        ledger_xact_type, organization,
+        ledger_xact_type, organization, subsidiary_ledger,
     },
     store::OrmError,
     Store,
@@ -41,11 +43,18 @@ pub(crate) struct Inner {
     pub(crate) journal_xact_line:
         HashMap<JournalTransactionId, Vec<journal::transaction::line::ledger::ActiveModel>>,
     pub(crate) journal_xact_line_account:
-        HashMap<JournalTransactionId, journal::transaction::line::account::ActiveModel>,
+        HashMap<JournalTransactionId, Vec<journal::transaction::line::account::ActiveModel>>,
     pub(crate) journal_entry: HashMap<LedgerKey, ledger::transaction::ActiveModel>,
-    pub(crate) ledger_xact: HashMap<LedgerKey, ledger::transaction::ledger::ActiveModel>,
-    // _ext_account_txs: HashMap<LedgerKey, ExternalTransaction>,
+    pub(crate) ledger_xact_account: HashMap<LedgerKey, ledger::transaction::account::ActiveModel>,
+    pub(crate) ledger_xact_ledger: HashMap<LedgerKey, ledger::transaction::ledger::ActiveModel>,
     pub(crate) ledger_xact_type: HashMap<LedgerXactTypeCode, ledger_xact_type::ActiveModel>,
+    pub(crate) external_xact_type:
+        HashMap<ExternalXactTypeCode, external::transaction_type::ActiveModel>,
+    pub(crate) subsidary_ledger: HashMap<SubLedgerId, subsidiary_ledger::ActiveModel>,
+    pub(crate) external_account: HashMap<AccountId, external::account::ActiveModel>,
+    pub(crate) external_account_type:
+        HashMap<ExternalAccountTypeCode, external::account_type::ActiveModel>,
+    pub(crate) entity_type: HashMap<EntityCode, external::entity_type::ActiveModel>,
 }
 
 impl MemoryStore {
@@ -85,12 +94,25 @@ impl Inner {
             >::new(),
             journal_xact_line_account: HashMap::<
                 JournalTransactionId,
-                journal::transaction::line::account::ActiveModel,
+                Vec<journal::transaction::line::account::ActiveModel>,
             >::new(),
             journal_entry: HashMap::<LedgerKey, ledger::transaction::ActiveModel>::new(),
-            ledger_xact: HashMap::<LedgerKey, ledger::transaction::ledger::ActiveModel>::new(),
-            // _ext_account_txs: HashMap::<LedgerKey, ExternalTransaction>::new(),
+            ledger_xact_account:
+                HashMap::<LedgerKey, ledger::transaction::account::ActiveModel>::new(),
+            ledger_xact_ledger: HashMap::<LedgerKey, ledger::transaction::ledger::ActiveModel>::new(
+            ),
             ledger_xact_type: HashMap::<LedgerXactTypeCode, ledger_xact_type::ActiveModel>::new(),
+            external_xact_type: HashMap::<
+                ExternalXactTypeCode,
+                external::transaction_type::ActiveModel,
+            >::new(),
+            subsidary_ledger: HashMap::<SubLedgerId, subsidiary_ledger::ActiveModel>::new(),
+            external_account: HashMap::<AccountId, external::account::ActiveModel>::new(),
+            external_account_type: HashMap::<
+                ExternalAccountTypeCode,
+                external::account_type::ActiveModel,
+            >::new(),
+            entity_type: HashMap::<EntityCode, external::entity_type::ActiveModel>::new(),
         };
         let code = LedgerXactTypeCode::from_str("LL").unwrap();
         res.ledger_xact_type.insert(
@@ -169,6 +191,28 @@ impl Store for MemoryStore {
         Ok(count as u64)
     }
 
+    async fn update_journal_transaction_line_account_posting_ref(
+        &self,
+        id: JournalTransactionId,
+        line: &journal::transaction::line::account::ActiveModel,
+    ) -> Result<u64, OrmError> {
+        let mut dummy = Vec::<journal::transaction::line::account::ActiveModel>::new();
+        let mut inner = self.inner.write().await;
+        let xact_lines = match inner.journal_xact_line_account.get_mut(&id) {
+            Some(lines) => lines,
+            None => &mut dummy,
+        };
+        let count = xact_lines.len();
+        for mut jl in xact_lines.iter_mut() {
+            if jl.account_id == line.account_id {
+                jl.state = TransactionState::Posted;
+                jl.posting_ref = line.posting_ref;
+            }
+        }
+
+        Ok(count as u64)
+    }
+
     async fn find_ledger_by_no(
         &self,
         no: ArrayShortString,
@@ -215,7 +259,7 @@ impl Store for MemoryStore {
     ) -> Result<Vec<ledger::transaction::ledger::ActiveModel>, OrmError> {
         let inner = self.inner.read().await;
         let xacts: Vec<ledger::transaction::ledger::ActiveModel> = inner
-            .ledger_xact
+            .ledger_xact_ledger
             .iter()
             .filter(|(_, value)| ids.contains(&value.ledger_dr_id))
             .map(|(_, am)| *am)

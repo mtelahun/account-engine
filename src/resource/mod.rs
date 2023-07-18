@@ -1,9 +1,7 @@
 pub mod account_engine;
-pub mod account_transaction;
 pub mod account_type;
 pub mod accounting_period;
 pub mod external;
-pub mod external_xact_type;
 pub mod general_ledger;
 pub mod journal;
 pub mod ledger;

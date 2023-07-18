@@ -6,7 +6,10 @@ pub mod postgres;
 
 pub use error::OrmError;
 
-use crate::resource::{accounting_period, general_ledger, journal, ledger, ledger_xact_type};
+use crate::resource::{
+    accounting_period, external, general_ledger, journal, ledger, ledger_xact_type,
+    subsidiary_ledger,
+};
 
 pub trait Resource {
     const NAME: &'static str;
@@ -80,6 +83,10 @@ impl Resource for ledger::transaction::ledger::ActiveModel {
     const NAME: &'static str = "ledger_transaction_ledger";
 }
 
+impl Resource for ledger::transaction::account::ActiveModel {
+    const NAME: &'static str = "ledger_transaction_account";
+}
+
 impl Resource for ledger_xact_type::ActiveModel {
     const NAME: &'static str = "ledger_transaction_type";
 }
@@ -94,4 +101,24 @@ impl Resource for ledger::derived::ActiveModel {
 
 impl Resource for accounting_period::ActiveModel {
     const NAME: &'static str = "accounting_period";
+}
+
+impl Resource for external::account::ActiveModel {
+    const NAME: &'static str = "external_account";
+}
+
+impl Resource for external::entity_type::ActiveModel {
+    const NAME: &'static str = "entity_type";
+}
+
+impl Resource for external::transaction_type::ActiveModel {
+    const NAME: &'static str = "transaction_type_external";
+}
+
+impl Resource for external::account_type::ActiveModel {
+    const NAME: &'static str = "external_account_type";
+}
+
+impl Resource for subsidiary_ledger::ActiveModel {
+    const NAME: &'static str = "subsidiary_ledger";
 }

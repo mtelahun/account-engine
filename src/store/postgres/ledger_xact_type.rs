@@ -60,8 +60,16 @@ impl ResourceOperations<ledger_xact_type::Model, ledger_xact_type::ActiveModel, 
         todo!()
     }
 
-    async fn delete(&self, _id: LedgerXactTypeCode) -> Result<u64, OrmError> {
-        todo!()
+    async fn delete(&self, id: LedgerXactTypeCode) -> Result<u64, OrmError> {
+        let conn = self.get_connection().await?;
+        let query = format!(
+            "DELETE FROM {} WHERE id = $1",
+            ledger_xact_type::ActiveModel::NAME
+        );
+
+        conn.execute(query.as_str(), &[&id])
+            .await
+            .map_err(|e| OrmError::Internal(e.to_string()))
     }
 
     async fn archive(&self, id: LedgerXactTypeCode) -> Result<u64, OrmError> {

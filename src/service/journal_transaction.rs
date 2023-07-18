@@ -1,12 +1,10 @@
-use std::iter::zip;
-
 use async_trait::async_trait;
 
 use crate::{
     domain::{ids::JournalId, AccountId, JournalTransactionId, LedgerXactTypeCode, XactType},
     resource::{
-        account_engine::AccountEngine, journal, ledger, ledger_xact_type, LedgerKey, PostingRef,
-        TransactionState,
+        account_engine::AccountEngine, external, journal, ledger, ledger_xact_type, LedgerKey,
+        PostingRef, TransactionState,
     },
     store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
     Store,
@@ -38,10 +36,15 @@ where
             ledger::transaction::ledger::ActiveModel,
             LedgerKey,
         > + ResourceOperations<
+            ledger::transaction::account::Model,
+            ledger::transaction::account::ActiveModel,
+            LedgerKey,
+        > + ResourceOperations<
             ledger_xact_type::Model,
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
-        > + Send
+        > + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
+        + Send
         + Sync
         + 'static,
 {
@@ -54,6 +57,12 @@ where
             JournalTransactionId,
         >>::get(self.store(), Some(&vec![id]))
         .await?;
+        let mut jxact_lines2 = <R as ResourceOperations<
+            journal::transaction::line::account::Model,
+            journal::transaction::line::account::ActiveModel,
+            JournalTransactionId,
+        >>::get(self.store(), Some(&vec![id]))
+        .await?;
         let cr_xact_lines = jxact_lines
             .iter()
             .filter(|am| am.xact_type == XactType::Cr)
@@ -62,48 +71,165 @@ where
             .iter()
             .filter(|am| am.xact_type == XactType::Dr)
             .collect::<Vec<_>>();
+        let cr_xact_lines2 = jxact_lines2
+            .iter()
+            .filter(|am| am.xact_type == XactType::Cr)
+            .collect::<Vec<_>>();
+        let dr_xact_lines2 = jxact_lines2
+            .iter()
+            .filter(|am| am.xact_type == XactType::Dr)
+            .collect::<Vec<_>>();
+        let sum_dr = dr_xact_lines.len() + dr_xact_lines2.len();
+        let sum_cr = cr_xact_lines.len() + cr_xact_lines2.len();
+        if sum_dr == 0 || sum_dr != sum_cr {
+            return Err(ServiceError::Validation(
+                "the Dr and Cr sides of the transaction must be equal".to_string(),
+            ));
+        }
+        let key: LedgerKey;
+        let entry: ledger::transaction::Model;
+        let ledger_line: ledger::transaction::ledger::Model;
+        let account_line: ledger::transaction::account::Model;
         let mut ledger_posted_list = Vec::<journal::transaction::line::ledger::ActiveModel>::new();
-        for (cr, dr) in zip(cr_xact_lines.clone(), dr_xact_lines.clone()) {
-            let key = LedgerKey {
-                ledger_id: cr.ledger_id,
-                timestamp: cr.timestamp,
+        let mut account_posted_list =
+            Vec::<journal::transaction::line::account::ActiveModel>::new();
+        if !cr_xact_lines.is_empty() {
+            key = LedgerKey {
+                ledger_id: cr_xact_lines[0].ledger_id,
+                timestamp: cr_xact_lines[0].timestamp,
             };
-            let entry = ledger::transaction::Model {
+            entry = ledger::transaction::Model {
                 ledger_id: key.ledger_id,
                 timestamp: key.timestamp,
                 ledger_xact_type_code: ledger_xact_type.code,
-                amount: cr.amount,
+                amount: cr_xact_lines[0].amount,
                 journal_ref: id,
             };
-            let tx_dr = ledger::transaction::ledger::Model {
-                ledger_id: key.ledger_id,
-                timestamp: key.timestamp,
-                ledger_dr_id: dr.ledger_id,
-            };
-
             let _ = self.store().insert(&entry).await?;
-            let _ = self.store().insert(&tx_dr).await?;
-            let mut cr = *cr;
+            let mut cr = *cr_xact_lines[0];
             cr.state = TransactionState::Posted;
             cr.posting_ref = Some(PostingRef {
                 key,
                 account_id: cr.ledger_id,
             });
-            let mut dr = *dr;
+            ledger_posted_list.push(cr);
+            if !dr_xact_lines.is_empty() {
+                ledger_line = ledger::transaction::ledger::Model {
+                    ledger_id: key.ledger_id,
+                    timestamp: key.timestamp,
+                    ledger_dr_id: dr_xact_lines[0].ledger_id,
+                };
+                let _ = self.store().insert(&ledger_line).await?;
+                let mut dr = *dr_xact_lines[0];
+                dr.state = TransactionState::Posted;
+                dr.posting_ref = Some(PostingRef {
+                    key,
+                    account_id: dr.ledger_id,
+                });
+                ledger_posted_list.push(dr);
+            } else {
+                account_line = ledger::transaction::account::Model {
+                    account_id: dr_xact_lines2[0].account_id,
+                    ledger_id: key.ledger_id,
+                    timestamp: key.timestamp,
+                    xact_type_code: XactType::Dr,
+                    xact_type_external_code: dr_xact_lines2[0].xact_type_external.unwrap(),
+                };
+                let _ = self.store().insert(&account_line).await?;
+                let mut dr = *dr_xact_lines2[0];
+                dr.state = TransactionState::Posted;
+                dr.posting_ref = Some(PostingRef {
+                    key,
+                    account_id: dr.account_id,
+                });
+                account_posted_list.push(dr);
+            }
+        } else {
+            key = LedgerKey {
+                ledger_id: dr_xact_lines[0].ledger_id,
+                timestamp: dr_xact_lines[0].timestamp,
+            };
+            entry = ledger::transaction::Model {
+                ledger_id: key.ledger_id,
+                timestamp: key.timestamp,
+                ledger_xact_type_code: ledger_xact_type.code,
+                amount: dr_xact_lines[0].amount,
+                journal_ref: id,
+            };
+            account_line = ledger::transaction::account::Model {
+                account_id: cr_xact_lines2[0].account_id,
+                ledger_id: key.ledger_id,
+                timestamp: key.timestamp,
+                xact_type_code: XactType::Dr,
+                xact_type_external_code: dr_xact_lines2[0].xact_type_external.unwrap(),
+            };
+            let _ = self.store().insert(&entry).await?;
+            let _ = self.store().insert(&account_line).await?;
+            let mut dr = *dr_xact_lines[0];
             dr.state = TransactionState::Posted;
             dr.posting_ref = Some(PostingRef {
                 key,
                 account_id: dr.ledger_id,
             });
             ledger_posted_list.push(dr);
-            ledger_posted_list.push(cr);
+            let mut cr = *cr_xact_lines2[0];
+            cr.state = TransactionState::Posted;
+            cr.posting_ref = Some(PostingRef {
+                key,
+                account_id: cr.account_id,
+            });
+            account_posted_list.push(cr);
         }
+        // for (cr, dr) in zip(cr_xact_lines.clone(), dr_xact_lines.clone()) {
+        //     let key = LedgerKey {
+        //         ledger_id: cr.ledger_id,
+        //         timestamp: cr.timestamp,
+        //     };
+        //     let entry = ledger::transaction::Model {
+        //         ledger_id: key.ledger_id,
+        //         timestamp: key.timestamp,
+        //         ledger_xact_type_code: ledger_xact_type.code,
+        //         amount: cr.amount,
+        //         journal_ref: id,
+        //     };
+        //     let tx_dr = ledger::transaction::ledger::Model {
+        //         ledger_id: key.ledger_id,
+        //         timestamp: key.timestamp,
+        //         ledger_dr_id: dr.ledger_id,
+        //     };
+
+        //     let _ = self.store().insert(&entry).await?;
+        //     let _ = self.store().insert(&tx_dr).await?;
+        //     let mut cr = *cr;
+        //     cr.state = TransactionState::Posted;
+        //     cr.posting_ref = Some(PostingRef {
+        //         key,
+        //         account_id: cr.ledger_id,
+        //     });
+        //     let mut dr = *dr;
+        //     dr.state = TransactionState::Posted;
+        //     dr.posting_ref = Some(PostingRef {
+        //         key,
+        //         account_id: dr.ledger_id,
+        //     });
+        //     ledger_posted_list.push(dr);
+        //     ledger_posted_list.push(cr);
+        // }
 
         for line in jxact_lines.iter_mut() {
             for post_line in ledger_posted_list.iter() {
                 if line.id() == post_line.id() {
                     self.store()
                         .update_journal_transaction_line_ledger_posting_ref(id, post_line)
+                        .await?;
+                }
+            }
+        }
+        for line in jxact_lines2.iter_mut() {
+            for post_line in account_posted_list.iter() {
+                if line.id() == post_line.id() {
+                    self.store()
+                        .update_journal_transaction_line_account_posting_ref(id, post_line)
                         .await?;
                 }
             }

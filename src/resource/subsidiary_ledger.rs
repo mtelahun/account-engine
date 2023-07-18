@@ -1,14 +1,16 @@
-use arrayvec::ArrayString;
+use postgres_types::{FromSql, ToSql};
 
-use crate::domain::{AccountBookId, AccountId};
+use crate::domain::{AccountId, ArrayLongString, SubLedgerId};
 
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, ToSql, FromSql)]
 pub struct Model {
-    pub name: ArrayString<256>,
+    pub name: ArrayLongString,
     pub ledger_account_id: AccountId,
 }
 
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, ToSql, FromSql)]
 pub struct ActiveModel {
-    pub id: AccountBookId,
-    pub name: ArrayString<256>,
+    pub id: SubLedgerId,
+    pub name: ArrayLongString,
     pub ledger_account_id: AccountId,
 }

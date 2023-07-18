@@ -1,3 +1,5 @@
+use postgres_types::{to_sql_checked, FromSql, ToSql};
+
 use super::{fixed_len_char::InvalidLengthError, FixedLenChar};
 
 const LEN: usize = 2;
@@ -33,6 +35,14 @@ impl ExternalXactTypeCode {
     }
 }
 
+impl From<String> for ExternalXactTypeCode {
+    fn from(value: String) -> Self {
+        Self {
+            inner: FixedLenChar::<LEN>::from(value),
+        }
+    }
+}
+
 impl std::str::FromStr for ExternalXactTypeCode {
     type Err = InvalidLengthError;
 
@@ -57,6 +67,51 @@ impl std::fmt::Display for ExternalXactTypeCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.inner.as_str())
     }
+}
+
+impl std::ops::Deref for ExternalXactTypeCode {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.inner.as_str()
+    }
+}
+
+impl<'a> FromSql<'a> for ExternalXactTypeCode {
+    fn from_sql(
+        ty: &postgres_types::Type,
+        raw: &'a [u8],
+    ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
+        let res = <&str as FromSql>::from_sql(ty, raw).map(ToString::to_string)?;
+
+        Ok(ExternalXactTypeCode::from(res))
+    }
+
+    fn accepts(ty: &postgres_types::Type) -> bool {
+        <&str as FromSql>::accepts(ty)
+    }
+}
+
+impl ToSql for ExternalXactTypeCode {
+    fn to_sql(
+        &self,
+        ty: &postgres_types::Type,
+        out: &mut postgres_types::private::BytesMut,
+    ) -> Result<postgres_types::IsNull, Box<dyn std::error::Error + Sync + Send>>
+    where
+        Self: Sized,
+    {
+        <&str as ToSql>::to_sql(&&**self, ty, out)
+    }
+
+    fn accepts(ty: &postgres_types::Type) -> bool
+    where
+        Self: Sized,
+    {
+        <&str as ToSql>::accepts(ty)
+    }
+
+    to_sql_checked!();
 }
 
 #[cfg(test)]

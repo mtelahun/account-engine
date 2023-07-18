@@ -2,22 +2,23 @@ use std::str::FromStr;
 
 use account_engine::{
     domain::{
-        ids::JournalId, AccountId, ArrayCodeString, ArrayLongString, ArrayShortString, XactType,
+        ids::JournalId, AccountId, ArrayCodeString, ArrayLongString, ArrayShortString,
+        JournalTransactionId, XactType,
     },
     resource::{
-        account_engine::AccountEngine, accounting_period, general_ledger, journal, ledger,
-        InterimType, LedgerType, TransactionState,
+        account_engine::AccountEngine, accounting_period, external, general_ledger, journal,
+        ledger, subsidiary_ledger, InterimType, LedgerType, TransactionState,
     },
     service::{
         AccountingPeriodService, GeneralLedgerService, JournalService, JournalTransactionService,
-        LedgerService, ServiceError,
+        LedgerService, ServiceError, SubsidiaryLedgerService,
     },
     store::{memory::store::MemoryStore, OrmError},
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 
-use crate::timestamp;
+use crate::{timestamp, utils::random_account_no};
 
 #[tokio::test]
 async fn non_existant_ledger() {
@@ -553,36 +554,36 @@ async fn journal_transaction_creation_invalid() {
             )),
             "line2: ledger_id is fake",
         ),
-        // (
-        //     {
-        //         let mut jx_line1 = jx_line1.clone();
-        //         jx_line1.account_id = Some(fake_account_id);
-        //         let mut jx_line2 = jx_line2.clone();
-        //         jx_line2.ledger_id = Some(bank.id);
-        //         let mut jx1 = jx1.clone();
-        //         jx1.lines = vec![jx_line1, jx_line2]; 
-        //         jx1
-        //     },
-        //     OrmError::RecordNotFound(format!(
-        //         "account id: {fake_account_id}",
-        //     )),
-        //     "line1: account_id is fake",
-        // ),
-        // (
-        //     {
-        //         let mut jx_line1 = jx_line1.clone();
-        //         jx_line1.ledger_id = Some(bank.id);
-        //         let mut jx_line2 = jx_line2.clone();
-        //         jx_line2.account_id = Some(fake_account_id);
-        //         let mut jx1 = jx1.clone();
-        //         jx1.lines = vec![jx_line1, jx_line2]; 
-        //         jx1
-        //     },
-        //     OrmError::RecordNotFound(format!(
-        //         "account id: {fake_account_id}",
-        //     )),
-        //     "line2: account_id is fake",
-        // ),
+        (
+            {
+                let mut jx_line1 = jxact.line1.clone();
+                jx_line1.account_id = Some(fake_account_id);
+                let mut jx_line2 = jxact.line2.clone();
+                jx_line2.ledger_id = Some(bank.id);
+                let mut jx1 = jxact.jx.clone();
+                jx1.lines = vec![jx_line1, jx_line2];
+                jx1
+            },
+            ServiceError::EmptyRecord(format!(
+                "account id: {fake_account_id}",
+            )),
+            "line1: account_id is fake",
+        ),
+        (
+            {
+                let mut jx_line1 = jxact.line1.clone();
+                jx_line1.ledger_id = Some(bank.id);
+                let mut jx_line2 = jxact.line2.clone();
+                jx_line2.account_id = Some(fake_account_id);
+                let mut jx1 = jxact.jx.clone();
+                jx1.lines = vec![jx_line1, jx_line2];
+                jx1
+            },
+            ServiceError::EmptyRecord(format!(
+                "account id: {fake_account_id}",
+            )),
+            "line2: account_id is fake",
+        ),
     ];
 
     for (case, expected_error, msg) in invalid_cases {
@@ -747,18 +748,10 @@ async fn post_journal_transaction_happy_path() {
     );
 }
 
-async fn _post_journal_transaction_happy_path() {
+#[tokio::test]
+async fn post_journal_transaction_unbalanced() {
     // Arrange
     let state = TestState::new().await;
-    let cash = state
-        .create_account(
-            "1001",
-            "Cash",
-            LedgerType::Leaf,
-            Some(state.general_ledger.root),
-        )
-        .await
-        .expect("failed to create Cash account");
     let bank = state
         .create_account(
             "1002",
@@ -768,108 +761,93 @@ async fn _post_journal_transaction_happy_path() {
         )
         .await
         .expect("failed to create Bank account");
+    let cr_line = journal::transaction::line::Model {
+        journal_id: state.journal.id,
+        timestamp: timestamp(),
+        ledger_id: Some(bank.id),
+        account_id: None,
+        xact_type: XactType::Cr,
+        state: TransactionState::Pending,
+        amount: Decimal::ONE,
+        posting_ref: None,
+    };
+    let model = journal::transaction::Model {
+        journal_id: state.journal.id,
+        timestamp: timestamp(),
+        explanation: "".into(),
+        lines: vec![cr_line],
+    };
     let jxact = state
-        .create_journal_xact(Decimal::from(100), cash.id, bank.id, "Withdrew cash", None)
+        .engine
+        .create_journal_transaction(&model)
         .await
-        .expect("failed to create journal transaction: Withdrew cash");
+        .expect("failed to create unbalanaced transaction");
 
     // Act
-    let _ = state
+    let posted = state.engine.post_transaction(jxact.id()).await;
+
+    // Assert
+    assert!(posted.is_err(), "posting an unbalanced journal tx fails");
+    assert_eq!(
+        posted.err().unwrap(),
+        Err::<(), ServiceError>(ServiceError::Validation(
+            "the Dr and Cr sides of the transaction must be equal".into(),
+        ))
+        .err()
+        .unwrap()
+    );
+}
+
+#[tokio::test]
+async fn ledger_and_external_account() {
+    // Arrange
+    let state = TestState::new().await;
+    let (_, ledger, account) = state.create_subsidiary("A/R").await;
+    let mut jxact = state.simple_xact_model();
+    jxact.line1.account_id = Some(account.id);
+    jxact.line2.ledger_id = Some(ledger.id);
+
+    // Act
+    let jxact = state.create_simple_jxact(&jxact, "Widget sales").await;
+    let posted = state
         .engine
         .post_transaction(jxact.id())
         .await
-        .expect("the call to 'post' the journal tx failed");
+        .expect("failed to post transaction");
 
     // Assert
-    let bank_entries = state
+    assert!(posted, "posting of transaction succeeds");
+    let cr_e = state
         .engine
-        .journal_entries(bank.id)
+        .journal_entries(ledger.id)
         .await
-        .expect("failed to get journal entries for Bank ledger");
-    let cash_entries = state
+        .expect("failed to get journal enries for revenue ledger");
+    let dr_e = state
         .engine
-        .journal_entries(cash.id)
+        .journal_entries(account.id)
         .await
-        .expect("failed to get journal entries for Cash ledger");
-    let jxact = &state
-        .engine
-        .get_journal_transactions(Some(&vec![jxact.id()]))
-        .await
-        .expect("unexpected search error")[0];
-    let entry1 = state
-        .engine
-        .journal_entry_by_posting_ref(jxact.lines[0].posting_ref.unwrap())
-        .await
-        .expect("failed to retrieve journal entry #1 using the posting ref.")
-        .expect("journal entry #1 is empty");
-    let entry2 = state
-        .engine
-        .journal_entry_by_posting_ref(jxact.lines[1].posting_ref.unwrap())
-        .await
-        .expect("failed to retrieve journal entry #2 using the posting ref.")
-        .expect("journal entry #2 is empty");
-    for line in &jxact.lines {
-        assert_eq!(
-            line.state,
-            TransactionState::Posted,
-            "journal transaction line IS Posted"
-        );
-    }
+        .expect("failed to get journal entries for subsidiary account");
     assert_eq!(
-        cash_entries.len(),
+        cr_e.len(),
         1,
-        "there is ONE journal entry in the cash account"
+        "there is ONE journal entry in the ledger account"
+    );
+    assert_eq!(cr_e[0].amount, Decimal::ONE, "the CR amount equals 1.00");
+    assert_eq!(
+        cr_e[0].journal_ref,
+        JournalTransactionId::new(jxact.journal_id, jxact.timestamp),
+        "the CR journal reference points back to the transaction"
     );
     assert_eq!(
-        bank_entries.len(),
+        dr_e.len(),
         1,
-        "there is ONE journal entry in the bank account"
+        "there is ONE journal entry in the external account"
     );
+    assert_eq!(dr_e[0].amount, Decimal::ONE, "the DR amount equals 1.00");
     assert_eq!(
-        entry1, cash_entries[0],
-        "the 1st posting ref points to the DR account"
-    );
-    assert_eq!(
-        entry2, bank_entries[0],
-        "the 2nd posting ref points to the CR account"
-    );
-    let cr_account = state
-        .engine
-        .get_ledgers(Some(&vec![bank.id]))
-        .await
-        .expect("unexpected search error")[0];
-    let dr_account = state
-        .engine
-        .get_ledgers(Some(&vec![cash.id]))
-        .await
-        .expect("unexpected search error")[0];
-    assert_eq!(
-        cr_account.id,
-        jxact.lines[1].ledger_id.unwrap(),
-        "ledger CR ac. matches journal"
-    );
-    assert_eq!(
-        dr_account.id,
-        jxact.lines[0].ledger_id.unwrap(),
-        "ledger DR ac. matches journal"
-    );
-    assert_eq!(
-        entry1.timestamp, jxact.timestamp,
-        "ledger #1 datetime matches journal"
-    );
-    assert_eq!(
-        entry2.timestamp, jxact.timestamp,
-        "ledger #2 datetime matches journal"
-    );
-    assert_ne!(
-        entry1.ledger_id.to_string(),
-        entry2.ledger_id.to_string(),
-        "accounts ARE different"
-    );
-    assert_ne!(
-        jxact.lines[0].ledger_id.unwrap(),
-        jxact.lines[1].ledger_id.unwrap(),
-        "ournal transaction dr and cr account are different"
+        dr_e[0].journal_ref,
+        JournalTransactionId::new(jxact.journal_id, jxact.timestamp),
+        "the DR journal reference points back to the transaction"
     );
 }
 
@@ -907,7 +885,7 @@ impl TestState {
 
     pub async fn create_account(
         &self,
-        number: &'static str,
+        number: &str,
         name: &'static str,
         typ: LedgerType,
         parent_id: Option<AccountId>,
@@ -921,6 +899,55 @@ impl TestState {
         };
 
         self.engine.create_ledger(&account).await
+    }
+
+    pub async fn create_ledger(&self, name: &'static str, typ: LedgerType) -> ledger::ActiveModel {
+        let ledger = ledger::Model {
+            ledger_no: random_account_no().into(),
+            ledger_type: typ,
+            parent_id: Some(self.general_ledger.root),
+            name: name.into(),
+            currency_code: None,
+        };
+
+        self.engine
+            .create_ledger(&ledger)
+            .await
+            .expect("failed to create ledger")
+    }
+
+    pub async fn create_subsidiary(
+        &self,
+        name: &'static str,
+    ) -> (
+        subsidiary_ledger::ActiveModel,
+        ledger::ActiveModel,
+        external::account::ActiveModel,
+    ) {
+        let ledg = self.create_ledger(name, LedgerType::Derived).await;
+        let model = subsidiary_ledger::Model {
+            name: name.into(),
+            ledger_account_id: ledg.id,
+        };
+        let sub = self
+            .engine
+            .create_subsidiary_ledger(&model)
+            .await
+            .expect(format!("failed to create subsidiary ledger: {name}").as_str());
+
+        let model = external::account::Model {
+            subsidiary_ledger_id: sub.id,
+            entity_code: "PE".into(),
+            account_no: random_account_no().into(),
+            date_opened: NaiveDate::from_ymd_opt(2023, 1, 1).unwrap(),
+        };
+        let acc = self
+            .engine
+            .create_account(&model)
+            .await
+            .expect("failed to create external account");
+
+        (sub, ledg, acc)
     }
 
     pub async fn create_journal(
@@ -975,6 +1002,24 @@ impl TestState {
         self.engine.create_journal_transaction(&model).await
     }
 
+    pub async fn create_simple_jxact(
+        &self,
+        tx: &SimpleJournalTransaction,
+        desc: &str,
+    ) -> journal::transaction::ActiveModel {
+        let model = journal::transaction::Model {
+            journal_id: tx.line1.journal_id,
+            timestamp: timestamp(),
+            explanation: desc.into(),
+            lines: vec![tx.line1, tx.line2],
+        };
+
+        self.engine
+            .create_journal_transaction(&model)
+            .await
+            .expect(format!("failed to create simple journal transaction: {desc}").as_str())
+    }
+
     pub fn simple_xact_model(&self) -> SimpleJournalTransaction {
         let timestamp = timestamp();
         let line1 = journal::transaction::line::Model {
@@ -984,7 +1029,7 @@ impl TestState {
             account_id: None,
             xact_type: XactType::Dr,
             state: TransactionState::Pending,
-            amount: Decimal::ZERO,
+            amount: Decimal::ONE,
             posting_ref: None,
         };
         let line2 = journal::transaction::line::Model {
@@ -994,7 +1039,7 @@ impl TestState {
             account_id: None,
             xact_type: XactType::Cr,
             state: TransactionState::Pending,
-            amount: Decimal::ZERO,
+            amount: Decimal::ONE,
             posting_ref: None,
         };
         let jx = journal::transaction::Model {

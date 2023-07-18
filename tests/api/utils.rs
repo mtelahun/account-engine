@@ -31,3 +31,12 @@ pub async fn connect_to_db(db_name: &str) -> tokio_postgres::Client {
 
     client
 }
+
+pub fn random_account_no() -> String {
+    let mut no = String::from("");
+    for _ in 0..4 {
+        no.push(rand::random())
+    }
+
+    no
+}

@@ -27,22 +27,22 @@ impl Deref for AccountId {
 }
 
 #[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
-#[postgres(name = "accountbookid")]
-pub struct AccountBookId(uuid::Uuid);
+#[postgres(name = "subledgerid")]
+pub struct SubLedgerId(uuid::Uuid);
 
-impl AccountBookId {
-    pub fn new() -> AccountBookId {
+impl SubLedgerId {
+    pub fn new() -> SubLedgerId {
         Self(uuid::Uuid::new_v4())
     }
 }
 
-impl std::fmt::Display for AccountBookId {
+impl std::fmt::Display for SubLedgerId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-impl Deref for AccountBookId {
+impl Deref for SubLedgerId {
     type Target = uuid::Uuid;
 
     fn deref(&self) -> &Self::Target {

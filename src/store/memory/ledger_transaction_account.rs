@@ -8,29 +8,31 @@ use crate::{
 use super::store::MemoryStore;
 
 #[async_trait]
-impl ResourceOperations<transaction::ledger::Model, transaction::ledger::ActiveModel, LedgerKey>
+impl ResourceOperations<transaction::account::Model, transaction::account::ActiveModel, LedgerKey>
     for MemoryStore
 {
     async fn insert(
         &self,
-        model: &transaction::ledger::Model,
-    ) -> Result<transaction::ledger::ActiveModel, OrmError> {
-        let xact = transaction::ledger::ActiveModel {
+        model: &transaction::account::Model,
+    ) -> Result<transaction::account::ActiveModel, OrmError> {
+        let xact = transaction::account::ActiveModel {
             ledger_id: model.ledger_id,
             timestamp: model.timestamp,
-            ledger_dr_id: model.ledger_dr_id,
+            account_id: model.account_id,
+            xact_type_code: model.xact_type_code,
+            xact_type_external_code: model.xact_type_external_code,
         };
         let mut inner = self.inner.write().await;
         let is_duplicate = inner
-            .ledger_xact_ledger
+            .ledger_xact_account
             .iter()
-            .any(|(k, v)| (*k == xact.id()) && (v.ledger_dr_id == xact.ledger_dr_id));
+            .any(|(k, v)| (*k == xact.id()) && (v.account_id == xact.account_id));
         if is_duplicate {
             return Err(OrmError::DuplicateRecord(
-                "duplicate ledger transaction".into(),
+                "duplicate account transaction".into(),
             ));
         }
-        inner.ledger_xact_ledger.insert(xact.id(), xact);
+        inner.ledger_xact_account.insert(xact.id(), xact);
 
         Ok(xact)
     }
@@ -38,17 +40,17 @@ impl ResourceOperations<transaction::ledger::Model, transaction::ledger::ActiveM
     async fn get(
         &self,
         ids: Option<&Vec<LedgerKey>>,
-    ) -> Result<Vec<transaction::ledger::ActiveModel>, OrmError> {
-        let mut res = Vec::<transaction::ledger::ActiveModel>::new();
+    ) -> Result<Vec<transaction::account::ActiveModel>, OrmError> {
+        let mut res = Vec::<transaction::account::ActiveModel>::new();
         let inner = self.inner.read().await;
         if let Some(ids) = ids {
-            for xact in inner.ledger_xact_ledger.values() {
+            for xact in inner.ledger_xact_account.values() {
                 if ids.iter().any(|i| *i == xact.id()) {
                     res.push(*xact);
                 }
             }
         } else {
-            for xact in inner.ledger_xact_ledger.values() {
+            for xact in inner.ledger_xact_account.values() {
                 res.push(*xact);
             }
         }
@@ -59,11 +61,11 @@ impl ResourceOperations<transaction::ledger::Model, transaction::ledger::ActiveM
     async fn search(
         &self,
         _domain: &str,
-    ) -> Result<Vec<transaction::ledger::ActiveModel>, OrmError> {
+    ) -> Result<Vec<transaction::account::ActiveModel>, OrmError> {
         todo!()
     }
 
-    async fn save(&self, _model: &transaction::ledger::ActiveModel) -> Result<u64, OrmError> {
+    async fn save(&self, _model: &transaction::account::ActiveModel) -> Result<u64, OrmError> {
         todo!()
     }
 

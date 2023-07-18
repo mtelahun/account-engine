@@ -1,7 +1,7 @@
 use crate::{
     domain::{
         ids::JournalId, AccountId, GeneralLedgerId, JournalTransactionId, LedgerXactTypeCode,
-        PeriodId,
+        PeriodId, SubLedgerId,
     },
     service::ServiceError,
     store::ResourceOperations,
@@ -9,7 +9,8 @@ use crate::{
 };
 
 use super::{
-    accounting_period, general_ledger, journal, ledger, ledger_xact_type, organization, LedgerKey,
+    accounting_period, external, general_ledger, journal, ledger, ledger_xact_type, organization,
+    subsidiary_ledger, LedgerKey,
 };
 
 pub struct AccountEngine<R>
@@ -39,7 +40,8 @@ where
             ledger_xact_type::Model,
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
-        >,
+        > + ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
+        + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>,
 {
     pub(crate) repository: R,
 }
@@ -72,6 +74,8 @@ where
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
         > + ResourceOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
+        + ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
+        + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
         + Send
         + Sync
         + 'static,

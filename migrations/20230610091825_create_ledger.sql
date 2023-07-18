@@ -33,7 +33,7 @@ CREATE TABLE ledger_derived(
     CONSTRAINT fk_ledger_id FOREIGN KEY(id) REFERENCES ledger(id) ON DELETE RESTRICT
 );
 
-ALTER TABLE supporting_ledger
+ALTER TABLE subsidiary_ledger
     ADD CONSTRAINT fk_ledger_id FOREIGN KEY(ledger_id) REFERENCES ledger(id);
 
 CREATE TABLE ledger_transaction_type(

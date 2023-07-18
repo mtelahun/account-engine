@@ -1,7 +1,9 @@
 use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
-use crate::domain::{ids::JournalId, xact_type::XactType, AccountId, JournalTransactionId};
+use crate::domain::{
+    ids::JournalId, xact_type::XactType, AccountId, ExternalXactTypeCode, JournalTransactionId,
+};
 
 use super::{PostingRef, TransactionState};
 
@@ -12,6 +14,7 @@ pub struct Model {
     pub ledger_id: Option<AccountId>,
     pub account_id: Option<AccountId>,
     pub xact_type: XactType,
+    pub xact_type_external: Option<ExternalXactTypeCode>,
     pub amount: Decimal,
     pub state: TransactionState,
     pub posting_ref: Option<PostingRef>,
@@ -24,6 +27,7 @@ pub struct ActiveModel {
     pub ledger_id: Option<AccountId>,
     pub account_id: Option<AccountId>,
     pub xact_type: XactType,
+    pub xact_type_external: Option<ExternalXactTypeCode>,
     pub amount: Decimal,
     pub state: TransactionState,
     pub posting_ref: Option<PostingRef>,
@@ -43,6 +47,7 @@ impl From<ledger::ActiveModel> for ActiveModel {
             ledger_id: Some(value.ledger_id),
             account_id: None,
             xact_type: value.xact_type,
+            xact_type_external: None,
             amount: value.amount,
             state: value.state,
             posting_ref: value.posting_ref,
@@ -58,6 +63,7 @@ impl From<account::ActiveModel> for ActiveModel {
             ledger_id: None,
             account_id: Some(value.account_id),
             xact_type: value.xact_type,
+            xact_type_external: value.xact_type_external,
             amount: value.amount,
             state: value.state,
             posting_ref: value.posting_ref,
@@ -108,7 +114,9 @@ pub mod account {
     use postgres_types::{FromSql, ToSql};
     use rust_decimal::Decimal;
 
-    use crate::domain::{ids::JournalId, xact_type::XactType, AccountId, JournalTransactionId};
+    use crate::domain::{
+        ids::JournalId, xact_type::XactType, AccountId, ExternalXactTypeCode, JournalTransactionId,
+    };
 
     use super::{PostingRef, TransactionState};
 
@@ -118,6 +126,7 @@ pub mod account {
         pub timestamp: NaiveDateTime,
         pub account_id: AccountId,
         pub xact_type: XactType,
+        pub xact_type_external: Option<ExternalXactTypeCode>,
         pub amount: Decimal,
         pub state: TransactionState,
         pub posting_ref: Option<PostingRef>,
@@ -129,6 +138,7 @@ pub mod account {
         pub timestamp: NaiveDateTime,
         pub account_id: AccountId,
         pub xact_type: XactType,
+        pub xact_type_external: Option<ExternalXactTypeCode>,
         pub amount: Decimal,
         pub state: TransactionState,
         pub posting_ref: Option<PostingRef>,

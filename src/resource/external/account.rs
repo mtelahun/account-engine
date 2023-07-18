@@ -1,20 +1,20 @@
-use arrayvec::ArrayString;
+use chrono::NaiveDate;
 
-use crate::domain::{AccountBookId, AccountId};
+use crate::domain::{entity_code::EntityCode, AccountId, ArrayShortString, SubLedgerId};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Model {
-    pub book_id: AccountBookId,
-    pub account_no: ArrayString<64>,
-    pub entity_type: super::entity_type::Model,
-    pub account_type: super::account_type::Model,
+    pub subsidiary_ledger_id: SubLedgerId,
+    pub entity_code: EntityCode,
+    pub account_no: ArrayShortString,
+    pub date_opened: NaiveDate,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ActiveModel {
     pub id: AccountId,
-    pub book_id: AccountBookId,
-    pub account_no: ArrayString<64>,
-    pub entity_type: super::entity_type::Model,
-    pub account_type: super::account_type::Model,
+    pub subsidiary_ledger_id: SubLedgerId,
+    pub entity_code: EntityCode,
+    pub account_no: ArrayShortString,
+    pub date_opened: NaiveDate,
 }

@@ -24,6 +24,6 @@ pub use composite_ids::JournalTransactionId;
 pub use external_account_type_code::ExternalAccountTypeCode;
 pub use external_xact_type_code::ExternalXactTypeCode;
 pub use fixed_len_char::FixedLenChar;
-pub use ids::{AccountBookId, AccountId, GeneralLedgerId, PeriodId};
+pub use ids::{AccountId, GeneralLedgerId, PeriodId, SubLedgerId};
 pub use ledger_xact_type_code::{LedgerXactTypeCode, XACT_ACCOUNT, XACT_LEDGER};
 pub use xact_type::XactType;

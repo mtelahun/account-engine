@@ -125,6 +125,35 @@ impl Store for PostgresStore {
         Ok(res)
     }
 
+    async fn update_journal_transaction_line_account_posting_ref(
+        &self,
+        id: JournalTransactionId,
+        line: &journal::transaction::line::account::ActiveModel,
+    ) -> Result<u64, OrmError> {
+        let conn = self.get_connection().await?;
+        let sql = format!(
+            "UPDATE {} 
+                SET state=$1, posting_ref=$2
+                    WHERE journal_id=$3::JournalId AND timestamp=$4 and ledger_id=$5::AccountId",
+            journal::transaction::line::account::ActiveModel::NAME
+        );
+        let res = conn
+            .execute(
+                sql.as_str(),
+                &[
+                    &TransactionState::Posted,
+                    &line.posting_ref,
+                    &id.journal_id(),
+                    &id.timestamp(),
+                    &line.account_id,
+                ],
+            )
+            .await
+            .map_err(|e| OrmError::Internal(e.to_string()))?;
+
+        Ok(res)
+    }
+
     async fn find_ledger_by_no(
         &self,
         no: ArrayShortString,

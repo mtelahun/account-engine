@@ -73,18 +73,18 @@ pub mod account {
     pub struct Model {
         pub ledger_id: AccountId,
         pub timestamp: NaiveDateTime,
-        pub external_account_id: AccountId,
-        pub xact_type: XactType,
-        pub external_xact_type: ExternalXactTypeCode,
+        pub account_id: AccountId,
+        pub xact_type_code: XactType,
+        pub xact_type_external_code: ExternalXactTypeCode,
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct ActiveModel {
         pub ledger_id: AccountId,
         pub timestamp: NaiveDateTime,
-        pub external_account_id: AccountId,
-        pub transaction_type: XactType,
-        pub external_xact_type: ExternalXactTypeCode,
+        pub account_id: AccountId,
+        pub xact_type_code: XactType,
+        pub xact_type_external_code: ExternalXactTypeCode,
     }
 
     impl ActiveModel {

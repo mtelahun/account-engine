@@ -7,7 +7,8 @@ use crate::{
         ids::JournalId, ledger_xact_type_code, AccountId, JournalTransactionId, LedgerXactTypeCode,
     },
     resource::{
-        account_engine::AccountEngine, journal, ledger, ledger_xact_type, TransactionState,
+        account_engine::AccountEngine, external, journal, ledger, ledger_xact_type,
+        TransactionState,
     },
     store::{
         memory::store::MemoryStore, postgres::store::PostgresStore, OrmError, ResourceOperations,
@@ -39,7 +40,8 @@ where
             ledger_xact_type::Model,
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
-        > + Send
+        > + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
+        + Send
         + Sync
         + 'static,
 {
@@ -74,17 +76,19 @@ where
                         line.ledger_id.unwrap()
                     )));
                 }
-            } else if line.account_id.is_some() {
-                //     if self
-                //         .search_account(Some(vec![line.account_id.unwrap()]))
-                //         .await?
-                //         .is_empty()
-                //     {
-                //         return Err(OrmError::RecordNotFound(format!(
-                //             "account id: {}",
-                //             line.ledger_id.unwrap()
-                //         )));
-                //     }
+            } else if line.account_id.is_some()
+                && <R as ResourceOperations<
+                    external::account::Model,
+                    external::account::ActiveModel,
+                    AccountId,
+                >>::get(self.store(), Some(&vec![line.account_id.unwrap()]))
+                .await?
+                .is_empty()
+            {
+                return Err(ServiceError::EmptyRecord(format!(
+                    "account id: {}",
+                    line.account_id.unwrap()
+                )));
             }
         }
 
@@ -124,6 +128,7 @@ where
                     ledger_id: Some(jtx_line.ledger_id),
                     account_id: None,
                     xact_type: jtx_line.xact_type,
+                    xact_type_external: None,
                     amount: jtx_line.amount,
                     posting_ref: jtx_line.posting_ref,
                     state: jtx_line.state,
@@ -135,6 +140,7 @@ where
                     state: TransactionState::Pending,
                     account_id: line.account_id.unwrap(),
                     xact_type: line.xact_type,
+                    xact_type_external: line.xact_type_external,
                     amount: line.amount,
                     posting_ref: None,
                 };
@@ -150,6 +156,7 @@ where
                     ledger_id: None,
                     account_id: Some(jtx_line.account_id),
                     xact_type: jtx_line.xact_type,
+                    xact_type_external: jtx_line.xact_type_external,
                     amount: jtx_line.amount,
                     posting_ref: jtx_line.posting_ref,
                     state: jtx_line.state,
@@ -175,22 +182,42 @@ where
             JournalTransactionId,
         >>::get(self.store(), ids)
         .await?;
-        let record_lines = <R as ResourceOperations<
+        let ledger_lines = <R as ResourceOperations<
             journal::transaction::line::ledger::Model,
             journal::transaction::line::ledger::ActiveModel,
+            JournalTransactionId,
+        >>::get(self.store(), ids)
+        .await?;
+        let account_lines = <R as ResourceOperations<
+            journal::transaction::line::account::Model,
+            journal::transaction::line::account::ActiveModel,
             JournalTransactionId,
         >>::get(self.store(), ids)
         .await?;
 
         if !xacts.is_empty() {
             let mut lines = Vec::<journal::transaction::line::ActiveModel>::new();
-            for r in record_lines {
+            for r in ledger_lines {
                 lines.push(journal::transaction::line::ActiveModel {
                     journal_id: r.journal_id,
                     timestamp: r.timestamp,
                     ledger_id: Some(r.ledger_id),
                     account_id: None,
                     xact_type: r.xact_type,
+                    xact_type_external: None,
+                    amount: r.amount,
+                    state: r.state,
+                    posting_ref: r.posting_ref,
+                })
+            }
+            for r in account_lines {
+                lines.push(journal::transaction::line::ActiveModel {
+                    journal_id: r.journal_id,
+                    timestamp: r.timestamp,
+                    ledger_id: None,
+                    account_id: Some(r.account_id),
+                    xact_type: r.xact_type,
+                    xact_type_external: r.xact_type_external,
                     amount: r.amount,
                     state: r.state,
                     posting_ref: r.posting_ref,

@@ -18,7 +18,7 @@ CREATE TABLE general_ledger(
     PRIMARY KEY(id)
 );
 
-CREATE TABLE supporting_ledger(
+CREATE TABLE subsidiary_ledger(
     id SubLedgerId NOT NULL,
     name TEXT NOT NULL,
     ledger_id AccountId NOT NULL,

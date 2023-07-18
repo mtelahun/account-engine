@@ -26,14 +26,20 @@ impl
             timestamp: model.timestamp,
             account_id: model.account_id,
             xact_type: model.xact_type,
+            xact_type_external: model.xact_type_external,
             amount: model.amount,
             state: model.state,
             posting_ref: model.posting_ref,
         };
         let mut inner = self.inner.write().await;
-        inner
-            .journal_xact_line_account
-            .insert(jtx_id, jtx_line_account);
+        match inner.journal_xact_line_account.get_mut(&jtx_id) {
+            Some(val) => val.push(jtx_line_account),
+            None => {
+                inner
+                    .journal_xact_line_account
+                    .insert(jtx_id, vec![jtx_line_account]);
+            }
+        };
 
         Ok(jtx_line_account)
     }
@@ -45,14 +51,18 @@ impl
         let mut res = Vec::<journal::transaction::line::account::ActiveModel>::new();
         let inner = self.inner.read().await;
         if let Some(ids) = ids {
-            for value in inner.journal_xact_line_account.values() {
-                if ids.iter().any(|id| *id == value.id()) {
-                    res.push(*value)
+            for (key, lst) in inner.journal_xact_line_account.iter() {
+                if ids.iter().any(|id| id == key) {
+                    for v in lst.iter() {
+                        res.push(*v)
+                    }
                 }
             }
         } else {
-            for value in inner.journal_xact_line_account.values() {
-                res.push(*value)
+            for lst in inner.journal_xact_line_account.values() {
+                for v in lst.iter() {
+                    res.push(*v)
+                }
             }
         }
 

@@ -19,6 +19,12 @@ pub trait Store {
         line: &journal::transaction::line::ledger::ActiveModel,
     ) -> Result<u64, OrmError>;
 
+    async fn update_journal_transaction_line_account_posting_ref(
+        &self,
+        id: JournalTransactionId,
+        line: &journal::transaction::line::account::ActiveModel,
+    ) -> Result<u64, OrmError>;
+
     async fn find_ledger_by_no(
         &self,
         no: ArrayShortString,

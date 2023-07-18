@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::{
-    domain::JournalTransactionId,
+    domain::{ExternalXactTypeCode, JournalTransactionId},
     resource::journal,
     store::{postgres::store::PostgresStore, OrmError, Resource, ResourceOperations},
 };
@@ -131,11 +131,14 @@ impl
 
 impl From<Row> for journal::transaction::line::account::ActiveModel {
     fn from(value: Row) -> Self {
+        let str_xte: String = value.get("xact_type_external");
+        let xact_type_external_code = ExternalXactTypeCode::from(str_xte);
         Self {
             journal_id: value.get("journal_id"),
             timestamp: value.get("timestamp"),
             account_id: value.get("account_id"),
             xact_type: value.get("xact_type"),
+            xact_type_external: Some(xact_type_external_code),
             amount: value.get("amount"),
             state: value.get("state"),
             posting_ref: value.get("posting_ref"),

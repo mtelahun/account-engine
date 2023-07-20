@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::{AccountId, SubLedgerId},
+    domain::{AccountId, ExternalXactTypeCode, SubLedgerId},
     resource::{account_engine::AccountEngine, external, subsidiary_ledger},
     store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
     Store,
@@ -15,7 +15,11 @@ where
     R: Store
         + ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
         + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
-        + Send
+        + ResourceOperations<
+            external::transaction_type::Model,
+            external::transaction_type::ActiveModel,
+            ExternalXactTypeCode,
+        > + Send
         + Sync
         + 'static,
 {
@@ -46,6 +50,20 @@ where
         &self,
         ids: Option<&Vec<AccountId>>,
     ) -> Result<Vec<external::account::ActiveModel>, ServiceError> {
+        Ok(self.store().get(ids).await?)
+    }
+
+    async fn create_external_transaction_type(
+        &self,
+        model: &external::transaction_type::Model,
+    ) -> Result<external::transaction_type::ActiveModel, ServiceError> {
+        Ok(self.store().insert(model).await?)
+    }
+
+    async fn get_external_transaction_type(
+        &self,
+        ids: Option<&Vec<ExternalXactTypeCode>>,
+    ) -> Result<Vec<external::transaction_type::ActiveModel>, ServiceError> {
         Ok(self.store().get(ids).await?)
     }
 }

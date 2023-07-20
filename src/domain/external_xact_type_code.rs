@@ -35,6 +35,12 @@ impl ExternalXactTypeCode {
     }
 }
 
+impl From<&str> for ExternalXactTypeCode {
+    fn from(value: &str) -> Self {
+        ExternalXactTypeCode::from(value.to_string())
+    }
+}
+
 impl From<String> for ExternalXactTypeCode {
     fn from(value: String) -> Self {
         Self {

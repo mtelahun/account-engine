@@ -7,7 +7,7 @@ use crate::domain::{
 
 use super::{PostingRef, TransactionState};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Model {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,

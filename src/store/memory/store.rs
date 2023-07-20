@@ -7,9 +7,8 @@ use crate::{
     domain::{
         entity_code::EntityCode,
         ids::{InterimPeriodId, JournalId},
-        AccountId, ArrayCodeString, ArrayLongString, ArrayShortString, ExternalAccountTypeCode,
-        ExternalXactTypeCode, GeneralLedgerId, JournalTransactionId, LedgerXactTypeCode, PeriodId,
-        SubLedgerId,
+        AccountId, ArrayCodeString, ArrayLongString, ArrayShortString, ExternalXactTypeCode,
+        GeneralLedgerId, JournalTransactionId, LedgerXactTypeCode, PeriodId, SubLedgerId,
     },
     resource::{
         accounting_period, external, general_ledger,
@@ -52,9 +51,7 @@ pub(crate) struct Inner {
         HashMap<ExternalXactTypeCode, external::transaction_type::ActiveModel>,
     pub(crate) subsidary_ledger: HashMap<SubLedgerId, subsidiary_ledger::ActiveModel>,
     pub(crate) external_account: HashMap<AccountId, external::account::ActiveModel>,
-    pub(crate) external_account_type:
-        HashMap<ExternalAccountTypeCode, external::account_type::ActiveModel>,
-    pub(crate) entity_type: HashMap<EntityCode, external::entity_type::ActiveModel>,
+    pub(crate) _entity_type: HashMap<EntityCode, external::entity_type::ActiveModel>,
 }
 
 impl MemoryStore {
@@ -108,11 +105,7 @@ impl Inner {
             >::new(),
             subsidary_ledger: HashMap::<SubLedgerId, subsidiary_ledger::ActiveModel>::new(),
             external_account: HashMap::<AccountId, external::account::ActiveModel>::new(),
-            external_account_type: HashMap::<
-                ExternalAccountTypeCode,
-                external::account_type::ActiveModel,
-            >::new(),
-            entity_type: HashMap::<EntityCode, external::entity_type::ActiveModel>::new(),
+            _entity_type: HashMap::<EntityCode, external::entity_type::ActiveModel>::new(),
         };
         let code = LedgerXactTypeCode::from_str("LL").unwrap();
         res.ledger_xact_type.insert(

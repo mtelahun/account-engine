@@ -408,21 +408,16 @@ async fn journal_transaction_creation() {
         journal_id: state.journal.id,
         timestamp: now,
         ledger_id: Some(cash1.id),
-        account_id: None,
         xact_type: XactType::Dr,
-        state: TransactionState::Pending,
-        amount: Decimal::ZERO,
-        posting_ref: None,
+        ..Default::default()
     };
     let jx1_line2 = journal::transaction::line::Model {
         journal_id: state.journal.id,
         timestamp: now,
         ledger_id: Some(bank1.id),
-        account_id: None,
         xact_type: XactType::Cr,
-        state: TransactionState::Pending,
-        amount: Decimal::ZERO,
         posting_ref: None,
+        ..Default::default()
     };
     let jx1 = journal::transaction::Model {
         journal_id: state.journal.id,
@@ -849,21 +844,17 @@ impl TestState {
             journal_id: journal_id,
             timestamp,
             ledger_id: Some(account_dr_id),
-            account_id: None,
             xact_type: XactType::Dr,
             amount,
-            state: TransactionState::Pending,
-            posting_ref: None,
+            ..Default::default()
         };
         let line2 = journal::transaction::line::Model {
             journal_id: journal_id,
             timestamp,
             ledger_id: Some(account_cr_id),
-            account_id: None,
             xact_type: XactType::Cr,
             amount,
-            state: TransactionState::Pending,
-            posting_ref: None,
+            ..Default::default()
         };
         let model = journal::transaction::Model {
             journal_id,
@@ -880,22 +871,16 @@ impl TestState {
         let line1 = journal::transaction::line::Model {
             journal_id: self.journal.id,
             timestamp,
-            ledger_id: None,
-            account_id: None,
             xact_type: XactType::Dr,
-            state: TransactionState::Pending,
             amount: Decimal::ZERO,
-            posting_ref: None,
+            ..Default::default()
         };
         let line2 = journal::transaction::line::Model {
             journal_id: self.journal.id,
             timestamp,
-            ledger_id: None,
-            account_id: None,
             xact_type: XactType::Cr,
-            state: TransactionState::Pending,
             amount: Decimal::ZERO,
-            posting_ref: None,
+            ..Default::default()
         };
         let jx = journal::transaction::Model {
             journal_id: self.journal.id,

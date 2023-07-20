@@ -20,7 +20,7 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
         let account = external::account::ActiveModel {
             id,
             subsidiary_ledger_id: model.subsidiary_ledger_id,
-            entity_code: model.entity_code,
+            entity_type_code: model.entity_type_code,
             account_no: model.account_no,
             date_opened: model.date_opened,
         };
@@ -69,7 +69,7 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
         let account = external::account::ActiveModel {
             id: model.id,
             subsidiary_ledger_id: model.subsidiary_ledger_id,
-            entity_code: model.entity_code,
+            entity_type_code: model.entity_type_code,
             account_no: model.account_no,
             date_opened: model.date_opened,
         };

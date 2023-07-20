@@ -49,11 +49,11 @@ impl
         ids: Option<&Vec<JournalTransactionId>>,
     ) -> Result<Vec<journal::transaction::line::ledger::ActiveModel>, OrmError> {
         let search_one = format!(
-            "SELECT * FROM {} WHERE journal_id=$1::JournalId AND timestamp=$2",
+            "SELECT * FROM {} WHERE journal_id=$1::JournalId AND timestamp=$2 ORDER BY xact_type DESC",
             journal::transaction::line::ledger::ActiveModel::NAME
         );
         let search_all = format!(
-            "SELECT * FROM {}",
+            "SELECT * FROM {} ORDER BY xact_type DESC",
             journal::transaction::line::ledger::ActiveModel::NAME
         );
         let conn = self.get_connection().await?;

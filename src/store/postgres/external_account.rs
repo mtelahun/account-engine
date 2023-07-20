@@ -28,7 +28,7 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
                 &[
                     &AccountId::new(),
                     &model.subsidiary_ledger_id,
-                    &model.entity_code,
+                    &model.entity_type_code,
                     &model.account_no,
                     &model.date_opened,
                 ],
@@ -78,7 +78,7 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
             query.as_str(),
             &[
                 &model.subsidiary_ledger_id,
-                &model.entity_code,
+                &model.entity_type_code,
                 &model.account_no,
                 &model.date_opened,
                 &model.id,
@@ -114,7 +114,7 @@ impl From<Row> for external::account::ActiveModel {
         Self {
             id: value.get("id"),
             subsidiary_ledger_id: value.get("subsidiary_ledger_id"),
-            entity_code: value.get("entity_code"),
+            entity_type_code: value.get("entity_type_code"),
             account_no: value.get("account_no"),
             date_opened: value.get("opened_date"),
         }

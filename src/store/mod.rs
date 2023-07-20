@@ -115,10 +115,6 @@ impl Resource for external::transaction_type::ActiveModel {
     const NAME: &'static str = "transaction_type_external";
 }
 
-impl Resource for external::account_type::ActiveModel {
-    const NAME: &'static str = "external_account_type";
-}
-
 impl Resource for subsidiary_ledger::ActiveModel {
     const NAME: &'static str = "subsidiary_ledger";
 }

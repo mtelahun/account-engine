@@ -392,21 +392,17 @@ async fn journal_transaction_creation() {
         journal_id: state.journal.id,
         timestamp: now,
         ledger_id: Some(cash1.id),
-        account_id: None,
         xact_type: XactType::Dr,
-        state: TransactionState::Pending,
         amount: Decimal::ZERO,
-        posting_ref: None,
+        ..Default::default()
     };
     let jx1_line2 = journal::transaction::line::Model {
         journal_id: state.journal.id,
         timestamp: now,
         ledger_id: Some(bank1.id),
-        account_id: None,
         xact_type: XactType::Cr,
-        state: TransactionState::Pending,
         amount: Decimal::ZERO,
-        posting_ref: None,
+        ..Default::default()
     };
     let jx1 = journal::transaction::Model {
         journal_id: state.journal.id,
@@ -765,11 +761,9 @@ async fn post_journal_transaction_unbalanced() {
         journal_id: state.journal.id,
         timestamp: timestamp(),
         ledger_id: Some(bank.id),
-        account_id: None,
         xact_type: XactType::Cr,
-        state: TransactionState::Pending,
         amount: Decimal::ONE,
-        posting_ref: None,
+        ..Default::default()
     };
     let model = journal::transaction::Model {
         journal_id: state.journal.id,
@@ -805,6 +799,7 @@ async fn ledger_and_external_account() {
     let (_, ledger, account) = state.create_subsidiary("A/R").await;
     let mut jxact = state.simple_xact_model();
     jxact.line1.account_id = Some(account.id);
+    jxact.line1.xact_type_external = Some("DF".into());
     jxact.line2.ledger_id = Some(ledger.id);
 
     // Act
@@ -827,6 +822,9 @@ async fn ledger_and_external_account() {
         .journal_entries(account.id)
         .await
         .expect("failed to get journal entries for subsidiary account");
+    println!("dr_e: {:#?}\n", dr_e);
+    println!("cr_e: {:#?}\n", cr_e);
+    println!("memory_store: {:#?}\n", LedgerService::store(&state.engine));
     assert_eq!(
         cr_e.len(),
         1,
@@ -869,12 +867,27 @@ impl TestState {
             name: ArrayLongString::from_str("My Company").unwrap(),
             currency_code: ArrayCodeString::from_str("USD").unwrap(),
         };
-        let ledger = engine.update_general_ledger(&ledger).await.unwrap();
+        let ledger = engine
+            .update_general_ledger(&ledger)
+            .await
+            .expect("failed to update general ledger");
         let journal = journal::Model {
             name: "General Journal".into(),
             code: "G".into(),
         };
-        let journal = engine.create_journal(&journal).await.unwrap();
+        let journal = engine
+            .create_journal(&journal)
+            .await
+            .expect("failed to create main journal");
+        let model = external::transaction_type::Model {
+            code: "DF".into(),
+            entity_type_code: "NO".into(),
+            description: "Default transaction".into(),
+        };
+        let _ = engine
+            .create_external_transaction_type(&model)
+            .await
+            .expect("failed to create external transaction type");
 
         Self {
             engine,
@@ -937,7 +950,7 @@ impl TestState {
 
         let model = external::account::Model {
             subsidiary_ledger_id: sub.id,
-            entity_code: "PE".into(),
+            entity_type_code: "PE".into(),
             account_no: random_account_no().into(),
             date_opened: NaiveDate::from_ymd_opt(2023, 1, 1).unwrap(),
         };
@@ -976,21 +989,17 @@ impl TestState {
             journal_id: journal_id,
             timestamp: timestamp(),
             ledger_id: Some(account_dr_id),
-            account_id: None,
             xact_type: XactType::Dr,
-            state: TransactionState::Pending,
             amount: amount,
-            posting_ref: None,
+            ..Default::default()
         };
         let cr_line = journal::transaction::line::Model {
             journal_id: journal_id,
             timestamp: timestamp(),
             ledger_id: Some(account_cr_id),
-            account_id: None,
             xact_type: XactType::Cr,
-            state: TransactionState::Pending,
             amount: amount,
-            posting_ref: None,
+            ..Default::default()
         };
         let model = journal::transaction::Model {
             journal_id,
@@ -1025,22 +1034,16 @@ impl TestState {
         let line1 = journal::transaction::line::Model {
             journal_id: self.journal.id,
             timestamp,
-            ledger_id: None,
-            account_id: None,
             xact_type: XactType::Dr,
-            state: TransactionState::Pending,
             amount: Decimal::ONE,
-            posting_ref: None,
+            ..Default::default()
         };
         let line2 = journal::transaction::line::Model {
             journal_id: self.journal.id,
             timestamp,
-            ledger_id: None,
-            account_id: None,
             xact_type: XactType::Cr,
-            state: TransactionState::Pending,
             amount: Decimal::ONE,
-            posting_ref: None,
+            ..Default::default()
         };
         let jx = journal::transaction::Model {
             journal_id: self.journal.id,

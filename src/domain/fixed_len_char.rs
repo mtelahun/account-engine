@@ -33,6 +33,12 @@ impl<const L: usize> FixedLenChar<L> {
     }
 }
 
+impl<const L: usize> From<&str> for FixedLenChar<L> {
+    fn from(value: &str) -> Self {
+        FixedLenChar::<L>::from(value.to_string())
+    }
+}
+
 impl<const L: usize> From<String> for FixedLenChar<L> {
     fn from(value: String) -> Self {
         let mut value = value;

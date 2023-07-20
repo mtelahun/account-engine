@@ -8,27 +8,27 @@ CREATE TABLE account_type(
 );
 
 CREATE TABLE ledger(
-    id AccountId NOT NULL,
+    id LedgerId NOT NULL,
     ledger_no TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     ledger_type LEDGERTYPE NOT NULL,
-    parent_id AccountId,
+    parent_id LedgerId,
     currency_code CHAR(3),
     PRIMARY KEY(id)
 );
 
 CREATE TABLE ledger_intermediate(
-    id AccountId UNIQUE NOT NULL,
+    id LedgerId UNIQUE NOT NULL,
     CONSTRAINT fk_ledger_id FOREIGN KEY(id) REFERENCES ledger(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE ledger_leaf(
-    id AccountId UNIQUE NOT NULL,
+    id LedgerId UNIQUE NOT NULL,
     CONSTRAINT fk_ledger_id FOREIGN KEY(id) REFERENCES ledger(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE ledger_derived(
-    id AccountId UNIQUE NOT NULL,
+    id LedgerId UNIQUE NOT NULL,
     supporting_ledger_id SubLedgerId NOT NULL,
     CONSTRAINT fk_ledger_id FOREIGN KEY(id) REFERENCES ledger(id) ON DELETE RESTRICT
 );

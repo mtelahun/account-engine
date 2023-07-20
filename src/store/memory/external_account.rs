@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::AccountId,
+    domain::LedgerId,
     resource::external,
     store::{OrmError, ResourceOperations},
 };
@@ -9,14 +9,14 @@ use crate::{
 use super::store::MemoryStore;
 
 #[async_trait]
-impl ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
+impl ResourceOperations<external::account::Model, external::account::ActiveModel, LedgerId>
     for MemoryStore
 {
     async fn insert(
         &self,
         model: &external::account::Model,
     ) -> Result<external::account::ActiveModel, OrmError> {
-        let id = AccountId::new();
+        let id = LedgerId::new();
         let account = external::account::ActiveModel {
             id,
             subsidiary_ledger_id: model.subsidiary_ledger_id,
@@ -42,7 +42,7 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
 
     async fn get(
         &self,
-        ids: Option<&Vec<AccountId>>,
+        ids: Option<&Vec<LedgerId>>,
     ) -> Result<Vec<external::account::ActiveModel>, OrmError> {
         let mut res = Vec::<external::account::ActiveModel>::new();
         let inner = self.inner.read().await;
@@ -87,7 +87,7 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
         )));
     }
 
-    async fn delete(&self, id: AccountId) -> Result<u64, OrmError> {
+    async fn delete(&self, id: LedgerId) -> Result<u64, OrmError> {
         let mut inner = self.inner.write().await;
         match inner.external_account.remove(&id) {
             Some(_) => return Ok(1),
@@ -95,11 +95,11 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
         }
     }
 
-    async fn archive(&self, _id: AccountId) -> Result<u64, OrmError> {
+    async fn archive(&self, _id: LedgerId) -> Result<u64, OrmError> {
         todo!()
     }
 
-    async fn unarchive(&self, _id: AccountId) -> Result<u64, OrmError> {
+    async fn unarchive(&self, _id: LedgerId) -> Result<u64, OrmError> {
         todo!()
     }
 }

@@ -2,21 +2,21 @@ use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::{
-    domain::AccountId,
+    domain::LedgerId,
     resource::ledger,
     store::{postgres::store::PostgresStore, OrmError, Resource, ResourceOperations},
 };
 
 #[async_trait]
-impl ResourceOperations<ledger::intermediate::Model, ledger::intermediate::ActiveModel, AccountId>
+impl ResourceOperations<ledger::intermediate::Model, ledger::intermediate::ActiveModel, LedgerId>
     for PostgresStore
 {
     async fn get(
         &self,
-        ids: Option<&Vec<AccountId>>,
+        ids: Option<&Vec<LedgerId>>,
     ) -> Result<Vec<ledger::intermediate::ActiveModel>, OrmError> {
         let search_one = format!(
-            "SELECT * FROM {} WHERE id = any ($1::AccountId[])",
+            "SELECT * FROM {} WHERE id = any ($1::LedgerId[])",
             ledger::intermediate::ActiveModel::NAME
         );
         let search_all = format!("SELECT * FROM {}", ledger::ActiveModel::NAME);
@@ -78,7 +78,7 @@ impl ResourceOperations<ledger::intermediate::Model, ledger::intermediate::Activ
         Ok(0)
     }
 
-    async fn delete(&self, id: AccountId) -> Result<u64, OrmError> {
+    async fn delete(&self, id: LedgerId) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
             "DELETE FROM {} WHERE id = $1::LedgerId;",
@@ -90,10 +90,10 @@ impl ResourceOperations<ledger::intermediate::Model, ledger::intermediate::Activ
             .map_err(|e| OrmError::Internal(e.to_string()))
     }
 
-    async fn archive(&self, id: AccountId) -> Result<u64, OrmError> {
+    async fn archive(&self, id: LedgerId) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
-            "UPDATE {} SET archived = true WHERE id = $1::AccountId;",
+            "UPDATE {} SET archived = true WHERE id = $1::LedgerId;",
             ledger::intermediate::ActiveModel::NAME
         );
 
@@ -102,10 +102,10 @@ impl ResourceOperations<ledger::intermediate::Model, ledger::intermediate::Activ
             .map_err(|e| OrmError::Internal(e.to_string()))
     }
 
-    async fn unarchive(&self, id: AccountId) -> Result<u64, OrmError> {
+    async fn unarchive(&self, id: LedgerId) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
-            "UPDATE {} SET archived = false WHERE id = $1::AccountId;",
+            "UPDATE {} SET archived = false WHERE id = $1::LedgerId;",
             ledger::intermediate::ActiveModel::NAME
         );
 

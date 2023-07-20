@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::{AccountId, ExternalXactTypeCode, SubLedgerId},
+    domain::{ExternalXactTypeCode, LedgerId, SubLedgerId},
     resource::{account_engine::AccountEngine, external, subsidiary_ledger},
     store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
     Store,
@@ -14,7 +14,7 @@ pub trait SubsidiaryLedgerService<R>
 where
     R: Store
         + ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
-        + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
+        + ResourceOperations<external::account::Model, external::account::ActiveModel, LedgerId>
         + ResourceOperations<
             external::transaction_type::Model,
             external::transaction_type::ActiveModel,
@@ -48,7 +48,7 @@ where
 
     async fn get_accounts(
         &self,
-        ids: Option<&Vec<AccountId>>,
+        ids: Option<&Vec<LedgerId>>,
     ) -> Result<Vec<external::account::ActiveModel>, ServiceError> {
         Ok(self.store().get(ids).await?)
     }

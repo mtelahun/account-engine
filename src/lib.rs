@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use domain::{AccountId, ArrayShortString, JournalTransactionId};
+use domain::{ArrayShortString, JournalTransactionId, LedgerId};
 use resource::{
     accounting_period, journal,
     ledger::{self, transaction},
@@ -32,12 +32,12 @@ pub trait Store {
 
     async fn journal_entries_by_ledger(
         &self,
-        ids: &[AccountId],
+        ids: &[LedgerId],
     ) -> Result<Vec<ledger::transaction::ActiveModel>, OrmError>;
 
     async fn journal_entry_ledgers_by_ledger(
         &self,
-        ids: &[AccountId],
+        ids: &[LedgerId],
     ) -> Result<Vec<transaction::ledger::ActiveModel>, OrmError>;
 
     async fn find_journal_by_code<'a>(

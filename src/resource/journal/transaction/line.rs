@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
 use crate::domain::{
-    ids::JournalId, xact_type::XactType, AccountId, ExternalXactTypeCode, JournalTransactionId,
+    ids::JournalId, xact_type::XactType, ExternalXactTypeCode, JournalTransactionId, LedgerId,
 };
 
 use super::{PostingRef, TransactionState};
@@ -11,8 +11,8 @@ use super::{PostingRef, TransactionState};
 pub struct Model {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
-    pub ledger_id: Option<AccountId>,
-    pub account_id: Option<AccountId>,
+    pub ledger_id: Option<LedgerId>,
+    pub account_id: Option<LedgerId>,
     pub xact_type: XactType,
     pub xact_type_external: Option<ExternalXactTypeCode>,
     pub amount: Decimal,
@@ -24,8 +24,8 @@ pub struct Model {
 pub struct ActiveModel {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
-    pub ledger_id: Option<AccountId>,
-    pub account_id: Option<AccountId>,
+    pub ledger_id: Option<LedgerId>,
+    pub account_id: Option<LedgerId>,
     pub xact_type: XactType,
     pub xact_type_external: Option<ExternalXactTypeCode>,
     pub amount: Decimal,
@@ -76,7 +76,7 @@ pub mod ledger {
     use postgres_types::{FromSql, ToSql};
     use rust_decimal::Decimal;
 
-    use crate::domain::{ids::JournalId, xact_type::XactType, AccountId, JournalTransactionId};
+    use crate::domain::{ids::JournalId, xact_type::XactType, JournalTransactionId, LedgerId};
 
     use super::{PostingRef, TransactionState};
 
@@ -84,7 +84,7 @@ pub mod ledger {
     pub struct Model {
         pub journal_id: JournalId,
         pub timestamp: NaiveDateTime,
-        pub ledger_id: AccountId,
+        pub ledger_id: LedgerId,
         pub xact_type: XactType,
         pub amount: Decimal,
         pub state: TransactionState,
@@ -95,7 +95,7 @@ pub mod ledger {
     pub struct ActiveModel {
         pub journal_id: JournalId,
         pub timestamp: NaiveDateTime,
-        pub ledger_id: AccountId,
+        pub ledger_id: LedgerId,
         pub xact_type: XactType,
         pub amount: Decimal,
         pub state: TransactionState,
@@ -115,7 +115,7 @@ pub mod account {
     use rust_decimal::Decimal;
 
     use crate::domain::{
-        ids::JournalId, xact_type::XactType, AccountId, ExternalXactTypeCode, JournalTransactionId,
+        ids::JournalId, xact_type::XactType, ExternalXactTypeCode, JournalTransactionId, LedgerId,
     };
 
     use super::{PostingRef, TransactionState};
@@ -124,7 +124,7 @@ pub mod account {
     pub struct Model {
         pub journal_id: JournalId,
         pub timestamp: NaiveDateTime,
-        pub account_id: AccountId,
+        pub account_id: LedgerId,
         pub xact_type: XactType,
         pub xact_type_external: Option<ExternalXactTypeCode>,
         pub amount: Decimal,
@@ -136,7 +136,7 @@ pub mod account {
     pub struct ActiveModel {
         pub journal_id: JournalId,
         pub timestamp: NaiveDateTime,
-        pub account_id: AccountId,
+        pub account_id: LedgerId,
         pub xact_type: XactType,
         pub xact_type_external: Option<ExternalXactTypeCode>,
         pub amount: Decimal,

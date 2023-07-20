@@ -1,6 +1,6 @@
 use crate::{
     domain::{
-        ids::JournalId, AccountId, GeneralLedgerId, JournalTransactionId, LedgerXactTypeCode,
+        ids::JournalId, GeneralLedgerId, JournalTransactionId, LedgerId, LedgerXactTypeCode,
         PeriodId, SubLedgerId,
     },
     service::ServiceError,
@@ -17,7 +17,7 @@ pub struct AccountEngine<R>
 where
     R: Store
         + ResourceOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>
+        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
         + ResourceOperations<ledger::transaction::Model, ledger::transaction::ActiveModel, LedgerKey>
         + ResourceOperations<
             ledger::transaction::ledger::Model,
@@ -41,7 +41,7 @@ where
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
         > + ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
-        + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>,
+        + ResourceOperations<external::account::Model, external::account::ActiveModel, LedgerId>,
 {
     pub(crate) repository: R,
 }
@@ -50,7 +50,7 @@ impl<R> AccountEngine<R>
 where
     R: Store
         + ResourceOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>
+        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
         + ResourceOperations<ledger::transaction::Model, ledger::transaction::ActiveModel, LedgerKey>
         + ResourceOperations<
             ledger::transaction::ledger::Model,
@@ -75,7 +75,7 @@ where
             LedgerXactTypeCode,
         > + ResourceOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
         + ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
-        + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
+        + ResourceOperations<external::account::Model, external::account::ActiveModel, LedgerId>
         + Send
         + Sync
         + 'static,

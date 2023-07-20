@@ -1,6 +1,6 @@
 use postgres_types::{FromSql, ToSql};
 
-use crate::{domain::AccountId, resource::LedgerKey};
+use crate::{domain::LedgerId, resource::LedgerKey};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, ToSql, FromSql)]
 #[postgres(name = "transactionstate")]
@@ -23,7 +23,7 @@ pub enum TransactionAccountType {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ToSql, FromSql)]
 pub struct PostingRef {
     pub(crate) key: LedgerKey,
-    pub(crate) account_id: AccountId,
+    pub(crate) account_id: LedgerId,
 }
 
 impl std::fmt::Display for TransactionState {

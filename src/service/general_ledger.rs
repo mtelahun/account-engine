@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::{
     domain::{
         ids::{InterimPeriodId, JournalId},
-        AccountId, GeneralLedgerId, PeriodId,
+        GeneralLedgerId, LedgerId, PeriodId,
     },
     resource::{
         account_engine::AccountEngine,
@@ -22,12 +22,9 @@ pub trait GeneralLedgerService<R>
 where
     R: Store
         + ResourceOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>
-        + ResourceOperations<
-            ledger::intermediate::Model,
-            ledger::intermediate::ActiveModel,
-            AccountId,
-        > + ResourceOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, AccountId>
+        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
+        + ResourceOperations<ledger::intermediate::Model, ledger::intermediate::ActiveModel, LedgerId>
+        + ResourceOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, LedgerId>
         + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
         + ResourceOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
         + ResourceOperations<
@@ -100,10 +97,10 @@ where
 
     async fn get_ledgers(
         &self,
-        ids: Option<&Vec<AccountId>>,
+        ids: Option<&Vec<LedgerId>>,
     ) -> Result<Vec<ledger::ActiveModel>, ServiceError> {
         Ok(
-            <R as ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>>::get(
+            <R as ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>>::get(
                 self.store(),
                 ids,
             )
@@ -122,15 +119,7 @@ where
         &self,
         model: &journal::Model,
     ) -> Result<journal::ActiveModel, ServiceError> {
-        let id = JournalId::new();
-        let journal = journal::ActiveModel {
-            id,
-            name: model.name,
-            code: model.code,
-        };
-        self.store().insert(model).await?;
-
-        Ok(journal)
+        Ok(self.store().insert(model).await?)
     }
 
     async fn get_journals(

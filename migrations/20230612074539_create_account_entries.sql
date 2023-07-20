@@ -1,6 +1,6 @@
 -- Add migration script here
 CREATE TABLE ledger_transaction(
-    ledger_id AccountId NOT NULL,
+    ledger_id LedgerId NOT NULL,
     timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     ledger_transaction_type_code CHAR(2) NOT NULL,
     journal_id JournalId NOT NULL,
@@ -11,20 +11,20 @@ CREATE TABLE ledger_transaction(
             REFERENCES ledger_transaction_type(code),
     CONSTRAINT fk_journal_transaction_record
         FOREIGN KEY(journal_id, timestamp)
-            REFERENCES journal_transaction_record(journal_id, timestamp)
+            REFERENCES general_journal_transaction_record(journal_id, timestamp)
 );
 
 CREATE TABLE ledger_transaction_ledger(
-    ledger_id AccountId NOT NULL,
+    ledger_id LedgerId NOT NULL,
     timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    ledger_dr_id AccountId NOT NULL,
+    ledger_dr_id LedgerId NOT NULL,
     CONSTRAINT fk_ledger_transaction
         FOREIGN KEY(ledger_id, timestamp)
             REFERENCES ledger_transaction(ledger_id, timestamp)
 );
 
 CREATE TABLE ledger_transaction_account(
-    ledger_id AccountId NOT NULL,
+    ledger_id LedgerId NOT NULL,
     timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     account_id AccountId NOT NULL,
     transaction_type_code CHAR(2) NOT NULL,
@@ -44,17 +44,17 @@ CREATE TABLE ledger_transaction_account(
 );
 
 CREATE TYPE "LedgerKey" AS (
-    ledger_id AccountId,
+    ledger_id LedgerId,
     timestamp TIMESTAMP WITHOUT TIME ZONE
 );
 
 CREATE TYPE "PostingRef" AS (
     key "LedgerKey",
-    account_id AccountId
+    account_id LedgerId
 );
 
-ALTER TABLE journal_transaction_line_ledger
+ALTER TABLE general_journal_transaction_line_ledger
     ADD COLUMN posting_ref "PostingRef";
 
-ALTER TABLE journal_transaction_line_account
+ALTER TABLE general_journal_transaction_line_account
     ADD COLUMN posting_ref "PostingRef";

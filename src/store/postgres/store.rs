@@ -6,7 +6,7 @@ use mobc::{Connection, Pool};
 use mobc_postgres::PgConnectionManager;
 use tokio_postgres::{Config, NoTls};
 
-use crate::domain::{AccountId, ArrayShortString, JournalTransactionId};
+use crate::domain::{ArrayShortString, JournalTransactionId, LedgerId};
 use crate::resource::{
     accounting_period, journal,
     ledger::{self, transaction},
@@ -105,7 +105,7 @@ impl Store for PostgresStore {
         let sql = format!(
             "UPDATE {} 
                 SET state=$1, posting_ref=$2
-                    WHERE journal_id=$3::JournalId AND timestamp=$4 and ledger_id=$5::AccountId",
+                    WHERE journal_id=$3::JournalId AND timestamp=$4 and ledger_id=$5::LedgerId",
             journal::transaction::line::ledger::ActiveModel::NAME
         );
         let res = conn
@@ -134,7 +134,7 @@ impl Store for PostgresStore {
         let sql = format!(
             "UPDATE {} 
                 SET state=$1, posting_ref=$2
-                    WHERE journal_id=$3::JournalId AND timestamp=$4 and ledger_id=$5::AccountId",
+                    WHERE journal_id=$3::JournalId AND timestamp=$4 and ledger_id=$5::LedgerId",
             journal::transaction::line::account::ActiveModel::NAME
         );
         let res = conn
@@ -182,10 +182,10 @@ impl Store for PostgresStore {
 
     async fn journal_entries_by_ledger(
         &self,
-        ids: &[AccountId],
+        ids: &[LedgerId],
     ) -> Result<Vec<ledger::transaction::ActiveModel>, OrmError> {
         let search_one = format!(
-            "SELECT * FROM {} WHERE ledger_id = any ($1::AccountId[])",
+            "SELECT * FROM {} WHERE ledger_id = any ($1::LedgerId[])",
             ledger::transaction::ActiveModel::NAME
         );
         let conn = self.get_connection().await?;
@@ -205,10 +205,10 @@ impl Store for PostgresStore {
 
     async fn journal_entry_ledgers_by_ledger(
         &self,
-        ids: &[AccountId],
+        ids: &[LedgerId],
     ) -> Result<Vec<transaction::ledger::ActiveModel>, OrmError> {
         let search_one = format!(
-            "SELECT * FROM {} WHERE ledger_dr_id = any ($1::AccountId[])",
+            "SELECT * FROM {} WHERE ledger_dr_id = any ($1::LedgerId[])",
             transaction::ledger::ActiveModel::NAME
         );
         let conn = self.get_connection().await?;

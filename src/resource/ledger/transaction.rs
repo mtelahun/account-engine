@@ -1,13 +1,13 @@
 use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
-use crate::domain::{AccountId, JournalTransactionId, LedgerXactTypeCode};
+use crate::domain::{JournalTransactionId, LedgerId, LedgerXactTypeCode};
 
 use super::journal_entry::LedgerKey;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Model {
-    pub ledger_id: AccountId,
+    pub ledger_id: LedgerId,
     pub timestamp: NaiveDateTime,
     pub ledger_xact_type_code: LedgerXactTypeCode,
     pub amount: Decimal,
@@ -16,7 +16,7 @@ pub struct Model {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ActiveModel {
-    pub ledger_id: AccountId,
+    pub ledger_id: LedgerId,
     pub timestamp: NaiveDateTime,
     pub ledger_xact_type_code: LedgerXactTypeCode,
     pub amount: Decimal,
@@ -35,20 +35,20 @@ impl ActiveModel {
 pub mod ledger {
     use chrono::NaiveDateTime;
 
-    use crate::{domain::AccountId, resource::ledger::journal_entry::LedgerKey};
+    use crate::{domain::LedgerId, resource::ledger::journal_entry::LedgerKey};
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct Model {
-        pub ledger_id: AccountId,
+        pub ledger_id: LedgerId,
         pub timestamp: NaiveDateTime,
-        pub ledger_dr_id: AccountId,
+        pub ledger_dr_id: LedgerId,
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct ActiveModel {
-        pub ledger_id: AccountId,
+        pub ledger_id: LedgerId,
         pub timestamp: NaiveDateTime,
-        pub ledger_dr_id: AccountId,
+        pub ledger_dr_id: LedgerId,
     }
 
     impl ActiveModel {
@@ -65,24 +65,24 @@ pub mod account {
     use chrono::NaiveDateTime;
 
     use crate::{
-        domain::{AccountId, ExternalXactTypeCode, XactType},
+        domain::{ExternalXactTypeCode, LedgerId, XactType},
         resource::ledger::journal_entry::LedgerKey,
     };
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct Model {
-        pub ledger_id: AccountId,
+        pub ledger_id: LedgerId,
         pub timestamp: NaiveDateTime,
-        pub account_id: AccountId,
+        pub account_id: LedgerId,
         pub xact_type_code: XactType,
         pub xact_type_external_code: ExternalXactTypeCode,
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct ActiveModel {
-        pub ledger_id: AccountId,
+        pub ledger_id: LedgerId,
         pub timestamp: NaiveDateTime,
-        pub account_id: AccountId,
+        pub account_id: LedgerId,
         pub xact_type_code: XactType,
         pub xact_type_external_code: ExternalXactTypeCode,
     }

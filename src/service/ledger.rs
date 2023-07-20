@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use journal_entry::LedgerKey;
 
 use crate::{
-    domain::{AccountId, XactType},
+    domain::{LedgerId, XactType},
     resource::{account_engine::AccountEngine, ledger, ledger::journal_entry, PostingRef},
     store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
     Store,
@@ -14,13 +14,10 @@ use super::ServiceError;
 pub trait LedgerService<R>
 where
     R: Store
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>
-        + ResourceOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, AccountId>
-        + ResourceOperations<
-            ledger::intermediate::Model,
-            ledger::intermediate::ActiveModel,
-            AccountId,
-        > + ResourceOperations<ledger::transaction::Model, ledger::transaction::ActiveModel, LedgerKey>
+        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
+        + ResourceOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, LedgerId>
+        + ResourceOperations<ledger::intermediate::Model, ledger::intermediate::ActiveModel, LedgerId>
+        + ResourceOperations<ledger::transaction::Model, ledger::transaction::ActiveModel, LedgerKey>
         + ResourceOperations<
             ledger::transaction::ledger::Model,
             ledger::transaction::ledger::ActiveModel,
@@ -32,7 +29,7 @@ where
 
     async fn journal_entries(
         &self,
-        id: AccountId,
+        id: LedgerId,
     ) -> Result<Vec<ledger::journal_entry::ActiveModel>, ServiceError> {
         let mut res = Vec::<ledger::journal_entry::ActiveModel>::new();
         let entries = self.store().journal_entries_by_ledger(&[id]).await?;

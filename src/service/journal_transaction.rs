@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::{ids::JournalId, AccountId, JournalTransactionId, LedgerXactTypeCode, XactType},
+    domain::{ids::JournalId, JournalTransactionId, LedgerId, LedgerXactTypeCode, XactType},
     resource::{
         account_engine::AccountEngine, external, journal, ledger, ledger_xact_type, LedgerKey,
         PostingRef, TransactionState,
@@ -16,7 +16,7 @@ use super::{JournalService, ServiceError};
 pub trait JournalTransactionService<R>: JournalService<R>
 where
     R: Store
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>
+        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
         + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
         + ResourceOperations<
             journal::transaction::record::Model,
@@ -43,7 +43,7 @@ where
             ledger_xact_type::Model,
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
-        > + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
+        > + ResourceOperations<external::account::Model, external::account::ActiveModel, LedgerId>
         + Send
         + Sync
         + 'static,

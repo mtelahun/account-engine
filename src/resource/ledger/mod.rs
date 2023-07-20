@@ -1,8 +1,8 @@
 use postgres_types::{FromSql, ToSql};
 
 use crate::domain::{
-    array_long_string::ArrayLongString, array_short_string::ArrayShortString, AccountId,
-    ArrayCodeString,
+    array_long_string::ArrayLongString, array_short_string::ArrayShortString, ArrayCodeString,
+    LedgerId,
 };
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, ToSql, FromSql)]
@@ -20,17 +20,17 @@ pub enum LedgerType {
 pub struct Model {
     pub ledger_no: ArrayShortString,
     pub ledger_type: LedgerType,
-    pub parent_id: Option<AccountId>,
+    pub parent_id: Option<LedgerId>,
     pub name: ArrayLongString,
     pub currency_code: Option<ArrayCodeString>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ActiveModel {
-    pub id: AccountId,
+    pub id: LedgerId,
     pub ledger_no: ArrayShortString,
     pub ledger_type: LedgerType,
-    pub parent_id: Option<AccountId>,
+    pub parent_id: Option<LedgerId>,
     pub name: ArrayLongString,
     pub currency_code: Option<ArrayCodeString>,
 }

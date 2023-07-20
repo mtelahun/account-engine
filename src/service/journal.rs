@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     domain::{
-        ids::JournalId, ledger_xact_type_code, AccountId, JournalTransactionId, LedgerXactTypeCode,
+        ids::JournalId, ledger_xact_type_code, JournalTransactionId, LedgerId, LedgerXactTypeCode,
     },
     resource::{
         account_engine::AccountEngine, external, journal, ledger, ledger_xact_type,
@@ -22,7 +22,7 @@ use super::ServiceError;
 pub trait JournalService<R>
 where
     R: Store
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>
+        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
         + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
         + ResourceOperations<
             journal::transaction::record::Model,
@@ -40,7 +40,7 @@ where
             ledger_xact_type::Model,
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
-        > + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
+        > + ResourceOperations<external::account::Model, external::account::ActiveModel, LedgerId>
         + Send
         + Sync
         + 'static,
@@ -64,7 +64,7 @@ where
                     jtx_id
                 )));
             } else if line.ledger_id.is_some() {
-                if <R as ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId>>::get(
+                if <R as ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>>::get(
                     self.store(),
                     Some(&vec![line.ledger_id.unwrap()]),
                 )
@@ -80,7 +80,7 @@ where
                 && <R as ResourceOperations<
                     external::account::Model,
                     external::account::ActiveModel,
-                    AccountId,
+                    LedgerId,
                 >>::get(self.store(), Some(&vec![line.account_id.unwrap()]))
                 .await?
                 .is_empty()

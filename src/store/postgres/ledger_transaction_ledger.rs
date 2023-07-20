@@ -36,7 +36,7 @@ impl ResourceOperations<transaction::ledger::Model, transaction::ledger::ActiveM
         ids: Option<&Vec<LedgerKey>>,
     ) -> Result<Vec<transaction::ledger::ActiveModel>, OrmError> {
         let search_one = format!(
-            "SELECT * FROM {} WHERE ledger_id=$1::AccountId AND timestamp=$2",
+            "SELECT * FROM {} WHERE ledger_id=$1::LedgerId AND timestamp=$2",
             transaction::ledger::ActiveModel::NAME
         );
         let search_all = format!("SELECT * FROM {}", transaction::ledger::ActiveModel::NAME);

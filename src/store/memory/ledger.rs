@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::AccountId,
+    domain::LedgerId,
     resource::ledger,
     store::{OrmError, ResourceOperations},
 };
@@ -9,10 +9,10 @@ use crate::{
 use super::store::MemoryStore;
 
 #[async_trait]
-impl ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId> for MemoryStore {
+impl ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId> for MemoryStore {
     async fn insert(&self, model: &ledger::Model) -> Result<ledger::ActiveModel, OrmError> {
         let ledger = ledger::ActiveModel {
-            id: AccountId::new(),
+            id: LedgerId::new(),
             ledger_no: model.ledger_no,
             ledger_type: model.ledger_type,
             parent_id: model.parent_id,
@@ -35,10 +35,7 @@ impl ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId> for Memor
         Ok(ledger)
     }
 
-    async fn get(
-        &self,
-        ids: Option<&Vec<AccountId>>,
-    ) -> Result<Vec<ledger::ActiveModel>, OrmError> {
+    async fn get(&self, ids: Option<&Vec<LedgerId>>) -> Result<Vec<ledger::ActiveModel>, OrmError> {
         let mut res = Vec::<ledger::ActiveModel>::new();
         let inner = self.inner.read().await;
         if let Some(ids) = ids {
@@ -64,15 +61,15 @@ impl ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId> for Memor
         todo!()
     }
 
-    async fn delete(&self, _id: AccountId) -> Result<u64, OrmError> {
+    async fn delete(&self, _id: LedgerId) -> Result<u64, OrmError> {
         todo!()
     }
 
-    async fn archive(&self, _id: AccountId) -> Result<u64, OrmError> {
+    async fn archive(&self, _id: LedgerId) -> Result<u64, OrmError> {
         todo!()
     }
 
-    async fn unarchive(&self, _id: AccountId) -> Result<u64, OrmError> {
+    async fn unarchive(&self, _id: LedgerId) -> Result<u64, OrmError> {
         todo!()
     }
 }

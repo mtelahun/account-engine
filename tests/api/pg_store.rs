@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use account_engine::{
     domain::{
-        ids::JournalId, AccountId, ArrayCodeString, ArrayLongString, ArrayShortString, XactType,
+        ids::JournalId, ArrayCodeString, ArrayLongString, ArrayShortString, LedgerId, XactType,
     },
     resource::{
         account_engine::AccountEngine, accounting_period, general_ledger, journal, ledger,
@@ -24,7 +24,7 @@ use crate::timestamp;
 async fn non_existant_ledger() {
     // Arrange
     let state = TestState::new().await;
-    let ledger_id = AccountId::new();
+    let ledger_id = LedgerId::new();
 
     // Act
     let res = GeneralLedgerService::get_ledgers(&state.engine, Some(&vec![ledger_id]))
@@ -362,7 +362,7 @@ async fn unique_journal_name() {
         journal2.err().unwrap(),
         Err::<(), ServiceError>(ServiceError::Resource(OrmError::Internal(
             "db error: ERROR: duplicate key value violates unique constraint \
-            \"journal_code_key\"\nDETAIL: Key (code)=(S) already exists."
+            \"general_journal_code_key\"\nDETAIL: Key (code)=(S) already exists."
                 .into()
         )))
         .err()
@@ -441,7 +441,7 @@ async fn journal_transaction_creation() {
     // Assert
     assert!(jx_same_ledger.is_err());
     let err_str = format!(
-        "db error: ERROR: duplicate key value violates unique constraint \"journal_transaction_record_pkey\"\nDETAIL: Key (journal_id, \"timestamp\")=({}, {}) already exists.",
+        "db error: ERROR: duplicate key value violates unique constraint \"general_journal_transaction_record_pkey\"\nDETAIL: Key (journal_id, \"timestamp\")=({}, {}) already exists.",
         state.journal.id,
         now
     );
@@ -466,7 +466,7 @@ async fn journal_transaction_creation() {
 #[tokio::test]
 async fn journal_transaction_creation_invalid() {
     // Arrange
-    let fake_account_id = AccountId::new();
+    let fake_account_id = LedgerId::new();
     let state = TestState::new().await;
     let bank = state
         .create_account(
@@ -804,7 +804,7 @@ impl TestState {
         number: &'static str,
         name: &'static str,
         typ: LedgerType,
-        parent_id: Option<AccountId>,
+        parent_id: Option<LedgerId>,
     ) -> Result<ledger::ActiveModel, ServiceError> {
         let account = ledger::Model {
             ledger_no: ArrayShortString::from_str(number).unwrap(),
@@ -833,8 +833,8 @@ impl TestState {
     pub async fn create_journal_xact(
         &self,
         amount: Decimal,
-        account_dr_id: AccountId,
-        account_cr_id: AccountId,
+        account_dr_id: LedgerId,
+        account_cr_id: LedgerId,
         desc: &str,
         journal_id: Option<JournalId>,
     ) -> Result<journal::transaction::ActiveModel, ServiceError> {

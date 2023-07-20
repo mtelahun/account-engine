@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::{
-    domain::AccountId,
+    domain::LedgerId,
     resource::external,
     store::{OrmError, Resource, ResourceOperations},
 };
@@ -10,7 +10,7 @@ use crate::{
 use super::store::PostgresStore;
 
 #[async_trait]
-impl ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
+impl ResourceOperations<external::account::Model, external::account::ActiveModel, LedgerId>
     for PostgresStore
 {
     async fn insert(
@@ -26,7 +26,7 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
             .query_one(
                 &query,
                 &[
-                    &AccountId::new(),
+                    &LedgerId::new(),
                     &model.subsidiary_ledger_id,
                     &model.entity_type_code,
                     &model.account_no,
@@ -41,7 +41,7 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
 
     async fn get(
         &self,
-        ids: Option<&Vec<AccountId>>,
+        ids: Option<&Vec<LedgerId>>,
     ) -> Result<Vec<external::account::ActiveModel>, OrmError> {
         let search_one = format!(
             "SELECT * FROM {} WHERE id in $1",
@@ -88,7 +88,7 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
         .map_err(|e| OrmError::Internal(e.to_string()))
     }
 
-    async fn delete(&self, id: AccountId) -> Result<u64, OrmError> {
+    async fn delete(&self, id: LedgerId) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
             "DELETE FROM {} WHERE id = $1::AccountId;",
@@ -100,11 +100,11 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
             .map_err(|e| OrmError::Internal(e.to_string()))
     }
 
-    async fn archive(&self, _id: AccountId) -> Result<u64, OrmError> {
+    async fn archive(&self, _id: LedgerId) -> Result<u64, OrmError> {
         todo!()
     }
 
-    async fn unarchive(&self, _id: AccountId) -> Result<u64, OrmError> {
+    async fn unarchive(&self, _id: LedgerId) -> Result<u64, OrmError> {
         todo!()
     }
 }

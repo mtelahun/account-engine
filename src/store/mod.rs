@@ -46,15 +46,15 @@ impl Resource for accounting_period::interim_period::ActiveModel {
 }
 
 impl Resource for journal::transaction::line::account::ActiveModel {
-    const NAME: &'static str = "journal_transaction_line_account";
+    const NAME: &'static str = "general_journal_transaction_line_account";
 }
 
 impl Resource for journal::transaction::line::ledger::ActiveModel {
-    const NAME: &'static str = "journal_transaction_line_ledger";
+    const NAME: &'static str = "general_journal_transaction_line_ledger";
 }
 
 impl Resource for journal::transaction::record::ActiveModel {
-    const NAME: &'static str = "journal_transaction_record";
+    const NAME: &'static str = "general_journal_transaction_record";
 }
 
 /// The journal_transaction::ActiveModel is only ever used to communicate with
@@ -64,7 +64,7 @@ impl Resource for journal::transaction::ActiveModel {
 }
 
 impl Resource for journal::ActiveModel {
-    const NAME: &'static str = "journal";
+    const NAME: &'static str = "general_journal";
 }
 
 impl Resource for ledger::intermediate::ActiveModel {

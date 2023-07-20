@@ -6,14 +6,14 @@ use rust_decimal::Decimal;
 
 use crate::{
     domain::{
-        xact_type::XactType, AccountId, JournalTransactionId, LedgerXactTypeCode, XACT_LEDGER,
+        xact_type::XactType, JournalTransactionId, LedgerId, LedgerXactTypeCode, XACT_LEDGER,
     },
     resource::ledger,
 };
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, ToSql, FromSql)]
 pub struct LedgerKey {
-    pub ledger_id: AccountId,
+    pub ledger_id: LedgerId,
     pub timestamp: NaiveDateTime,
 }
 
@@ -29,7 +29,7 @@ impl std::fmt::Display for LedgerKey {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Model {
-    pub ledger_id: AccountId,
+    pub ledger_id: LedgerId,
     pub timestamp: NaiveDateTime,
     pub xact_type: XactType,
     pub amount: Decimal,
@@ -38,7 +38,7 @@ pub struct Model {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ActiveModel {
-    pub ledger_id: AccountId,
+    pub ledger_id: LedgerId,
     pub timestamp: NaiveDateTime,
     pub xact_type: XactType,
     pub amount: Decimal,

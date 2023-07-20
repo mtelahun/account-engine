@@ -1,11 +1,11 @@
-use crate::domain::AccountId;
+use crate::domain::LedgerId;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct Model {
-    pub id: AccountId,
+    pub id: LedgerId,
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct ActiveModel {
-    pub id: AccountId,
+    pub id: LedgerId,
 }

@@ -7,8 +7,8 @@ use crate::{
     domain::{
         entity_code::EntityCode,
         ids::{InterimPeriodId, JournalId},
-        AccountId, ArrayCodeString, ArrayLongString, ArrayShortString, ExternalXactTypeCode,
-        GeneralLedgerId, JournalTransactionId, LedgerXactTypeCode, PeriodId, SubLedgerId,
+        ArrayCodeString, ArrayLongString, ArrayShortString, ExternalXactTypeCode, GeneralLedgerId,
+        JournalTransactionId, LedgerId, LedgerXactTypeCode, PeriodId, SubLedgerId,
     },
     resource::{
         accounting_period, external, general_ledger,
@@ -30,9 +30,9 @@ pub(crate) struct Inner {
     _name: String,
     _uri: String,
     pub(crate) general_ledger: HashMap<GeneralLedgerId, general_ledger::ActiveModel>,
-    pub(crate) ledger: HashMap<AccountId, ledger::ActiveModel>,
-    pub(crate) ledger_intermediate: HashMap<AccountId, ledger::intermediate::ActiveModel>,
-    pub(crate) ledger_account: HashMap<AccountId, ledger::leaf::ActiveModel>,
+    pub(crate) ledger: HashMap<LedgerId, ledger::ActiveModel>,
+    pub(crate) ledger_intermediate: HashMap<LedgerId, ledger::intermediate::ActiveModel>,
+    pub(crate) ledger_account: HashMap<LedgerId, ledger::leaf::ActiveModel>,
     pub(crate) period: HashMap<PeriodId, accounting_period::ActiveModel>,
     pub(crate) interim_period:
         HashMap<InterimPeriodId, accounting_period::interim_period::ActiveModel>,
@@ -50,7 +50,7 @@ pub(crate) struct Inner {
     pub(crate) external_xact_type:
         HashMap<ExternalXactTypeCode, external::transaction_type::ActiveModel>,
     pub(crate) subsidary_ledger: HashMap<SubLedgerId, subsidiary_ledger::ActiveModel>,
-    pub(crate) external_account: HashMap<AccountId, external::account::ActiveModel>,
+    pub(crate) external_account: HashMap<LedgerId, external::account::ActiveModel>,
     pub(crate) _entity_type: HashMap<EntityCode, external::entity_type::ActiveModel>,
 }
 
@@ -74,9 +74,9 @@ impl Inner {
             _name: name.to_string(),
             _uri: uri.to_string(),
             general_ledger: HashMap::<GeneralLedgerId, general_ledger::ActiveModel>::new(),
-            ledger: HashMap::<AccountId, ledger::ActiveModel>::new(),
-            ledger_intermediate: HashMap::<AccountId, ledger::intermediate::ActiveModel>::new(),
-            ledger_account: HashMap::<AccountId, ledger::leaf::ActiveModel>::new(),
+            ledger: HashMap::<LedgerId, ledger::ActiveModel>::new(),
+            ledger_intermediate: HashMap::<LedgerId, ledger::intermediate::ActiveModel>::new(),
+            ledger_account: HashMap::<LedgerId, ledger::leaf::ActiveModel>::new(),
             period: HashMap::<PeriodId, accounting_period::ActiveModel>::new(),
             interim_period: HashMap::<
                 InterimPeriodId,
@@ -104,7 +104,7 @@ impl Inner {
                 external::transaction_type::ActiveModel,
             >::new(),
             subsidary_ledger: HashMap::<SubLedgerId, subsidiary_ledger::ActiveModel>::new(),
-            external_account: HashMap::<AccountId, external::account::ActiveModel>::new(),
+            external_account: HashMap::<LedgerId, external::account::ActiveModel>::new(),
             _entity_type: HashMap::<EntityCode, external::entity_type::ActiveModel>::new(),
         };
         let code = LedgerXactTypeCode::from_str("LL").unwrap();
@@ -121,8 +121,8 @@ impl Inner {
         res
     }
 
-    fn insert_ledger_root(&mut self) -> AccountId {
-        let root_id = AccountId::new();
+    fn insert_ledger_root(&mut self) -> LedgerId {
+        let root_id = LedgerId::new();
         let root = ledger::ActiveModel {
             id: root_id,
             ledger_no: ArrayShortString::from_str("0").unwrap(),
@@ -136,7 +136,7 @@ impl Inner {
         root_id
     }
 
-    fn insert_general_leger(&mut self, root_id: AccountId) {
+    fn insert_general_leger(&mut self, root_id: LedgerId) {
         let id = GeneralLedgerId::new();
         let v = general_ledger::ActiveModel {
             id,
@@ -211,7 +211,7 @@ impl Store for MemoryStore {
         no: ArrayShortString,
     ) -> Result<Option<ledger::ActiveModel>, OrmError> {
         let inner = self.inner.read().await;
-        let list: Vec<(&AccountId, &ledger::ActiveModel)> = inner
+        let list: Vec<(&LedgerId, &ledger::ActiveModel)> = inner
             .ledger
             .iter()
             .filter(|(_, l)| l.ledger_no == no)
@@ -233,7 +233,7 @@ impl Store for MemoryStore {
 
     async fn journal_entries_by_ledger(
         &self,
-        ids: &[AccountId],
+        ids: &[LedgerId],
     ) -> Result<Vec<ledger::transaction::ActiveModel>, OrmError> {
         let inner = self.inner.read().await;
         let entries: Vec<ledger::transaction::ActiveModel> = inner
@@ -248,7 +248,7 @@ impl Store for MemoryStore {
 
     async fn journal_entry_ledgers_by_ledger(
         &self,
-        ids: &[AccountId],
+        ids: &[LedgerId],
     ) -> Result<Vec<ledger::transaction::ledger::ActiveModel>, OrmError> {
         let inner = self.inner.read().await;
         let xacts: Vec<ledger::transaction::ledger::ActiveModel> = inner

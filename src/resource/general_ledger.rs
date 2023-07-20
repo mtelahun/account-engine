@@ -1,5 +1,5 @@
 use crate::domain::{
-    array_long_string::ArrayLongString, AccountId, ArrayCodeString, GeneralLedgerId,
+    array_long_string::ArrayLongString, ArrayCodeString, GeneralLedgerId, LedgerId,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -12,6 +12,6 @@ pub struct Model {
 pub struct ActiveModel {
     pub id: GeneralLedgerId,
     pub name: ArrayLongString,
-    pub root: AccountId,
+    pub root: LedgerId,
     pub currency_code: ArrayCodeString,
 }

@@ -4,19 +4,16 @@ use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::{
-    domain::{AccountId, ArrayLongString, ArrayShortString},
+    domain::{ArrayLongString, ArrayShortString, LedgerId},
     resource::ledger,
     store::{postgres::store::PostgresStore, OrmError, Resource, ResourceOperations},
 };
 
 #[async_trait]
-impl ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId> for PostgresStore {
-    async fn get(
-        &self,
-        ids: Option<&Vec<AccountId>>,
-    ) -> Result<Vec<ledger::ActiveModel>, OrmError> {
+impl ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId> for PostgresStore {
+    async fn get(&self, ids: Option<&Vec<LedgerId>>) -> Result<Vec<ledger::ActiveModel>, OrmError> {
         let search_one = format!(
-            "SELECT * FROM {} WHERE id = any ($1::AccountId[])",
+            "SELECT * FROM {} WHERE id = any ($1::LedgerId[])",
             ledger::ActiveModel::NAME
         );
         let search_all = format!("SELECT * FROM {}", ledger::ActiveModel::NAME);
@@ -49,7 +46,7 @@ impl ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId> for Postg
             .query_one(
                 query.as_str(),
                 &[
-                    &AccountId::new(),
+                    &LedgerId::new(),
                     &model.ledger_no.as_str(),
                     &model.name.as_str(),
                     &model.ledger_type,
@@ -85,7 +82,7 @@ impl ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId> for Postg
         .map_err(|e| OrmError::Internal(e.to_string()))
     }
 
-    async fn delete(&self, id: AccountId) -> Result<u64, OrmError> {
+    async fn delete(&self, id: LedgerId) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
             "DELETE FROM {} WHERE id = $1::LedgerId;",
@@ -97,10 +94,10 @@ impl ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId> for Postg
             .map_err(|e| OrmError::Internal(e.to_string()))
     }
 
-    async fn archive(&self, id: AccountId) -> Result<u64, OrmError> {
+    async fn archive(&self, id: LedgerId) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
-            "UPDATE {} SET archived = true WHERE id = $1::AccountId;",
+            "UPDATE {} SET archived = true WHERE id = $1::LedgerId;",
             ledger::ActiveModel::NAME
         );
 
@@ -109,10 +106,10 @@ impl ResourceOperations<ledger::Model, ledger::ActiveModel, AccountId> for Postg
             .map_err(|e| OrmError::Internal(e.to_string()))
     }
 
-    async fn unarchive(&self, id: AccountId) -> Result<u64, OrmError> {
+    async fn unarchive(&self, id: LedgerId) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
-            "UPDATE {} SET archived = false WHERE id = $1::AccountId;",
+            "UPDATE {} SET archived = false WHERE id = $1::LedgerId;",
             ledger::ActiveModel::NAME
         );
 

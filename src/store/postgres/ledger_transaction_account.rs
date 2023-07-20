@@ -42,7 +42,7 @@ impl ResourceOperations<transaction::account::Model, transaction::account::Activ
         ids: Option<&Vec<LedgerKey>>,
     ) -> Result<Vec<transaction::account::ActiveModel>, OrmError> {
         let search_one = format!(
-            "SELECT * FROM {} WHERE ledger_id=$1::AccountId AND timestamp=$2",
+            "SELECT * FROM {} WHERE ledger_id=$1::LedgerId AND timestamp=$2",
             transaction::account::ActiveModel::NAME
         );
         let search_all = format!("SELECT * FROM {}", transaction::account::ActiveModel::NAME);

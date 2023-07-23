@@ -10,8 +10,8 @@ use account_engine::{
     },
     service::ServiceError,
     service::{
-        AccountingPeriodService, GeneralLedgerService, JournalService, JournalTransactionService,
-        LedgerService,
+        AccountingPeriodService, GeneralJournalService, GeneralLedgerService,
+        JournalTransactionService, LedgerService,
     },
     store::{postgres::store::PostgresStore, OrmError},
 };
@@ -339,10 +339,12 @@ async fn unique_journal_name() {
     let j1 = journal::Model {
         name: "General".into(),
         code: "S".into(),
+        ..Default::default()
     };
     let j2 = journal::Model {
         name: "Sales".into(),
         code: "S".into(),
+        ..Default::default()
     };
 
     // Act
@@ -362,7 +364,7 @@ async fn unique_journal_name() {
         journal2.err().unwrap(),
         Err::<(), ServiceError>(ServiceError::Resource(OrmError::Internal(
             "db error: ERROR: duplicate key value violates unique constraint \
-            \"general_journal_code_key\"\nDETAIL: Key (code)=(S) already exists."
+            \"journal_code_key\"\nDETAIL: Key (code)=(S) already exists."
                 .into()
         )))
         .err()
@@ -404,22 +406,22 @@ async fn journal_transaction_creation() {
         .unwrap();
 
     let now = timestamp();
-    let jx1_line1 = journal::transaction::line::Model {
+    let jx1_line1 = journal::transaction::general::line::Model {
         journal_id: state.journal.id,
         timestamp: now,
-        ledger_id: Some(cash1.id),
+        ledger_id: cash1.id,
         xact_type: XactType::Dr,
         ..Default::default()
     };
-    let jx1_line2 = journal::transaction::line::Model {
+    let jx1_line2 = journal::transaction::general::line::Model {
         journal_id: state.journal.id,
         timestamp: now,
-        ledger_id: Some(bank1.id),
+        ledger_id: bank1.id,
         xact_type: XactType::Cr,
         posting_ref: None,
         ..Default::default()
     };
-    let jx1 = journal::transaction::Model {
+    let jx1 = journal::transaction::general::Model {
         journal_id: state.journal.id,
         timestamp: now,
         explanation: "Withdrew cash for lunch".into(),
@@ -430,18 +432,18 @@ async fn journal_transaction_creation() {
     // Act
     let _ = state
         .engine
-        .create_journal_transaction(&jx1)
+        .create_general_transaction(&jx1)
         .await
         .expect("1st journal transaction failed");
     let jx_same_ledger = state
         .engine
-        .create_journal_transaction(&jx_same_ledger)
+        .create_general_transaction(&jx_same_ledger)
         .await;
 
     // Assert
     assert!(jx_same_ledger.is_err());
     let err_str = format!(
-        "db error: ERROR: duplicate key value violates unique constraint \"general_journal_transaction_record_pkey\"\nDETAIL: Key (journal_id, \"timestamp\")=({}, {}) already exists.",
+        "db error: ERROR: duplicate key value violates unique constraint \"journal_transaction_record_pkey\"\nDETAIL: Key (journal_id, \"timestamp\")=({}, {}) already exists.",
         state.journal.id,
         now
     );
@@ -481,88 +483,26 @@ async fn journal_transaction_creation_invalid() {
     let invalid_cases = [
         (
             {
-                let mut jx1 = jxact.jx.clone();
-                jx1.lines = vec![jxact.line1, jxact.line2];
-                jx1
-            },
-            ServiceError::Validation(format!(
-                "both ledger and account fields empty: transaction: JournalTransactionId {{ Journal ID: {}, Timestamp: {} }}", 
-                jxact.jx.journal_id, jxact.timestamp
-            )),
-            "line1: ledger_id and account_id are None" 
-        ),
-        (
-            {
-                let mut jx_line2 = jxact.line2.clone();
-                jx_line2.ledger_id = Some(bank.id);
-                let mut jx1 = jxact.jx.clone();
-                jx1.lines = vec![jxact.line1, jx_line2];
-                jx1
-            },
-            ServiceError::Validation(format!(
-                "both ledger and account fields empty: transaction: JournalTransactionId {{ Journal ID: {}, Timestamp: {} }}",
-                jxact.jx.journal_id, jxact.timestamp
-            )),
-            "line2: ledger_id and account_id are None" 
-        ),
-        (
-            {
                 let mut jx_line1 = jxact.line1.clone();
-                jx_line1.ledger_id = Some(fake_account_id);
-                jx_line1.account_id = Some(fake_account_id);
+                jx_line1.ledger_id = fake_account_id;
                 let mut jx1 = jxact.jx.clone();
                 jx1.lines = vec![jx_line1, jxact.line2];
                 jx1
             },
-            ServiceError::Validation(format!(
-                "both ledger and account fields NOT empty: transaction: JournalTransactionId {{ Journal ID: {}, Timestamp: {} }}",
-                jxact.jx.journal_id, jxact.timestamp
-            )),
-            "line1: ledger_id and account_id are BOTH Some()" 
-        ),
-        (
-            {
-                let mut jx_line1 = jxact.line1.clone();
-                jx_line1.ledger_id = Some(bank.id);
-                let mut jx_line2 = jxact.line2.clone();
-                jx_line2.ledger_id = Some(fake_account_id);
-                jx_line2.account_id = Some(fake_account_id);
-                let mut jx1 = jxact.jx.clone();
-                jx1.lines = vec![jx_line1, jx_line2];
-                jx1
-            },
-            ServiceError::Validation(format!(
-                "both ledger and account fields NOT empty: transaction: JournalTransactionId {{ Journal ID: {}, Timestamp: {} }}",
-                jxact.jx.journal_id, jxact.timestamp
-            )),
-            "line2: ledger_id and account_id are BOTH Some()" 
-        ),
-        (
-            {
-                let mut jx_line1 = jxact.line1.clone();
-                jx_line1.ledger_id = Some(fake_account_id);
-                let mut jx1 = jxact.jx.clone();
-                jx1.lines = vec![jx_line1, jxact.line2];
-                jx1
-            },
-            ServiceError::EmptyRecord(format!(
-                "account id: {fake_account_id}",
-            )),
+            ServiceError::EmptyRecord(format!("account id: {fake_account_id}",)),
             "line1: ledger_id is fake",
         ),
         (
             {
                 let mut jx_line1 = jxact.line1.clone();
-                jx_line1.ledger_id = Some(bank.id);
+                jx_line1.ledger_id = bank.id;
                 let mut jx_line2 = jxact.line2.clone();
-                jx_line2.ledger_id = Some(fake_account_id);
+                jx_line2.ledger_id = fake_account_id;
                 let mut jx1 = jxact.jx.clone();
                 jx1.lines = vec![jx_line1, jx_line2];
                 jx1
             },
-            ServiceError::EmptyRecord(format!(
-                "account id: {fake_account_id}",
-            )),
+            ServiceError::EmptyRecord(format!("account id: {fake_account_id}",)),
             "line2: ledger_id is fake",
         ),
         // (
@@ -572,7 +512,7 @@ async fn journal_transaction_creation_invalid() {
         //         let mut jx_line2 = jx_line2.clone();
         //         jx_line2.ledger_id = Some(bank.id);
         //         let mut jx1 = jx1.clone();
-        //         jx1.lines = vec![jx_line1, jx_line2]; 
+        //         jx1.lines = vec![jx_line1, jx_line2];
         //         jx1
         //     },
         //     OrmError::RecordNotFound(format!(
@@ -587,7 +527,7 @@ async fn journal_transaction_creation_invalid() {
         //         let mut jx_line2 = jx_line2.clone();
         //         jx_line2.account_id = Some(fake_account_id);
         //         let mut jx1 = jx1.clone();
-        //         jx1.lines = vec![jx_line1, jx_line2]; 
+        //         jx1.lines = vec![jx_line1, jx_line2];
         //         jx1
         //     },
         //     OrmError::RecordNotFound(format!(
@@ -604,12 +544,12 @@ async fn journal_transaction_creation_invalid() {
 
 async fn journal_transaction_invalid_common(
     state: &TestState,
-    jx1: &journal::transaction::Model,
+    jx1: &journal::transaction::general::Model,
     expected_error: ServiceError,
     msg: &str,
 ) {
     // Act
-    let jx1_db = state.engine.create_journal_transaction(&jx1).await;
+    let jx1_db = state.engine.create_general_transaction(&jx1).await;
 
     // Assert
     assert!(
@@ -730,13 +670,11 @@ async fn post_journal_transaction_happy_path() {
         .await
         .expect("unexpected search error")[0];
     assert_eq!(
-        cr_account.id,
-        jxact.lines[1].ledger_id.unwrap(),
+        cr_account.id, jxact.lines[1].ledger_id,
         "ledger CR ac. matches journal"
     );
     assert_eq!(
-        dr_account.id,
-        jxact.lines[0].ledger_id.unwrap(),
+        dr_account.id, jxact.lines[0].ledger_id,
         "ledger DR ac. matches journal"
     );
     assert_eq!(
@@ -753,8 +691,7 @@ async fn post_journal_transaction_happy_path() {
         "accounts ARE different"
     );
     assert_ne!(
-        jxact.lines[0].ledger_id.unwrap(),
-        jxact.lines[1].ledger_id.unwrap(),
+        jxact.lines[0].ledger_id, jxact.lines[1].ledger_id,
         "journal transaction dr and cr accounts are different"
     );
 }
@@ -788,6 +725,7 @@ impl TestState {
         let journal = journal::Model {
             name: "General Journal".into(),
             code: "G".into(),
+            ..Default::default()
         };
         let journal = engine.create_journal(&journal).await.unwrap();
 
@@ -825,6 +763,7 @@ impl TestState {
         let model = journal::Model {
             name: name.into(),
             code: code.into(),
+            ..Default::default()
         };
 
         GeneralLedgerService::create_journal(&self.engine, &model).await
@@ -837,56 +776,56 @@ impl TestState {
         account_cr_id: LedgerId,
         desc: &str,
         journal_id: Option<JournalId>,
-    ) -> Result<journal::transaction::ActiveModel, ServiceError> {
+    ) -> Result<journal::transaction::general::ActiveModel, ServiceError> {
         let timestamp = timestamp();
         let journal_id: JournalId = journal_id.unwrap_or(self.journal.id);
-        let line1 = journal::transaction::line::Model {
+        let line1 = journal::transaction::general::line::Model {
             journal_id: journal_id,
             timestamp,
-            ledger_id: Some(account_dr_id),
+            ledger_id: account_dr_id,
             xact_type: XactType::Dr,
             amount,
             ..Default::default()
         };
-        let line2 = journal::transaction::line::Model {
+        let line2 = journal::transaction::general::line::Model {
             journal_id: journal_id,
             timestamp,
-            ledger_id: Some(account_cr_id),
+            ledger_id: account_cr_id,
             xact_type: XactType::Cr,
             amount,
             ..Default::default()
         };
-        let model = journal::transaction::Model {
+        let model = journal::transaction::general::Model {
             journal_id,
             timestamp,
             explanation: ArrayLongString::from(desc),
             lines: vec![line1, line2],
         };
 
-        self.engine.create_journal_transaction(&model).await
+        self.engine.create_general_transaction(&model).await
     }
 
     pub fn simple_xact_model(&self) -> SimpleJournalTransaction {
         let timestamp = timestamp();
-        let line1 = journal::transaction::line::Model {
+        let line1 = journal::transaction::general::line::Model {
             journal_id: self.journal.id,
             timestamp,
             xact_type: XactType::Dr,
             amount: Decimal::ZERO,
             ..Default::default()
         };
-        let line2 = journal::transaction::line::Model {
+        let line2 = journal::transaction::general::line::Model {
             journal_id: self.journal.id,
             timestamp,
             xact_type: XactType::Cr,
             amount: Decimal::ZERO,
             ..Default::default()
         };
-        let jx = journal::transaction::Model {
+        let jx = journal::transaction::general::Model {
             journal_id: self.journal.id,
             timestamp,
             explanation: "Withdrew cash for lunch".into(),
-            lines: Vec::<journal::transaction::line::Model>::new(),
+            lines: Vec::<journal::transaction::general::line::Model>::new(),
         };
 
         SimpleJournalTransaction {
@@ -899,8 +838,8 @@ impl TestState {
 }
 
 pub struct SimpleJournalTransaction {
-    jx: journal::transaction::Model,
-    line1: journal::transaction::line::Model,
-    line2: journal::transaction::line::Model,
+    jx: journal::transaction::general::Model,
+    line1: journal::transaction::general::line::Model,
+    line2: journal::transaction::general::line::Model,
     timestamp: NaiveDateTime,
 }

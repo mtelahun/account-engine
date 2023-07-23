@@ -12,11 +12,7 @@ use super::store::MemoryStore;
 impl ResourceOperations<journal::Model, journal::ActiveModel, JournalId> for MemoryStore {
     async fn insert(&self, model: &journal::Model) -> Result<journal::ActiveModel, OrmError> {
         let id = JournalId::new();
-        let journal = journal::ActiveModel {
-            id,
-            name: model.name,
-            code: model.code,
-        };
+        let journal = model.into();
         let mut inner = self.inner.write().await;
         let is_duplicate = inner
             .journal
@@ -56,11 +52,7 @@ impl ResourceOperations<journal::Model, journal::ActiveModel, JournalId> for Mem
     }
 
     async fn save(&self, model: &journal::ActiveModel) -> Result<u64, OrmError> {
-        let journal = journal::ActiveModel {
-            id: model.id,
-            name: model.name,
-            code: model.code,
-        };
+        let journal = journal::ActiveModel { ..*model };
         let mut inner = self.inner.write().await;
         let exists = inner
             .journal

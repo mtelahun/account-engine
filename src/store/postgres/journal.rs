@@ -12,11 +12,19 @@ impl ResourceOperations<journal::Model, journal::ActiveModel, JournalId> for Pos
     async fn insert(&self, model: &journal::Model) -> Result<journal::ActiveModel, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
-            "INSERT INTO {}(id, name, code) VALUES($1, $2, $3) RETURNING *",
+            "INSERT INTO {}(id, name, code, journal_type) VALUES($1, $2, $3, $4) RETURNING *",
             journal::ActiveModel::NAME
         );
         let res = conn
-            .query_one(&query, &[&JournalId::new(), &model.name, &model.code])
+            .query_one(
+                &query,
+                &[
+                    &JournalId::new(),
+                    &model.name,
+                    &model.code,
+                    &model.journal_type,
+                ],
+            )
             .await
             .map_err(|e| OrmError::Internal(e.to_string()))?;
 
@@ -54,7 +62,7 @@ impl ResourceOperations<journal::Model, journal::ActiveModel, JournalId> for Pos
     async fn save(&self, model: &journal::ActiveModel) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
-            "UPDATE {} SET name = $1, code = $2 WHERE id = $3::JournalId;",
+            "UPDATE {} SET name = $1, code = $2, WHERE id = $3::JournalId;",
             journal::ActiveModel::NAME
         );
 
@@ -106,6 +114,7 @@ impl From<Row> for journal::ActiveModel {
             id: value.get("id"),
             name: value.get("name"),
             code: value.get("code"),
+            journal_type: value.get("journal_type"),
         }
     }
 }

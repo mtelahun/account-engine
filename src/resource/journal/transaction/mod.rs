@@ -2,6 +2,10 @@ use postgres_types::{FromSql, ToSql};
 
 use crate::{domain::LedgerId, resource::LedgerKey};
 
+pub mod general;
+pub mod record;
+pub mod special;
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, ToSql, FromSql)]
 #[postgres(name = "transactionstate")]
 pub enum TransactionState {
@@ -37,46 +41,3 @@ impl std::fmt::Display for TransactionState {
         write!(f, "{}", state)
     }
 }
-
-impl std::fmt::Display for PostingRef {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let msg = format!(
-            "PostingRef{{key: {}, account_id: {}}}",
-            self.key, self.account_id
-        );
-        write!(f, "{msg}")
-    }
-}
-
-use chrono::NaiveDateTime;
-
-use crate::domain::{ids::JournalId, ArrayLongString, JournalTransactionId};
-
-#[derive(Clone, Debug)]
-pub struct Model {
-    pub journal_id: JournalId,
-    pub timestamp: NaiveDateTime,
-    pub explanation: ArrayLongString,
-    pub lines: Vec<line::Model>,
-}
-
-#[derive(Clone, Debug)]
-pub struct ActiveModel {
-    pub journal_id: JournalId,
-    pub timestamp: NaiveDateTime,
-    pub explanation: ArrayLongString,
-    pub lines: Vec<line::ActiveModel>,
-}
-
-impl ActiveModel {
-    pub fn id(&self) -> JournalTransactionId {
-        JournalTransactionId::new(self.journal_id, self.timestamp)
-    }
-
-    pub fn posted(&self) -> bool {
-        todo!()
-    }
-}
-
-pub mod line;
-pub mod record;

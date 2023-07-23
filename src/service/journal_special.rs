@@ -19,7 +19,7 @@ use crate::{
 use super::ServiceError;
 
 #[async_trait]
-pub trait JournalService<R>
+pub trait GeneralJournalService<R>
 where
     R: Store
         + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
@@ -29,12 +29,12 @@ where
             journal::transaction::record::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
-            journal::transaction::line::ledger::Model,
-            journal::transaction::line::ledger::ActiveModel,
+            journal::transaction::general::line::Model,
+            journal::transaction::general::line::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
-            journal::transaction::line::account::Model,
-            journal::transaction::line::account::ActiveModel,
+            journal::transaction::special::line::Model,
+            journal::transaction::special::line::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
             ledger_xact_type::Model,
@@ -49,8 +49,8 @@ where
 
     async fn create_journal_transaction(
         &self,
-        model: &journal::transaction::Model,
-    ) -> Result<journal::transaction::ActiveModel, ServiceError> {
+        model: &journal::transaction::general::Model,
+    ) -> Result<journal::transaction::general::ActiveModel, ServiceError> {
         let jtx_id = JournalTransactionId::new(model.journal_id, model.timestamp);
         for line in model.lines.iter() {
             if line.ledger_id.is_none() && line.account_id.is_none() {
@@ -104,10 +104,10 @@ where
         >>::insert(self.store(), &jtx)
         .await?;
 
-        let mut res_tx_lines = Vec::<journal::transaction::line::ActiveModel>::new();
+        let mut res_tx_lines = Vec::<journal::transaction::general::ActiveModel>::new();
         for line in model.lines.iter() {
             if line.ledger_id.is_some() {
-                let jtx_line = journal::transaction::line::ledger::Model {
+                let jtx_line = journal::transaction::general::line::Model {
                     journal_id: model.journal_id,
                     timestamp: model.timestamp,
                     state: TransactionState::Pending,
@@ -117,12 +117,12 @@ where
                     posting_ref: None,
                 };
                 let jtx_line = <R as ResourceOperations<
-                    journal::transaction::line::ledger::Model,
-                    journal::transaction::line::ledger::ActiveModel,
+                    journal::transaction::general::line::Model,
+                    journal::transaction::general::line::ActiveModel,
                     JournalTransactionId,
                 >>::insert(self.store(), &jtx_line)
                 .await?;
-                res_tx_lines.push(journal::transaction::line::ActiveModel {
+                res_tx_lines.push(journal::transaction::general::ActiveModel {
                     journal_id: jtx_line.journal_id,
                     timestamp: jtx_line.timestamp,
                     ledger_id: Some(jtx_line.ledger_id),
@@ -134,7 +134,7 @@ where
                     state: jtx_line.state,
                 })
             } else {
-                let jtx_line = journal::transaction::line::account::Model {
+                let jtx_line = journal::transaction::special::line::Model {
                     journal_id: model.journal_id,
                     timestamp: model.timestamp,
                     state: TransactionState::Pending,
@@ -145,12 +145,12 @@ where
                     posting_ref: None,
                 };
                 let jtx_line = <R as ResourceOperations<
-                    journal::transaction::line::account::Model,
-                    journal::transaction::line::account::ActiveModel,
+                    journal::transaction::special::line::Model,
+                    journal::transaction::special::line::ActiveModel,
                     JournalTransactionId,
                 >>::insert(self.store(), &jtx_line)
                 .await?;
-                res_tx_lines.push(journal::transaction::line::ActiveModel {
+                res_tx_lines.push(journal::transaction::special::ActiveModel {
                     journal_id: jtx_line.journal_id,
                     timestamp: jtx_line.timestamp,
                     ledger_id: None,
@@ -164,7 +164,7 @@ where
             }
         }
 
-        Ok(journal::transaction::ActiveModel {
+        Ok(journal::transaction::general::ActiveModel {
             journal_id: record.journal_id,
             timestamp: record.timestamp,
             explanation: record.explanation,
@@ -175,7 +175,7 @@ where
     async fn get_journal_transactions(
         &self,
         ids: Option<&Vec<JournalTransactionId>>,
-    ) -> Result<Vec<journal::transaction::ActiveModel>, ServiceError> {
+    ) -> Result<Vec<journal::transaction::general::ActiveModel>, ServiceError> {
         let xacts = <R as ResourceOperations<
             journal::transaction::record::Model,
             journal::transaction::record::ActiveModel,
@@ -183,22 +183,22 @@ where
         >>::get(self.store(), ids)
         .await?;
         let ledger_lines = <R as ResourceOperations<
-            journal::transaction::line::ledger::Model,
-            journal::transaction::line::ledger::ActiveModel,
+            journal::transaction::general::line::Model,
+            journal::transaction::general::line::ActiveModel,
             JournalTransactionId,
         >>::get(self.store(), ids)
         .await?;
         let account_lines = <R as ResourceOperations<
-            journal::transaction::line::account::Model,
-            journal::transaction::line::account::ActiveModel,
+            journal::transaction::special::line::Model,
+            journal::transaction::special::line::ActiveModel,
             JournalTransactionId,
         >>::get(self.store(), ids)
         .await?;
 
         if !xacts.is_empty() {
-            let mut lines = Vec::<journal::transaction::line::ActiveModel>::new();
+            let mut lines = Vec::<journal::transaction::general::ActiveModel>::new();
             for r in ledger_lines {
-                lines.push(journal::transaction::line::ActiveModel {
+                lines.push(journal::transaction::general::ActiveModel {
                     journal_id: r.journal_id,
                     timestamp: r.timestamp,
                     ledger_id: Some(r.ledger_id),
@@ -211,7 +211,7 @@ where
                 })
             }
             for r in account_lines {
-                lines.push(journal::transaction::line::ActiveModel {
+                lines.push(journal::transaction::special::ActiveModel {
                     journal_id: r.journal_id,
                     timestamp: r.timestamp,
                     ledger_id: None,
@@ -224,7 +224,7 @@ where
                 })
             }
 
-            return Ok(vec![journal::transaction::ActiveModel {
+            return Ok(vec![journal::transaction::general::ActiveModel {
                 journal_id: xacts[0].journal_id,
                 timestamp: xacts[0].timestamp,
                 explanation: xacts[0].explanation,
@@ -232,7 +232,7 @@ where
             }]);
         }
 
-        Ok(Vec::<journal::transaction::ActiveModel>::new())
+        Ok(Vec::<journal::transaction::general::ActiveModel>::new())
     }
 
     async fn get_journal_entry_type(
@@ -246,14 +246,14 @@ where
 }
 
 #[async_trait]
-impl JournalService<PostgresStore> for AccountEngine<PostgresStore> {
+impl GeneralJournalService<PostgresStore> for AccountEngine<PostgresStore> {
     fn store(&self) -> &PostgresStore {
         &self.repository
     }
 }
 
 #[async_trait]
-impl JournalService<MemoryStore> for AccountEngine<MemoryStore> {
+impl GeneralJournalService<MemoryStore> for AccountEngine<MemoryStore> {
     fn store(&self) -> &MemoryStore {
         &self.repository
     }

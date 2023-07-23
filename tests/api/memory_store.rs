@@ -10,8 +10,8 @@ use account_engine::{
         ledger, subsidiary_ledger, InterimType, LedgerType, TransactionState,
     },
     service::{
-        AccountingPeriodService, GeneralLedgerService, JournalService, JournalTransactionService,
-        LedgerService, ServiceError, SubsidiaryLedgerService,
+        AccountingPeriodService, GeneralJournalService, GeneralLedgerService,
+        JournalTransactionService, LedgerService, ServiceError, SubsidiaryLedgerService,
     },
     store::{memory::store::MemoryStore, OrmError},
 };
@@ -328,10 +328,12 @@ async fn unique_journal_name() {
     let j1 = journal::Model {
         name: "General".into(),
         code: "S".into(),
+        ..Default::default()
     };
     let j2 = journal::Model {
         name: "Sales".into(),
         code: "S".into(),
+        ..Default::default()
     };
 
     // Act
@@ -388,23 +390,23 @@ async fn journal_transaction_creation() {
         .unwrap();
 
     let now = timestamp();
-    let jx1_line1 = journal::transaction::line::Model {
+    let jx1_line1 = journal::transaction::general::line::Model {
         journal_id: state.journal.id,
         timestamp: now,
-        ledger_id: Some(cash1.id),
+        ledger_id: cash1.id,
         xact_type: XactType::Dr,
         amount: Decimal::ZERO,
         ..Default::default()
     };
-    let jx1_line2 = journal::transaction::line::Model {
+    let jx1_line2 = journal::transaction::general::line::Model {
         journal_id: state.journal.id,
         timestamp: now,
-        ledger_id: Some(bank1.id),
+        ledger_id: bank1.id,
         xact_type: XactType::Cr,
         amount: Decimal::ZERO,
         ..Default::default()
     };
-    let jx1 = journal::transaction::Model {
+    let jx1 = journal::transaction::general::Model {
         journal_id: state.journal.id,
         timestamp: now,
         explanation: "Withdrew cash for lunch".into(),
@@ -415,12 +417,12 @@ async fn journal_transaction_creation() {
     // Act
     state
         .engine
-        .create_journal_transaction(&jx1)
+        .create_general_transaction(&jx1)
         .await
         .expect("failed to create 1st journal transaction");
     let same_ledger_tx = state
         .engine
-        .create_journal_transaction(&jx_same_ledger)
+        .create_general_transaction(&jx_same_ledger)
         .await;
 
     // Assert
@@ -466,120 +468,58 @@ async fn journal_transaction_creation_invalid() {
     let invalid_cases = [
         (
             {
-                let mut jx1 = jxact.jx.clone();
-                jx1.lines = vec![jxact.line1, jxact.line2];
-                jx1
-            },
-            ServiceError::Validation(format!(
-                "both ledger and account fields empty: transaction: JournalTransactionId {{ Journal ID: {}, Timestamp: {} }}", 
-                jxact.jx.journal_id, jxact.timestamp
-            )),
-            "line1: ledger_id and account_id are None" 
-        ),
-        (
-            {
-                let mut jx_line2 = jxact.line2.clone();
-                jx_line2.ledger_id = Some(bank.id);
-                let mut jx1 = jxact.jx.clone();
-                jx1.lines = vec![jxact.line1, jx_line2];
-                jx1
-            },
-            ServiceError::Validation(format!(
-                "both ledger and account fields empty: transaction: JournalTransactionId {{ Journal ID: {}, Timestamp: {} }}",
-                jxact.jx.journal_id, jxact.timestamp
-            )),
-            "line2: ledger_id and account_id are None" 
-        ),
-        (
-            {
                 let mut jx_line1 = jxact.line1.clone();
-                jx_line1.ledger_id = Some(fake_account_id);
-                jx_line1.account_id = Some(fake_account_id);
+                jx_line1.ledger_id = fake_account_id;
                 let mut jx1 = jxact.jx.clone();
                 jx1.lines = vec![jx_line1, jxact.line2];
                 jx1
             },
-            ServiceError::Validation(format!(
-                "both ledger and account fields NOT empty: transaction: JournalTransactionId {{ Journal ID: {}, Timestamp: {} }}",
-                jxact.jx.journal_id, jxact.timestamp
-            )),
-            "line1: ledger_id and account_id are BOTH Some()" 
-        ),
-        (
-            {
-                let mut jx_line1 = jxact.line1.clone();
-                jx_line1.ledger_id = Some(bank.id);
-                let mut jx_line2 = jxact.line2.clone();
-                jx_line2.ledger_id = Some(fake_account_id);
-                jx_line2.account_id = Some(fake_account_id);
-                let mut jx1 = jxact.jx.clone();
-                jx1.lines = vec![jx_line1, jx_line2];
-                jx1
-            },
-            ServiceError::Validation(format!(
-                "both ledger and account fields NOT empty: transaction: JournalTransactionId {{ Journal ID: {}, Timestamp: {} }}",
-                jxact.jx.journal_id, jxact.timestamp
-            )),
-            "line2: ledger_id and account_id are BOTH Some()" 
-        ),
-        (
-            {
-                let mut jx_line1 = jxact.line1.clone();
-                jx_line1.ledger_id = Some(fake_account_id);
-                let mut jx1 = jxact.jx.clone();
-                jx1.lines = vec![jx_line1, jxact.line2];
-                jx1
-            },
-            ServiceError::EmptyRecord(format!(
-                "account id: {fake_account_id}",
-            )),
+            ServiceError::EmptyRecord(format!("account id: {fake_account_id}",)),
             "line1: ledger_id is fake",
         ),
         (
             {
                 let mut jx_line1 = jxact.line1.clone();
-                jx_line1.ledger_id = Some(bank.id);
+                jx_line1.ledger_id = bank.id;
                 let mut jx_line2 = jxact.line2.clone();
-                jx_line2.ledger_id = Some(fake_account_id);
+                jx_line2.ledger_id = fake_account_id;
                 let mut jx1 = jxact.jx.clone();
                 jx1.lines = vec![jx_line1, jx_line2];
                 jx1
             },
-            ServiceError::EmptyRecord(format!(
-                "account id: {fake_account_id}",
-            )),
+            ServiceError::EmptyRecord(format!("account id: {fake_account_id}",)),
             "line2: ledger_id is fake",
         ),
-        (
-            {
-                let mut jx_line1 = jxact.line1.clone();
-                jx_line1.account_id = Some(fake_account_id);
-                let mut jx_line2 = jxact.line2.clone();
-                jx_line2.ledger_id = Some(bank.id);
-                let mut jx1 = jxact.jx.clone();
-                jx1.lines = vec![jx_line1, jx_line2];
-                jx1
-            },
-            ServiceError::EmptyRecord(format!(
-                "account id: {fake_account_id}",
-            )),
-            "line1: account_id is fake",
-        ),
-        (
-            {
-                let mut jx_line1 = jxact.line1.clone();
-                jx_line1.ledger_id = Some(bank.id);
-                let mut jx_line2 = jxact.line2.clone();
-                jx_line2.account_id = Some(fake_account_id);
-                let mut jx1 = jxact.jx.clone();
-                jx1.lines = vec![jx_line1, jx_line2];
-                jx1
-            },
-            ServiceError::EmptyRecord(format!(
-                "account id: {fake_account_id}",
-            )),
-            "line2: account_id is fake",
-        ),
+        // (
+        //     {
+        //         let mut jx_line1 = jxact.line1.clone();
+        //         jx_line1.account_id = fake_account_id;
+        //         let mut jx_line2 = jxact.line2.clone();
+        //         jx_line2.ledger_id = bank.id;
+        //         let mut jx1 = jxact.jx.clone();
+        //         jx1.lines = vec![jx_line1, jx_line2];
+        //         jx1
+        //     },
+        //     ServiceError::EmptyRecord(format!(
+        //         "account id: {fake_account_id}",
+        //     )),
+        //     "line1: account_id is fake",
+        // ),
+        // (
+        //     {
+        //         let mut jx_line1 = jxact.line1.clone();
+        //         jx_line1.ledger_id = bank.id;
+        //         let mut jx_line2 = jxact.line2.clone();
+        //         jx_line2.account_id = fake_account_id;
+        //         let mut jx1 = jxact.jx.clone();
+        //         jx1.lines = vec![jx_line1, jx_line2];
+        //         jx1
+        //     },
+        //     ServiceError::EmptyRecord(format!(
+        //         "account id: {fake_account_id}",
+        //     )),
+        //     "line2: account_id is fake",
+        // ),
     ];
 
     for (case, expected_error, msg) in invalid_cases {
@@ -589,12 +529,12 @@ async fn journal_transaction_creation_invalid() {
 
 async fn journal_transaction_invalid_common(
     state: &TestState,
-    jx1: &journal::transaction::Model,
+    jx1: &journal::transaction::general::Model,
     expected_error: ServiceError,
     msg: &str,
 ) {
     // Act
-    let jx1_db = state.engine.create_journal_transaction(jx1).await;
+    let jx1_db = state.engine.create_general_transaction(jx1).await;
 
     // Assert
     assert!(
@@ -715,13 +655,11 @@ async fn post_journal_transaction_happy_path() {
         .await
         .expect("unexpected search error")[0];
     assert_eq!(
-        cr_account.id,
-        jxact.lines[1].ledger_id.unwrap(),
+        cr_account.id, jxact.lines[1].ledger_id,
         "ledger CR ac. matches journal"
     );
     assert_eq!(
-        dr_account.id,
-        jxact.lines[0].ledger_id.unwrap(),
+        dr_account.id, jxact.lines[0].ledger_id,
         "ledger DR ac. matches journal"
     );
     assert_eq!(
@@ -738,8 +676,7 @@ async fn post_journal_transaction_happy_path() {
         "accounts ARE different"
     );
     assert_ne!(
-        jxact.lines[0].ledger_id.unwrap(),
-        jxact.lines[1].ledger_id.unwrap(),
+        jxact.lines[0].ledger_id, jxact.lines[1].ledger_id,
         "journal transaction dr and cr accounts are different"
     );
 }
@@ -747,6 +684,7 @@ async fn post_journal_transaction_happy_path() {
 #[tokio::test]
 async fn post_journal_transaction_unbalanced() {
     // Arrange
+    let now = timestamp();
     let state = TestState::new().await;
     let bank = state
         .create_account(
@@ -757,23 +695,23 @@ async fn post_journal_transaction_unbalanced() {
         )
         .await
         .expect("failed to create Bank account");
-    let cr_line = journal::transaction::line::Model {
+    let cr_line = journal::transaction::general::line::Model {
         journal_id: state.journal.id,
-        timestamp: timestamp(),
-        ledger_id: Some(bank.id),
+        timestamp: now,
+        ledger_id: bank.id,
         xact_type: XactType::Cr,
         amount: Decimal::ONE,
         ..Default::default()
     };
-    let model = journal::transaction::Model {
+    let model = journal::transaction::general::Model {
         journal_id: state.journal.id,
-        timestamp: timestamp(),
+        timestamp: now,
         explanation: "".into(),
         lines: vec![cr_line],
     };
     let jxact = state
         .engine
-        .create_journal_transaction(&model)
+        .create_general_transaction(&model)
         .await
         .expect("failed to create unbalanaced transaction");
 
@@ -785,7 +723,8 @@ async fn post_journal_transaction_unbalanced() {
     assert_eq!(
         posted.err().unwrap(),
         Err::<(), ServiceError>(ServiceError::Validation(
-            "the Dr and Cr sides of the transaction must be equal".into(),
+            "the Dr and Cr sides of the transaction must be non-zero and equal: DR: 0, CR: 1"
+                .into(),
         ))
         .err()
         .unwrap()
@@ -875,6 +814,7 @@ impl TestState {
         let journal = journal::Model {
             name: "General Journal".into(),
             code: "G".into(),
+            ..Default::default()
         };
         let journal = engine
             .create_journal(&journal)
@@ -972,6 +912,7 @@ impl TestState {
         let model = journal::Model {
             name: name.into(),
             code: code.into(),
+            ..Default::default()
         };
 
         self.engine.create_journal(&model).await
@@ -984,40 +925,41 @@ impl TestState {
         account_cr_id: LedgerId,
         desc: &str,
         journal_id: Option<JournalId>,
-    ) -> Result<journal::transaction::ActiveModel, ServiceError> {
+    ) -> Result<journal::transaction::general::ActiveModel, ServiceError> {
+        let now = timestamp();
         let journal_id: JournalId = journal_id.unwrap_or(self.journal.id);
-        let dr_line = journal::transaction::line::Model {
+        let dr_line = journal::transaction::general::line::Model {
             journal_id: journal_id,
-            timestamp: timestamp(),
-            ledger_id: Some(account_dr_id),
+            timestamp: now,
+            ledger_id: account_dr_id,
             xact_type: XactType::Dr,
             amount: amount,
             ..Default::default()
         };
-        let cr_line = journal::transaction::line::Model {
+        let cr_line = journal::transaction::general::line::Model {
             journal_id: journal_id,
-            timestamp: timestamp(),
-            ledger_id: Some(account_cr_id),
+            timestamp: now,
+            ledger_id: account_cr_id,
             xact_type: XactType::Cr,
             amount: amount,
             ..Default::default()
         };
-        let model = journal::transaction::Model {
+        let model = journal::transaction::general::Model {
             journal_id,
-            timestamp: timestamp(),
+            timestamp: now,
             explanation: desc.into(),
             lines: vec![dr_line, cr_line],
         };
 
-        self.engine.create_journal_transaction(&model).await
+        self.engine.create_general_transaction(&model).await
     }
 }
 
 #[derive(Debug)]
 struct SimpleJournalTransaction {
-    jx: journal::transaction::Model,
-    line1: journal::transaction::line::Model,
-    line2: journal::transaction::line::Model,
+    jx: journal::transaction::general::Model,
+    line1: journal::transaction::general::line::Model,
+    line2: journal::transaction::general::line::Model,
     timestamp: NaiveDateTime,
 }
 
@@ -1027,25 +969,25 @@ struct SpecialJournalTransaction {}
 impl SimpleJournalTransaction {
     pub fn new(state: &TestState) -> Self {
         let timestamp = timestamp();
-        let line1 = journal::transaction::line::Model {
+        let line1 = journal::transaction::general::line::Model {
             journal_id: state.journal.id,
             timestamp,
             xact_type: XactType::Dr,
             amount: Decimal::ONE,
             ..Default::default()
         };
-        let line2 = journal::transaction::line::Model {
+        let line2 = journal::transaction::general::line::Model {
             journal_id: state.journal.id,
             timestamp,
             xact_type: XactType::Cr,
             amount: Decimal::ONE,
             ..Default::default()
         };
-        let jx = journal::transaction::Model {
+        let jx = journal::transaction::general::Model {
             journal_id: state.journal.id,
             timestamp,
             explanation: "Withdrew cash for lunch".into(),
-            lines: Vec::<journal::transaction::line::Model>::new(),
+            lines: Vec::<journal::transaction::general::line::Model>::new(),
         };
 
         Self {
@@ -1060,8 +1002,8 @@ impl SimpleJournalTransaction {
         &self,
         state: &TestState,
         desc: &str,
-    ) -> journal::transaction::ActiveModel {
-        let model = journal::transaction::Model {
+    ) -> journal::transaction::general::ActiveModel {
+        let model = journal::transaction::general::Model {
             journal_id: self.line1.journal_id,
             timestamp: timestamp(),
             explanation: desc.into(),
@@ -1070,7 +1012,7 @@ impl SimpleJournalTransaction {
 
         state
             .engine
-            .create_journal_transaction(&model)
+            .create_general_transaction(&model)
             .await
             .expect(format!("failed to create simple journal transaction: {desc}").as_str())
     }
@@ -1085,7 +1027,7 @@ impl SpecialJournalTransaction {
         &self,
         state: &TestState,
         desc: &str,
-    ) -> journal::transaction::ActiveModel {
+    ) -> journal::transaction::general::ActiveModel {
         todo!()
     }
 }

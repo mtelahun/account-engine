@@ -29,12 +29,12 @@ where
             crate::resource::journal::transaction::record::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
-            journal::transaction::line::ledger::Model,
-            journal::transaction::line::ledger::ActiveModel,
+            journal::transaction::general::line::Model,
+            journal::transaction::general::line::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
-            journal::transaction::line::account::Model,
-            journal::transaction::line::account::ActiveModel,
+            journal::transaction::special::line::Model,
+            journal::transaction::special::line::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
             ledger_xact_type::Model,
@@ -62,12 +62,12 @@ where
             crate::resource::journal::transaction::record::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
-            journal::transaction::line::ledger::Model,
-            journal::transaction::line::ledger::ActiveModel,
+            journal::transaction::general::line::Model,
+            journal::transaction::general::line::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
-            journal::transaction::line::account::Model,
-            journal::transaction::line::account::ActiveModel,
+            journal::transaction::special::line::Model,
+            journal::transaction::special::line::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
             ledger_xact_type::Model,

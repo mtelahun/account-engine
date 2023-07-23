@@ -11,7 +11,7 @@ CREATE TABLE ledger_transaction(
             REFERENCES ledger_transaction_type(code),
     CONSTRAINT fk_journal_transaction_record
         FOREIGN KEY(journal_id, timestamp)
-            REFERENCES general_journal_transaction_record(journal_id, timestamp)
+            REFERENCES journal_transaction_record(journal_id, timestamp)
 );
 
 CREATE TABLE ledger_transaction_ledger(
@@ -53,8 +53,8 @@ CREATE TYPE "PostingRef" AS (
     account_id LedgerId
 );
 
-ALTER TABLE general_journal_transaction_line_ledger
+ALTER TABLE journal_transaction_general
     ADD COLUMN posting_ref "PostingRef";
 
-ALTER TABLE general_journal_transaction_line_account
+ALTER TABLE journal_transaction_line_account
     ADD COLUMN posting_ref "PostingRef";

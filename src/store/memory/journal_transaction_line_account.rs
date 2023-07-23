@@ -11,32 +11,23 @@ use super::store::MemoryStore;
 #[async_trait]
 impl
     ResourceOperations<
-        journal::transaction::line::account::Model,
-        journal::transaction::line::account::ActiveModel,
+        journal::transaction::special::line::Model,
+        journal::transaction::special::line::ActiveModel,
         JournalTransactionId,
     > for MemoryStore
 {
     async fn insert(
         &self,
-        model: &journal::transaction::line::account::Model,
-    ) -> Result<journal::transaction::line::account::ActiveModel, OrmError> {
+        model: &journal::transaction::special::line::Model,
+    ) -> Result<journal::transaction::special::line::ActiveModel, OrmError> {
         let jtx_id = JournalTransactionId::new(model.journal_id, model.timestamp);
-        let jtx_line_account = journal::transaction::line::account::ActiveModel {
-            journal_id: model.journal_id,
-            timestamp: model.timestamp,
-            account_id: model.account_id,
-            xact_type: model.xact_type,
-            xact_type_external: model.xact_type_external,
-            amount: model.amount,
-            state: model.state,
-            posting_ref: model.posting_ref,
-        };
+        let jtx_line_account = model.into();
         let mut inner = self.inner.write().await;
-        match inner.journal_xact_line_account.get_mut(&jtx_id) {
+        match inner.journal_xact_special.get_mut(&jtx_id) {
             Some(val) => val.push(jtx_line_account),
             None => {
                 inner
-                    .journal_xact_line_account
+                    .journal_xact_special
                     .insert(jtx_id, vec![jtx_line_account]);
             }
         };
@@ -47,11 +38,11 @@ impl
     async fn get(
         &self,
         ids: Option<&Vec<JournalTransactionId>>,
-    ) -> Result<Vec<journal::transaction::line::account::ActiveModel>, OrmError> {
-        let mut res = Vec::<journal::transaction::line::account::ActiveModel>::new();
+    ) -> Result<Vec<journal::transaction::special::line::ActiveModel>, OrmError> {
+        let mut res = Vec::<journal::transaction::special::line::ActiveModel>::new();
         let inner = self.inner.read().await;
         if let Some(ids) = ids {
-            for (key, lst) in inner.journal_xact_line_account.iter() {
+            for (key, lst) in inner.journal_xact_special.iter() {
                 if ids.iter().any(|id| id == key) {
                     for v in lst.iter() {
                         res.push(*v)
@@ -59,7 +50,7 @@ impl
                 }
             }
         } else {
-            for lst in inner.journal_xact_line_account.values() {
+            for lst in inner.journal_xact_special.values() {
                 for v in lst.iter() {
                     res.push(*v)
                 }
@@ -72,13 +63,13 @@ impl
     async fn search(
         &self,
         _domain: &str,
-    ) -> Result<Vec<journal::transaction::line::account::ActiveModel>, OrmError> {
+    ) -> Result<Vec<journal::transaction::special::line::ActiveModel>, OrmError> {
         todo!()
     }
 
     async fn save(
         &self,
-        _model: &journal::transaction::line::account::ActiveModel,
+        _model: &journal::transaction::special::line::ActiveModel,
     ) -> Result<u64, OrmError> {
         todo!()
     }

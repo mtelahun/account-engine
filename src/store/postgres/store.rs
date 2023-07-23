@@ -99,14 +99,14 @@ impl Store for PostgresStore {
     async fn update_journal_transaction_line_ledger_posting_ref(
         &self,
         id: JournalTransactionId,
-        line: &journal::transaction::line::ledger::ActiveModel,
+        line: &journal::transaction::general::line::ActiveModel,
     ) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let sql = format!(
             "UPDATE {} 
                 SET state=$1, posting_ref=$2
                     WHERE journal_id=$3::JournalId AND timestamp=$4 and ledger_id=$5::LedgerId",
-            journal::transaction::line::ledger::ActiveModel::NAME
+            journal::transaction::general::line::ActiveModel::NAME
         );
         let res = conn
             .execute(
@@ -128,14 +128,14 @@ impl Store for PostgresStore {
     async fn update_journal_transaction_line_account_posting_ref(
         &self,
         id: JournalTransactionId,
-        line: &journal::transaction::line::account::ActiveModel,
+        line: &journal::transaction::special::line::ActiveModel,
     ) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let sql = format!(
             "UPDATE {} 
                 SET state=$1, posting_ref=$2
                     WHERE journal_id=$3::JournalId AND timestamp=$4 and ledger_id=$5::LedgerId",
-            journal::transaction::line::account::ActiveModel::NAME
+            journal::transaction::special::line::ActiveModel::NAME
         );
         let res = conn
             .execute(

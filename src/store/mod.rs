@@ -45,26 +45,26 @@ impl Resource for accounting_period::interim_period::ActiveModel {
     const NAME: &'static str = "interim_accounting_period";
 }
 
-impl Resource for journal::transaction::line::account::ActiveModel {
-    const NAME: &'static str = "general_journal_transaction_line_account";
+impl Resource for journal::transaction::special::line::ActiveModel {
+    const NAME: &'static str = "journal_transaction_special";
 }
 
-impl Resource for journal::transaction::line::ledger::ActiveModel {
-    const NAME: &'static str = "general_journal_transaction_line_ledger";
+impl Resource for journal::transaction::general::line::ActiveModel {
+    const NAME: &'static str = "journal_transaction_general";
 }
 
 impl Resource for journal::transaction::record::ActiveModel {
-    const NAME: &'static str = "general_journal_transaction_record";
+    const NAME: &'static str = "journal_transaction_record";
 }
 
 /// The journal_transaction::ActiveModel is only ever used to communicate with
 /// the caller and doesn't have any datastore models associated with it.
-impl Resource for journal::transaction::ActiveModel {
+impl Resource for journal::transaction::general::ActiveModel {
     const NAME: &'static str = "";
 }
 
 impl Resource for journal::ActiveModel {
-    const NAME: &'static str = "general_journal";
+    const NAME: &'static str = "journal";
 }
 
 impl Resource for ledger::intermediate::ActiveModel {

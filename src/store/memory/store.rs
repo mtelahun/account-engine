@@ -39,10 +39,10 @@ pub(crate) struct Inner {
     pub(crate) journal: HashMap<JournalId, journal::ActiveModel>,
     pub(crate) journal_xact:
         HashMap<JournalTransactionId, journal::transaction::record::ActiveModel>,
-    pub(crate) journal_xact_line:
-        HashMap<JournalTransactionId, Vec<journal::transaction::line::ledger::ActiveModel>>,
-    pub(crate) journal_xact_line_account:
-        HashMap<JournalTransactionId, Vec<journal::transaction::line::account::ActiveModel>>,
+    pub(crate) journal_xact_general:
+        HashMap<JournalTransactionId, Vec<journal::transaction::general::line::ActiveModel>>,
+    pub(crate) journal_xact_special:
+        HashMap<JournalTransactionId, Vec<journal::transaction::special::line::ActiveModel>>,
     pub(crate) journal_entry: HashMap<LedgerKey, ledger::transaction::ActiveModel>,
     pub(crate) ledger_xact_account: HashMap<LedgerKey, ledger::transaction::account::ActiveModel>,
     pub(crate) ledger_xact_ledger: HashMap<LedgerKey, ledger::transaction::ledger::ActiveModel>,
@@ -85,13 +85,13 @@ impl Inner {
             journal: HashMap::<JournalId, journal::ActiveModel>::new(),
             journal_xact:
                 HashMap::<JournalTransactionId, journal::transaction::record::ActiveModel>::new(),
-            journal_xact_line: HashMap::<
+            journal_xact_general: HashMap::<
                 JournalTransactionId,
-                Vec<journal::transaction::line::ledger::ActiveModel>,
+                Vec<journal::transaction::general::line::ActiveModel>,
             >::new(),
-            journal_xact_line_account: HashMap::<
+            journal_xact_special: HashMap::<
                 JournalTransactionId,
-                Vec<journal::transaction::line::account::ActiveModel>,
+                Vec<journal::transaction::special::line::ActiveModel>,
             >::new(),
             journal_entry: HashMap::<LedgerKey, ledger::transaction::ActiveModel>::new(),
             ledger_xact_account:
@@ -165,11 +165,11 @@ impl Store for MemoryStore {
     async fn update_journal_transaction_line_ledger_posting_ref(
         &self,
         id: JournalTransactionId,
-        line: &journal::transaction::line::ledger::ActiveModel,
+        line: &journal::transaction::general::line::ActiveModel,
     ) -> Result<u64, OrmError> {
-        let mut dummy = Vec::<journal::transaction::line::ledger::ActiveModel>::new();
+        let mut dummy = Vec::<journal::transaction::general::line::ActiveModel>::new();
         let mut inner = self.inner.write().await;
-        let xact_lines = match inner.journal_xact_line.get_mut(&id) {
+        let xact_lines = match inner.journal_xact_general.get_mut(&id) {
             Some(lines) => lines,
             None => &mut dummy,
         };
@@ -187,11 +187,11 @@ impl Store for MemoryStore {
     async fn update_journal_transaction_line_account_posting_ref(
         &self,
         id: JournalTransactionId,
-        line: &journal::transaction::line::account::ActiveModel,
+        line: &journal::transaction::special::line::ActiveModel,
     ) -> Result<u64, OrmError> {
-        let mut dummy = Vec::<journal::transaction::line::account::ActiveModel>::new();
+        let mut dummy = Vec::<journal::transaction::special::line::ActiveModel>::new();
         let mut inner = self.inner.write().await;
-        let xact_lines = match inner.journal_xact_line_account.get_mut(&id) {
+        let xact_lines = match inner.journal_xact_special.get_mut(&id) {
             Some(lines) => lines,
             None => &mut dummy,
         };

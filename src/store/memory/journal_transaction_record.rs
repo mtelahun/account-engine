@@ -19,21 +19,20 @@ impl
         &self,
         model: &journal::transaction::record::Model,
     ) -> Result<journal::transaction::record::ActiveModel, OrmError> {
-        let jtx_id = JournalTransactionId::new(model.journal_id, model.timestamp);
         let jtx_record = journal::transaction::record::ActiveModel {
             journal_id: model.journal_id,
             timestamp: model.timestamp,
             explanation: model.explanation,
         };
         let mut inner = self.inner.write().await;
-        if inner.journal_xact.contains_key(&jtx_id) {
+        if inner.journal_xact.contains_key(&jtx_record.id()) {
             return Err(OrmError::Internal(format!(
                 "db error: ERROR: duplicate key value violates unique constraint \
                 \"journal_transaction_record_pkey\"\nDETAIL: Key (journal_id, \"timestamp\")=({}, {}) already exists.",
                 model.journal_id, model.timestamp
             )));
         }
-        inner.journal_xact.insert(jtx_id, jtx_record);
+        inner.journal_xact.insert(jtx_record.id(), jtx_record);
 
         Ok(jtx_record)
     }

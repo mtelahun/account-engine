@@ -16,13 +16,13 @@ pub trait Store {
     async fn update_journal_transaction_line_ledger_posting_ref(
         &self,
         id: JournalTransactionId,
-        line: &journal::transaction::line::ledger::ActiveModel,
+        line: &journal::transaction::general::line::ActiveModel,
     ) -> Result<u64, OrmError>;
 
     async fn update_journal_transaction_line_account_posting_ref(
         &self,
         id: JournalTransactionId,
-        line: &journal::transaction::line::account::ActiveModel,
+        line: &journal::transaction::special::line::ActiveModel,
     ) -> Result<u64, OrmError>;
 
     async fn find_ledger_by_no(

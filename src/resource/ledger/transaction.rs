@@ -65,7 +65,7 @@ pub mod account {
     use chrono::NaiveDateTime;
 
     use crate::{
-        domain::{ExternalXactTypeCode, LedgerId, XactType},
+        domain::{AccountId, ExternalXactTypeCode, LedgerId, XactType},
         resource::ledger::journal_entry::LedgerKey,
     };
 
@@ -73,7 +73,7 @@ pub mod account {
     pub struct Model {
         pub ledger_id: LedgerId,
         pub timestamp: NaiveDateTime,
-        pub account_id: LedgerId,
+        pub account_id: AccountId,
         pub xact_type_code: XactType,
         pub xact_type_external_code: ExternalXactTypeCode,
     }
@@ -82,7 +82,7 @@ pub mod account {
     pub struct ActiveModel {
         pub ledger_id: LedgerId,
         pub timestamp: NaiveDateTime,
-        pub account_id: LedgerId,
+        pub account_id: AccountId,
         pub xact_type_code: XactType,
         pub xact_type_external_code: ExternalXactTypeCode,
     }

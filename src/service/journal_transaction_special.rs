@@ -10,10 +10,10 @@ use crate::{
     Store,
 };
 
-use super::{JournalService, ServiceError};
+use super::{GeneralJournalService, ServiceError};
 
 #[async_trait]
-pub trait JournalTransactionService<R>: JournalService<R>
+pub trait JournalTransactionService<R>: GeneralJournalService<R>
 where
     R: Store
         + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>

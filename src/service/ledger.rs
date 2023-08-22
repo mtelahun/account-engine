@@ -3,7 +3,7 @@ use journal_entry::LedgerKey;
 
 use crate::{
     domain::{LedgerId, XactType},
-    resource::{account_engine::AccountEngine, ledger, ledger::journal_entry, PostingRef},
+    resource::{account_engine::AccountEngine, ledger, ledger::journal_entry, LedgerPostingRef},
     store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
     Store,
 };
@@ -68,12 +68,12 @@ where
 
     async fn journal_entry_by_posting_ref(
         &self,
-        posting_ref: PostingRef,
+        posting_ref: LedgerPostingRef,
     ) -> Result<Option<ledger::journal_entry::ActiveModel>, ServiceError> {
         let entry: Vec<ledger::transaction::ActiveModel> =
             self.store().get(Some(&vec![posting_ref.key])).await?;
         for e in entry.iter() {
-            if e.ledger_id == posting_ref.account_id {
+            if e.ledger_id == posting_ref.ledger_id {
                 return Ok(Some(ledger::journal_entry::ActiveModel {
                     ledger_id: e.ledger_id,
                     timestamp: e.timestamp,
@@ -86,7 +86,7 @@ where
         let xact: Vec<ledger::transaction::ledger::ActiveModel> =
             self.store().get(Some(&vec![posting_ref.key])).await?;
         for t in xact {
-            if t.ledger_dr_id == posting_ref.account_id {
+            if t.ledger_dr_id == posting_ref.ledger_id {
                 if let Some(counterpart) = self
                     .journal_entry_by_key(LedgerKey {
                         ledger_id: t.ledger_id,

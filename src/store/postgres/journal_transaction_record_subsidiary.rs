@@ -10,21 +10,20 @@ use crate::{
 #[async_trait]
 impl
     ResourceOperations<
-        journal::transaction::special::line::Model,
-        journal::transaction::special::line::ActiveModel,
+        journal::transaction::special::Model,
+        journal::transaction::special::ActiveModel,
         JournalTransactionId,
     > for PostgresStore
 {
     async fn insert(
         &self,
-        model: &journal::transaction::special::line::Model,
-    ) -> Result<journal::transaction::special::line::ActiveModel, OrmError> {
+        model: &journal::transaction::special::Model,
+    ) -> Result<journal::transaction::special::ActiveModel, OrmError> {
         let conn = self.get_connection().await?;
         let sql = format!(
-            "INSERT INTO 
-                {}(journal_id, timestamp, account_id, state) 
-                    VALUES($1, $2, $3, $4) RETURNING *",
-            journal::transaction::special::line::ActiveModel::NAME
+            "INSERT INTO {}(journal_id, timestamp, explanation, account_id, xact_type_external) 
+                VALUES($1, $2, $3, $4, $5, $6) RETURNING *",
+            journal::transaction::special::ActiveModel::NAME
         );
         let res = conn
             .query_one(
@@ -32,27 +31,28 @@ impl
                 &[
                     &model.journal_id,
                     &model.timestamp,
+                    &model.explanation,
                     &model.account_id,
-                    &model.state,
+                    &model.xact_type_external,
                 ],
             )
             .await
             .map_err(|e| OrmError::Internal(e.to_string()))?;
 
-        Ok(journal::transaction::special::line::ActiveModel::from(res))
+        Ok(journal::transaction::special::ActiveModel::from(res))
     }
 
     async fn get(
         &self,
         ids: Option<&Vec<JournalTransactionId>>,
-    ) -> Result<Vec<journal::transaction::special::line::ActiveModel>, OrmError> {
+    ) -> Result<Vec<journal::transaction::special::ActiveModel>, OrmError> {
         let search_one = format!(
             "SELECT * FROM {} WHERE journal_id=$1::JournalId AND timestamp=$2",
-            journal::transaction::special::line::ActiveModel::NAME
+            journal::transaction::special::ActiveModel::NAME
         );
         let search_all = format!(
             "SELECT * FROM {}",
-            journal::transaction::special::line::ActiveModel::NAME
+            journal::transaction::record::ActiveModel::NAME
         );
         let conn = self.get_connection().await?;
         let rows: Vec<Row> = match ids {
@@ -75,9 +75,9 @@ impl
                 .await
                 .map_err(|e| OrmError::Internal(e.to_string()))?,
         };
-        let mut records = Vec::<journal::transaction::special::line::ActiveModel>::new();
+        let mut records = Vec::<journal::transaction::special::ActiveModel>::new();
         for row in rows {
-            let am = journal::transaction::special::line::ActiveModel::from(row);
+            let am = journal::transaction::special::ActiveModel::from(row);
             records.push(am);
         }
 
@@ -87,13 +87,13 @@ impl
     async fn search(
         &self,
         _domain: &str,
-    ) -> Result<Vec<journal::transaction::special::line::ActiveModel>, OrmError> {
+    ) -> Result<Vec<journal::transaction::special::ActiveModel>, OrmError> {
         todo!()
     }
 
     async fn save(
         &self,
-        _model: &journal::transaction::special::line::ActiveModel,
+        _model: &journal::transaction::special::ActiveModel,
     ) -> Result<u64, OrmError> {
         todo!()
     }
@@ -105,8 +105,8 @@ impl
     async fn archive(&self, id: JournalTransactionId) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
-            "UPDATE {} SET archived = true, WHERE journal_id=$1::JournalId AND timestamp=$2",
-            journal::transaction::special::line::ActiveModel::NAME
+            "UPDATE {} SET archived = true, state = 'archived' WHERE journal_id=$1::JournalId AND timestamp=$2",
+            journal::transaction::special::ActiveModel::NAME
         );
 
         conn.execute(query.as_str(), &[&id.journal_id(), &id.timestamp()])
@@ -118,7 +118,7 @@ impl
         let conn = self.get_connection().await?;
         let query = format!(
             "UPDATE {} SET archived = false WHERE journal_id=$1::JournalId AND timestamp=$2",
-            journal::transaction::special::line::ActiveModel::NAME
+            journal::transaction::special::ActiveModel::NAME
         );
 
         conn.execute(query.as_str(), &[&id.journal_id(), &id.timestamp()])
@@ -127,18 +127,19 @@ impl
     }
 }
 
-impl From<Row> for journal::transaction::special::line::ActiveModel {
+impl From<Row> for journal::transaction::special::ActiveModel {
     fn from(value: Row) -> Self {
         let str_xte: String = value.get("xact_type_external");
         let xact_type_external_code = ExternalXactTypeCode::from(str_xte);
         Self {
             journal_id: value.get("journal_id"),
             timestamp: value.get("timestamp"),
-            template_id: value.get("template_id"),
+            explanation: value.get("explanation"),
             account_id: value.get("account_id"),
             xact_type_external: Some(xact_type_external_code),
-            state: value.get("state"),
             posting_ref: value.get("posting_ref"),
+            account_posted_state: value.get("account_posted_state"),
+            template_id: value.get("template_id"),
         }
     }
 }

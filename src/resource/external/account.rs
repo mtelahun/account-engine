@@ -1,10 +1,10 @@
 use chrono::NaiveDate;
 
-use crate::domain::{entity_code::EntityCode, ArrayShortString, LedgerId, SubLedgerId};
+use crate::domain::{entity_code::EntityCode, AccountId, ArrayShortString, SubLedgerId};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Model {
-    pub subsidiary_ledger_id: SubLedgerId,
+    pub subledger_id: SubLedgerId,
     pub entity_type_code: EntityCode,
     pub account_no: ArrayShortString,
     pub date_opened: NaiveDate,
@@ -12,8 +12,8 @@ pub struct Model {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ActiveModel {
-    pub id: LedgerId,
-    pub subsidiary_ledger_id: SubLedgerId,
+    pub id: AccountId,
+    pub subledger_id: SubLedgerId,
     pub entity_type_code: EntityCode,
     pub account_no: ArrayShortString,
     pub date_opened: NaiveDate,

@@ -45,16 +45,36 @@ impl Resource for accounting_period::interim_period::ActiveModel {
     const NAME: &'static str = "interim_accounting_period";
 }
 
-impl Resource for journal::transaction::special::line::ActiveModel {
-    const NAME: &'static str = "journal_transaction_special";
-}
-
 impl Resource for journal::transaction::general::line::ActiveModel {
     const NAME: &'static str = "journal_transaction_general";
 }
 
+impl Resource for journal::transaction::special::column::ActiveModel {
+    const NAME: &'static str = "journal_transaction_subsidiary_line";
+}
+
+impl Resource for journal::transaction::special::totals::ActiveModel {
+    const NAME: &'static str = "journal_transaction_subsidiary_totals";
+}
+
+impl Resource for journal::transaction::special::column::total::ActiveModel {
+    const NAME: &'static str = "journal_transaction_subsidiary_column_total";
+}
+
+impl Resource for journal::transaction::special::template::ActiveModel {
+    const NAME: &'static str = "journal_transaction_subsidiary_template";
+}
+
+impl Resource for journal::transaction::special::template::column::ActiveModel {
+    const NAME: &'static str = "journal_transaction_subsidiary_template_column";
+}
+
 impl Resource for journal::transaction::record::ActiveModel {
     const NAME: &'static str = "journal_transaction_record";
+}
+
+impl Resource for journal::transaction::special::ActiveModel {
+    const NAME: &'static str = "journal_transaction_subsidiary";
 }
 
 /// The journal_transaction::ActiveModel is only ever used to communicate with

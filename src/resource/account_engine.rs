@@ -1,7 +1,7 @@
 use crate::{
     domain::{
-        ids::JournalId, GeneralLedgerId, JournalTransactionId, LedgerId, LedgerXactTypeCode,
-        PeriodId, SubLedgerId,
+        ids::JournalId, AccountId, GeneralLedgerId, JournalTransactionId, LedgerId,
+        LedgerXactTypeCode, PeriodId, SubLedgerId,
     },
     service::ServiceError,
     store::ResourceOperations,
@@ -29,19 +29,23 @@ where
             crate::resource::journal::transaction::record::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
+            crate::resource::journal::transaction::special::Model,
+            crate::resource::journal::transaction::special::ActiveModel,
+            JournalTransactionId,
+        > + ResourceOperations<
             journal::transaction::general::line::Model,
             journal::transaction::general::line::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
-            journal::transaction::special::line::Model,
-            journal::transaction::special::line::ActiveModel,
+            journal::transaction::special::column::Model,
+            journal::transaction::special::column::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
             ledger_xact_type::Model,
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
         > + ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
-        + ResourceOperations<external::account::Model, external::account::ActiveModel, LedgerId>,
+        + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>,
 {
     pub(crate) repository: R,
 }
@@ -62,12 +66,16 @@ where
             crate::resource::journal::transaction::record::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
+            crate::resource::journal::transaction::special::Model,
+            crate::resource::journal::transaction::special::ActiveModel,
+            JournalTransactionId,
+        > + ResourceOperations<
             journal::transaction::general::line::Model,
             journal::transaction::general::line::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
-            journal::transaction::special::line::Model,
-            journal::transaction::special::line::ActiveModel,
+            journal::transaction::special::column::Model,
+            journal::transaction::special::column::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
             ledger_xact_type::Model,
@@ -75,7 +83,7 @@ where
             LedgerXactTypeCode,
         > + ResourceOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
         + ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
-        + ResourceOperations<external::account::Model, external::account::ActiveModel, LedgerId>
+        + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
         + Send
         + Sync
         + 'static,

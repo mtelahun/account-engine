@@ -6,14 +6,13 @@ use crate::{
     domain::{
         ids::JournalId, ledger_xact_type_code, JournalTransactionId, LedgerId, LedgerXactTypeCode,
     },
-    resource::{account_engine::AccountEngine, external, journal, ledger, ledger_xact_type},
+    resource::{account_engine::AccountEngine, journal, ledger, ledger_xact_type},
+    service::ServiceError,
     store::{
         memory::store::MemoryStore, postgres::store::PostgresStore, OrmError, ResourceOperations,
     },
     Store,
 };
-
-use super::ServiceError;
 
 #[async_trait]
 pub trait GeneralJournalService<R>
@@ -33,8 +32,7 @@ where
             ledger_xact_type::Model,
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
-        > + ResourceOperations<external::account::Model, external::account::ActiveModel, LedgerId>
-        + Send
+        > + Send
         + Sync
         + 'static,
 {

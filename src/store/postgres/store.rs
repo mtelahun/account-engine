@@ -6,7 +6,7 @@ use mobc::{Connection, Pool};
 use mobc_postgres::PgConnectionManager;
 use tokio_postgres::{Config, NoTls};
 
-use crate::domain::{ArrayShortString, JournalTransactionId, LedgerId};
+use crate::domain::{ArrayShortString, JournalTransactionId, LedgerId, SubJournalTemplateId};
 use crate::resource::{
     accounting_period, journal,
     ledger::{self, transaction},
@@ -117,35 +117,6 @@ impl Store for PostgresStore {
                     &id.journal_id(),
                     &id.timestamp(),
                     &line.ledger_id,
-                ],
-            )
-            .await
-            .map_err(|e| OrmError::Internal(e.to_string()))?;
-
-        Ok(res)
-    }
-
-    async fn update_journal_transaction_line_account_posting_ref(
-        &self,
-        id: JournalTransactionId,
-        line: &journal::transaction::special::line::ActiveModel,
-    ) -> Result<u64, OrmError> {
-        let conn = self.get_connection().await?;
-        let sql = format!(
-            "UPDATE {} 
-                SET state=$1, posting_ref=$2
-                    WHERE journal_id=$3::JournalId AND timestamp=$4 and ledger_id=$5::LedgerId",
-            journal::transaction::special::line::ActiveModel::NAME
-        );
-        let res = conn
-            .execute(
-                sql.as_str(),
-                &[
-                    &TransactionState::Posted,
-                    &line.posting_ref,
-                    &id.journal_id(),
-                    &id.timestamp(),
-                    &line.account_id,
                 ],
             )
             .await
@@ -268,5 +239,20 @@ impl Store for PostgresStore {
         }
 
         Ok(None)
+    }
+
+    async fn get_journal_transaction_columns<'a>(
+        &self,
+        _ids: &'a [JournalTransactionId],
+        _sequence: usize,
+    ) -> Result<Vec<journal::transaction::special::column::ActiveModel>, OrmError> {
+        todo!()
+    }
+
+    async fn get_journal_transaction_template_columns(
+        &self,
+        _id: SubJournalTemplateId,
+    ) -> Result<Vec<journal::transaction::special::template::column::ActiveModel>, OrmError> {
+        todo!()
     }
 }

@@ -11,6 +11,6 @@ pub mod subsidiary_ledger;
 
 // Re-exports
 pub use accounting_period::interim_period::InterimType;
-pub use journal::transaction::{PostingRef, TransactionState};
+pub use journal::transaction::{LedgerPostingRef, TransactionState};
 pub use ledger::journal_entry::LedgerKey;
 pub use ledger::LedgerType;

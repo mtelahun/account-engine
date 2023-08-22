@@ -4,14 +4,13 @@ use rust_decimal::Decimal;
 use crate::{
     domain::{ids::JournalId, JournalTransactionId, LedgerId, LedgerXactTypeCode, XactType},
     resource::{
-        account_engine::AccountEngine, external, journal, ledger, ledger_xact_type, LedgerKey,
-        PostingRef, TransactionState,
+        account_engine::AccountEngine, journal, ledger, ledger_xact_type, LedgerKey,
+        LedgerPostingRef, TransactionState,
     },
+    service::{GeneralJournalService, ServiceError},
     store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
     Store,
 };
-
-use super::{GeneralJournalService, ServiceError};
 
 #[async_trait]
 pub trait JournalTransactionService<R>: GeneralJournalService<R>
@@ -40,8 +39,7 @@ where
             ledger_xact_type::Model,
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
-        > + ResourceOperations<external::account::Model, external::account::ActiveModel, LedgerId>
-        + Send
+        > + Send
         + Sync
         + 'static,
 {
@@ -90,9 +88,9 @@ where
         let _ = self.store().insert(&entry).await?;
         let mut cr = *cr_xact_lines[0];
         cr.state = TransactionState::Posted;
-        cr.posting_ref = Some(PostingRef {
+        cr.posting_ref = Some(LedgerPostingRef {
             key,
-            account_id: cr.ledger_id,
+            ledger_id: cr.ledger_id,
         });
         ledger_posted_list.push(cr);
         if !dr_xact_lines.is_empty() {
@@ -104,9 +102,9 @@ where
             let _ = self.store().insert(&ledger_line).await?;
             let mut dr = *dr_xact_lines[0];
             dr.state = TransactionState::Posted;
-            dr.posting_ref = Some(PostingRef {
+            dr.posting_ref = Some(LedgerPostingRef {
                 key,
-                account_id: dr.ledger_id,
+                ledger_id: dr.ledger_id,
             });
             ledger_posted_list.push(dr);
         }

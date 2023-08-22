@@ -2,12 +2,16 @@
 CREATE TYPE JOURNALTYPE AS ENUM('general', 'special');
 CREATE TYPE TRANSACTIONSTATE AS ENUM('pending', 'archived', 'posted');
 CREATE DOMAIN JournalId AS UUID;
+CREATE DOMAIN SubJournalTemplateId AS UUID;
+CREATE DOMAIN SubJournalTemplateColId AS UUID;
 
 CREATE TABLE journal(
     id JournalId NOT NULL,
     name TEXT NOT NULL,
     code TEXT NOT NULL UNIQUE,
     journal_type JOURNALTYPE NOT NULL,
+    ledger_id LedgerId,
+    template_id SubJournalTemplateId,
     PRIMARY KEY(id)
 );
 
@@ -39,7 +43,22 @@ CREATE TABLE journal_transaction_general(
             REFERENCES ledger(id)
 );
 
-CREATE TABLE journal_transaction_line_account(
+CREATE TABLE journal_transaction_subsidiary_template(
+    id SubJournalTemplateId NOT NULL,
+    name TEXT NOT NULL,
+    PRIMARY KEY(id)
+);
+
+CREATE TABLE journal_transaction_subsidiary_template_column(
+    id SubJournalTemplateColId NOT NULL,
+    template_id SubJournalTemplateId NOT NULL,
+    sequence SMALLINT NOT NULL,
+    dr_ledger_id AccountId,
+    cr_ledger_id AccountId,
+    PRIMARY KEY(id)
+);
+
+CREATE TABLE journal_transaction_subsidiary(
     journal_id JournalId NOT NULL,
     timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     ledger_id LedgerId,

@@ -1,8 +1,14 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::{ExternalXactTypeCode, LedgerId, SubLedgerId},
-    resource::{account_engine::AccountEngine, external, subsidiary_ledger},
+    domain::{AccountId, ExternalXactTypeCode, SubLedgerId},
+    resource::{
+        account_engine::AccountEngine,
+        external,
+        journal::AccountPostingRef,
+        ledger::{self, journal_entry::LedgerKey},
+        subsidiary_ledger,
+    },
     store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
     Store,
 };
@@ -14,11 +20,15 @@ pub trait SubsidiaryLedgerService<R>
 where
     R: Store
         + ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
-        + ResourceOperations<external::account::Model, external::account::ActiveModel, LedgerId>
+        + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
         + ResourceOperations<
             external::transaction_type::Model,
             external::transaction_type::ActiveModel,
             ExternalXactTypeCode,
+        > + ResourceOperations<
+            ledger::transaction::account::Model,
+            ledger::transaction::account::ActiveModel,
+            LedgerKey,
         > + Send
         + Sync
         + 'static,
@@ -48,9 +58,24 @@ where
 
     async fn get_accounts(
         &self,
-        ids: Option<&Vec<LedgerId>>,
+        ids: Option<&Vec<AccountId>>,
     ) -> Result<Vec<external::account::ActiveModel>, ServiceError> {
         Ok(self.store().get(ids).await?)
+    }
+
+    async fn get_journal_entry_transaction_account(
+        &self,
+        posting_ref: &AccountPostingRef,
+    ) -> Result<ledger::transaction::account::ActiveModel, ServiceError> {
+        let xact = self.store().get(Some(&vec![posting_ref.key])).await?;
+        if xact.is_empty() {
+            return Err(ServiceError::EmptyRecord(format!(
+                "account: {}, key: {}",
+                posting_ref.account_id, posting_ref.key
+            )));
+        }
+
+        Ok(xact[0])
     }
 
     async fn create_external_transaction_type(

@@ -3,7 +3,7 @@ use rust_decimal::Decimal;
 
 use crate::{
     domain::{ids::JournalId, xact_type::XactType, JournalTransactionId, LedgerId},
-    resource::{PostingRef, TransactionState},
+    resource::{LedgerPostingRef, TransactionState},
 };
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -14,7 +14,7 @@ pub struct Model {
     pub xact_type: XactType,
     pub amount: Decimal,
     pub state: TransactionState,
-    pub posting_ref: Option<PostingRef>,
+    pub posting_ref: Option<LedgerPostingRef>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -25,7 +25,7 @@ pub struct ActiveModel {
     pub xact_type: XactType,
     pub amount: Decimal,
     pub state: TransactionState,
-    pub posting_ref: Option<PostingRef>,
+    pub posting_ref: Option<LedgerPostingRef>,
 }
 
 impl ActiveModel {

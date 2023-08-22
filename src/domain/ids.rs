@@ -82,6 +82,13 @@ impl JournalId {
     pub fn new() -> JournalId {
         Self(uuid::Uuid::new_v4())
     }
+
+    pub fn parse_str(input: &str) -> Result<JournalId, String> {
+        let res = uuid::Uuid::parse_str(input)
+            .map_err(|e| format!("unable to parse JournalId: {}", e))?;
+
+        Ok(Self(res))
+    }
 }
 
 impl std::fmt::Display for JournalId {
@@ -99,22 +106,22 @@ impl Deref for JournalId {
 }
 
 #[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
-#[postgres(name = "specjournaltemplateid")]
-pub struct SpecJournalTemplateId(uuid::Uuid);
+#[postgres(name = "subjournaltemplateid")]
+pub struct SubJournalTemplateId(uuid::Uuid);
 
-impl SpecJournalTemplateId {
+impl SubJournalTemplateId {
     pub fn new() -> Self {
         Self(uuid::Uuid::new_v4())
     }
 }
 
-impl std::fmt::Display for SpecJournalTemplateId {
+impl std::fmt::Display for SubJournalTemplateId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-impl Deref for SpecJournalTemplateId {
+impl Deref for SubJournalTemplateId {
     type Target = uuid::Uuid;
 
     fn deref(&self) -> &Self::Target {
@@ -123,22 +130,22 @@ impl Deref for SpecJournalTemplateId {
 }
 
 #[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
-#[postgres(name = "specjournaltemplatecolid")]
-pub struct SpecJournalTemplateColId(uuid::Uuid);
+#[postgres(name = "subjournaltemplatecolid")]
+pub struct SubJournalTemplateColId(uuid::Uuid);
 
-impl SpecJournalTemplateColId {
+impl SubJournalTemplateColId {
     pub fn new() -> Self {
         Self(uuid::Uuid::new_v4())
     }
 }
 
-impl std::fmt::Display for SpecJournalTemplateColId {
+impl std::fmt::Display for SubJournalTemplateColId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-impl Deref for SpecJournalTemplateColId {
+impl Deref for SubJournalTemplateColId {
     type Target = uuid::Uuid;
 
     fn deref(&self) -> &Self::Target {
@@ -171,6 +178,30 @@ impl Deref for SpecJournalColId {
 }
 
 #[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
+#[postgres(name = "columntotalid")]
+pub struct ColumnTotalId(uuid::Uuid);
+
+impl ColumnTotalId {
+    pub fn new() -> Self {
+        Self(uuid::Uuid::new_v4())
+    }
+}
+
+impl std::fmt::Display for ColumnTotalId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Deref for ColumnTotalId {
+    type Target = uuid::Uuid;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
 #[postgres(name = "journaltypeid")]
 pub struct JournalTypeId(uuid::Uuid);
 
@@ -187,6 +218,30 @@ impl std::fmt::Display for JournalTypeId {
 }
 
 impl Deref for JournalTypeId {
+    type Target = uuid::Uuid;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
+#[postgres(name = "journalrefid")]
+pub struct JournalRefId(uuid::Uuid);
+
+impl JournalRefId {
+    pub fn new() -> Self {
+        Self(uuid::Uuid::new_v4())
+    }
+}
+
+impl std::fmt::Display for JournalRefId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Deref for JournalRefId {
     type Target = uuid::Uuid;
 
     fn deref(&self) -> &Self::Target {

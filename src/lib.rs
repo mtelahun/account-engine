@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use domain::{ArrayShortString, JournalTransactionId, LedgerId};
+use domain::{ArrayShortString, JournalTransactionId, LedgerId, SubJournalTemplateId};
 use resource::{
     accounting_period, journal,
     ledger::{self, transaction},
@@ -17,12 +17,6 @@ pub trait Store {
         &self,
         id: JournalTransactionId,
         line: &journal::transaction::general::line::ActiveModel,
-    ) -> Result<u64, OrmError>;
-
-    async fn update_journal_transaction_line_account_posting_ref(
-        &self,
-        id: JournalTransactionId,
-        line: &journal::transaction::special::line::ActiveModel,
     ) -> Result<u64, OrmError>;
 
     async fn find_ledger_by_no(
@@ -49,6 +43,17 @@ pub trait Store {
         &self,
         fy: i32,
     ) -> Result<Option<accounting_period::ActiveModel>, OrmError>;
+
+    async fn get_journal_transaction_columns<'a>(
+        &self,
+        ids: &'a [JournalTransactionId],
+        sequence: usize,
+    ) -> Result<Vec<journal::transaction::special::column::ActiveModel>, OrmError>;
+
+    async fn get_journal_transaction_template_columns(
+        &self,
+        id: SubJournalTemplateId,
+    ) -> Result<Vec<journal::transaction::special::template::column::ActiveModel>, OrmError>;
 }
 
 pub mod domain;

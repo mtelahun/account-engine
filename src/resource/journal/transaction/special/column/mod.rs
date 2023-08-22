@@ -1,33 +1,35 @@
 use chrono::NaiveDateTime;
+use rust_decimal::Decimal;
 
 use crate::{
-    domain::{
-        ids::{AccountId, JournalId},
-        ExternalXactTypeCode, JournalTransactionId, SpecJournalTemplateId,
-    },
-    resource::{PostingRef, TransactionState},
+    domain::{ids::JournalId, ColumnTotalId, JournalTransactionId, LedgerId},
+    resource::TransactionState,
 };
+
+pub mod total;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Model {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
-    pub template_id: SpecJournalTemplateId,
-    pub account_id: AccountId,
-    pub xact_type_external: Option<ExternalXactTypeCode>,
+    pub sequence: usize,
+    pub dr_ledger_id: Option<LedgerId>,
+    pub cr_ledger_id: Option<LedgerId>,
+    pub amount: Decimal,
     pub state: TransactionState,
-    pub posting_ref: Option<PostingRef>,
+    pub column_total_id: Option<ColumnTotalId>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ActiveModel {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
-    pub template_id: SpecJournalTemplateId,
-    pub account_id: AccountId,
-    pub xact_type_external: Option<ExternalXactTypeCode>,
+    pub sequence: usize,
+    pub dr_ledger_id: Option<LedgerId>,
+    pub cr_ledger_id: Option<LedgerId>,
+    pub amount: Decimal,
     pub state: TransactionState,
-    pub posting_ref: Option<PostingRef>,
+    pub column_total_id: Option<ColumnTotalId>,
 }
 
 impl ActiveModel {
@@ -41,11 +43,12 @@ impl From<&Model> for ActiveModel {
         Self {
             journal_id: value.journal_id,
             timestamp: value.timestamp,
-            template_id: value.template_id,
-            account_id: value.account_id,
-            xact_type_external: value.xact_type_external,
+            sequence: value.sequence,
+            dr_ledger_id: value.dr_ledger_id,
+            cr_ledger_id: value.cr_ledger_id,
+            amount: value.amount,
             state: value.state,
-            posting_ref: value.posting_ref,
+            column_total_id: value.column_total_id,
         }
     }
 }

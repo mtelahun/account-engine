@@ -115,6 +115,8 @@ impl From<Row> for journal::ActiveModel {
             name: value.get("name"),
             code: value.get("code"),
             journal_type: value.get("journal_type"),
+            ledger_id: value.get("ledger_id"),
+            template_id: value.get("template_id"),
         }
     }
 }

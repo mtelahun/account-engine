@@ -48,13 +48,18 @@ CREATE TYPE "LedgerKey" AS (
     timestamp TIMESTAMP WITHOUT TIME ZONE
 );
 
-CREATE TYPE "PostingRef" AS (
+CREATE TYPE "LedgerPostingRef" AS (
     key "LedgerKey",
-    account_id LedgerId
+    ledger_id LedgerId
+);
+
+CREATE TYPE "AccountPostingRef" AS (
+    key "LedgerKey",
+    account_id AccountId
 );
 
 ALTER TABLE journal_transaction_general
-    ADD COLUMN posting_ref "PostingRef";
+    ADD COLUMN posting_ref "LedgerPostingRef";
 
-ALTER TABLE journal_transaction_line_account
-    ADD COLUMN posting_ref "PostingRef";
+ALTER TABLE journal_transaction_subsidiary
+    ADD COLUMN posting_ref "AccountPostingRef";

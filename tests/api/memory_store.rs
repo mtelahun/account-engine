@@ -1,24 +1,21 @@
-use std::str::FromStr;
-
 use account_engine::{
-    domain::{
-        ids::JournalId, ArrayCodeString, ArrayLongString, ArrayShortString, JournalTransactionId,
-        LedgerId, XactType,
-    },
-    resource::{
-        account_engine::AccountEngine, accounting_period, external, general_ledger, journal,
-        ledger, subsidiary_ledger, InterimType, LedgerType, TransactionState,
-    },
+    domain::{LedgerId, XactType},
+    resource::{accounting_period, journal, ledger, InterimType, LedgerType, TransactionState},
     service::{
         AccountingPeriodService, GeneralJournalService, GeneralLedgerService,
-        JournalTransactionService, LedgerService, ServiceError, SubsidiaryLedgerService,
+        JournalTransactionService, LedgerService, ServiceError,
     },
-    store::{memory::store::MemoryStore, OrmError},
+    store::OrmError,
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 
-use crate::{timestamp, utils::random_account_no};
+use crate::{
+    support::special_journal_transaction::SpecialJournalTransaction,
+    support::utils::timestamp,
+    support::{special_journal_transaction::TestColumn, state::TestState},
+    CreateLedgerType,
+};
 
 #[tokio::test]
 async fn non_existant_ledger() {
@@ -731,228 +728,82 @@ async fn post_journal_transaction_unbalanced() {
     );
 }
 
-#[ignore]
 #[tokio::test]
-async fn ledger_and_external_account() {
+async fn subsidiary_journal_tx_one_column_one_ledger() {
     // Arrange
+    // Account | Ledger Dr |
+    // --------|-----------|
+    //         |  100.00   |
     let state = TestState::new().await;
-    let (_, ledger, account) = state.create_subsidiary("A/R").await;
-    let mut jxact = SpecialJournalTransaction::new(&state);
-    // jxact.line1.account_id = Some(account.id);
-    // jxact.line1.xact_type_external = Some("DF".into());
-    // jxact.line2.ledger_id = Some(ledger.id);
+    let column = TestColumn::new(
+        &state,
+        1,
+        crate::CreateLedgerType::Random,
+        crate::CreateLedgerType::None,
+        Decimal::ONE_HUNDRED,
+    )
+    .await;
+    let jxact = SpecialJournalTransaction::new(&state, CreateLedgerType::Random, &column).await;
 
     // Act
-    let jxact = jxact.journalize(&state, "Widget sales").await;
-    let posted = state
-        .engine
-        .post_transaction(jxact.id())
-        .await
-        .expect("failed to post transaction");
+    let (tx, _) = jxact.journalize(&state).await;
 
     // Assert
-    assert!(posted, "posting of transaction succeeds");
-    let cr_e = state
-        .engine
-        .journal_entries(ledger.id)
-        .await
-        .expect("failed to get journal enries for revenue ledger");
-    let dr_e = state
-        .engine
-        .journal_entries(account.id)
-        .await
-        .expect("failed to get journal entries for subsidiary account");
-    println!("dr_e: {:#?}\n", dr_e);
-    println!("cr_e: {:#?}\n", cr_e);
-    println!("memory_store: {:#?}\n", LedgerService::store(&state.engine));
-    assert_eq!(
-        cr_e.len(),
-        1,
-        "there is ONE journal entry in the ledger account"
-    );
-    assert_eq!(cr_e[0].amount, Decimal::ONE, "the CR amount equals 1.00");
-    assert_eq!(
-        cr_e[0].journal_ref,
-        JournalTransactionId::new(jxact.journal_id, jxact.timestamp),
-        "the CR journal reference points back to the transaction"
+    jxact.assert_column_match(&state, &column, false).await;
+
+    // Act
+    let posted = jxact.post(&state, tx.id()).await;
+
+    // Assert
+    assert!(
+        posted.is_err(),
+        "A special journal with only ONE column AND ONE account is unbalanced and must fail"
     );
     assert_eq!(
-        dr_e.len(),
-        1,
-        "there is ONE journal entry in the external account"
-    );
-    assert_eq!(dr_e[0].amount, Decimal::ONE, "the DR amount equals 1.00");
-    assert_eq!(
-        dr_e[0].journal_ref,
-        JournalTransactionId::new(jxact.journal_id, jxact.timestamp),
-        "the DR journal reference points back to the transaction"
+        posted.unwrap_err(),
+        ServiceError::Validation(
+            "the Dr and Cr sides of the transaction must be equal".to_string()
+        ),
+        "The unbalanced transaction error is correctly returned"
     );
 }
 
-pub struct TestState {
-    pub engine: AccountEngine<MemoryStore>,
-    pub general_ledger: general_ledger::ActiveModel,
-    pub journal: journal::ActiveModel,
-}
+#[tokio::test]
+async fn subsidiary_journal_tx_one_column_two_ledger() {
+    // Arrange
+    //            | Ledger Dr/ |
+    // Account Dr | Ledger Cr  |
+    // -----------|------------|
+    //            |  100.00    |
+    let state = TestState::new().await;
+    let receivables = state.create_ledger_leaf().await;
+    let column = TestColumn::new(
+        &state,
+        1,
+        crate::CreateLedgerType::Ledger(receivables),
+        crate::CreateLedgerType::Random,
+        Decimal::ONE_HUNDRED,
+    )
+    .await;
+    let jxact =
+        SpecialJournalTransaction::new(&state, CreateLedgerType::Ledger(receivables), &column)
+            .await;
 
-impl TestState {
-    pub async fn new() -> TestState {
-        let store = MemoryStore::new_schema("", "")
-            .await
-            .expect("failed to create MemoryRepository");
-        let engine = AccountEngine::new(store)
-            .await
-            .expect("failed to create engine instance");
-        let ledger = general_ledger::Model {
-            name: ArrayLongString::from_str("My Company").unwrap(),
-            currency_code: ArrayCodeString::from_str("USD").unwrap(),
-        };
-        let ledger = engine
-            .update_general_ledger(&ledger)
-            .await
-            .expect("failed to update general ledger");
-        let journal = journal::Model {
-            name: "General Journal".into(),
-            code: "G".into(),
-            ..Default::default()
-        };
-        let journal = engine
-            .create_journal(&journal)
-            .await
-            .expect("failed to create main journal");
-        let model = external::transaction_type::Model {
-            code: "DF".into(),
-            entity_type_code: "NO".into(),
-            description: "Default transaction".into(),
-        };
-        let _ = engine
-            .create_external_transaction_type(&model)
-            .await
-            .expect("failed to create external transaction type");
+    // Act
+    let (tx, _) = jxact.journalize(&state).await;
 
-        Self {
-            engine,
-            general_ledger: ledger,
-            journal,
-        }
-    }
+    // Assert
+    jxact.assert_column_match(&state, &column, false).await;
 
-    pub async fn create_account(
-        &self,
-        number: &str,
-        name: &'static str,
-        typ: LedgerType,
-        parent_id: Option<LedgerId>,
-    ) -> Result<ledger::ActiveModel, ServiceError> {
-        let account = ledger::Model {
-            ledger_no: ArrayShortString::from_str(number).unwrap(),
-            ledger_type: typ,
-            parent_id,
-            name: ArrayLongString::from_str(name).unwrap(),
-            currency_code: None,
-        };
+    // Act
+    let posted = jxact
+        .post(&state, tx.id())
+        .await
+        .expect("failed to post subsidiary transaction");
 
-        self.engine.create_ledger(&account).await
-    }
-
-    pub async fn create_ledger(&self, name: &'static str, typ: LedgerType) -> ledger::ActiveModel {
-        let ledger = ledger::Model {
-            ledger_no: random_account_no().into(),
-            ledger_type: typ,
-            parent_id: Some(self.general_ledger.root),
-            name: name.into(),
-            currency_code: None,
-        };
-
-        self.engine
-            .create_ledger(&ledger)
-            .await
-            .expect("failed to create ledger")
-    }
-
-    pub async fn create_subsidiary(
-        &self,
-        name: &'static str,
-    ) -> (
-        subsidiary_ledger::ActiveModel,
-        ledger::ActiveModel,
-        external::account::ActiveModel,
-    ) {
-        let ledg = self.create_ledger(name, LedgerType::Derived).await;
-        let model = subsidiary_ledger::Model {
-            name: name.into(),
-            ledger_account_id: ledg.id,
-        };
-        let sub = self
-            .engine
-            .create_subsidiary_ledger(&model)
-            .await
-            .expect(format!("failed to create subsidiary ledger: {name}").as_str());
-
-        let model = external::account::Model {
-            subsidiary_ledger_id: sub.id,
-            entity_type_code: "PE".into(),
-            account_no: random_account_no().into(),
-            date_opened: NaiveDate::from_ymd_opt(2023, 1, 1).unwrap(),
-        };
-        let acc = self
-            .engine
-            .create_account(&model)
-            .await
-            .expect("failed to create external account");
-
-        (sub, ledg, acc)
-    }
-
-    pub async fn create_journal(
-        &self,
-        code: &'static str,
-        name: &'static str,
-    ) -> Result<journal::ActiveModel, ServiceError> {
-        let model = journal::Model {
-            name: name.into(),
-            code: code.into(),
-            ..Default::default()
-        };
-
-        self.engine.create_journal(&model).await
-    }
-
-    pub async fn create_journal_xact(
-        &self,
-        amount: Decimal,
-        account_dr_id: LedgerId,
-        account_cr_id: LedgerId,
-        desc: &str,
-        journal_id: Option<JournalId>,
-    ) -> Result<journal::transaction::general::ActiveModel, ServiceError> {
-        let now = timestamp();
-        let journal_id: JournalId = journal_id.unwrap_or(self.journal.id);
-        let dr_line = journal::transaction::general::line::Model {
-            journal_id: journal_id,
-            timestamp: now,
-            ledger_id: account_dr_id,
-            xact_type: XactType::Dr,
-            amount: amount,
-            ..Default::default()
-        };
-        let cr_line = journal::transaction::general::line::Model {
-            journal_id: journal_id,
-            timestamp: now,
-            ledger_id: account_cr_id,
-            xact_type: XactType::Cr,
-            amount: amount,
-            ..Default::default()
-        };
-        let model = journal::transaction::general::Model {
-            journal_id,
-            timestamp: now,
-            explanation: desc.into(),
-            lines: vec![dr_line, cr_line],
-        };
-
-        self.engine.create_general_transaction(&model).await
-    }
+    // Assert
+    jxact.assert_posted(&state, &column, tx.id(), posted).await;
+    jxact.assert_column_match(&state, &column, true).await;
 }
 
 #[derive(Debug)]
@@ -960,11 +811,8 @@ struct SimpleJournalTransaction {
     jx: journal::transaction::general::Model,
     line1: journal::transaction::general::line::Model,
     line2: journal::transaction::general::line::Model,
-    timestamp: NaiveDateTime,
+    _timestamp: NaiveDateTime,
 }
-
-#[derive(Debug)]
-struct SpecialJournalTransaction {}
 
 impl SimpleJournalTransaction {
     pub fn new(state: &TestState) -> Self {
@@ -994,11 +842,11 @@ impl SimpleJournalTransaction {
             jx,
             line1,
             line2,
-            timestamp,
+            _timestamp: timestamp,
         }
     }
 
-    pub async fn journalize(
+    pub async fn _journalize(
         &self,
         state: &TestState,
         desc: &str,
@@ -1015,19 +863,5 @@ impl SimpleJournalTransaction {
             .create_general_transaction(&model)
             .await
             .expect(format!("failed to create simple journal transaction: {desc}").as_str())
-    }
-}
-
-impl SpecialJournalTransaction {
-    pub fn new(state: &TestState) -> Self {
-        todo!()
-    }
-
-    pub async fn journalize(
-        &self,
-        state: &TestState,
-        desc: &str,
-    ) -> journal::transaction::general::ActiveModel {
-        todo!()
     }
 }

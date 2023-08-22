@@ -18,7 +18,7 @@ use account_engine::{
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 
-use crate::timestamp;
+use crate::support::utils::timestamp;
 
 #[tokio::test]
 async fn non_existant_ledger() {
@@ -832,7 +832,7 @@ impl TestState {
             jx,
             line1,
             line2,
-            timestamp,
+            _timestamp: timestamp,
         }
     }
 }
@@ -841,5 +841,5 @@ pub struct SimpleJournalTransaction {
     jx: journal::transaction::general::Model,
     line1: journal::transaction::general::line::Model,
     line2: journal::transaction::general::line::Model,
-    timestamp: NaiveDateTime,
+    _timestamp: NaiveDateTime,
 }

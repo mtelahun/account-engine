@@ -40,3 +40,12 @@ pub fn random_account_no() -> String {
 
     no
 }
+
+pub fn random_account_name() -> String {
+    let mut no = String::from("");
+    for _ in 0..5 {
+        no.push(rand::random())
+    }
+
+    no
+}

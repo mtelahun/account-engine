@@ -1,20 +1,16 @@
-use std::ops::Deref;
-
 use postgres_types::{to_sql_checked, FromSql, ToSql};
 
 use super::{fixed_len_char::InvalidLengthError, FixedLenChar};
 
-pub(crate) const LEN: usize = 2;
-pub const XACT_LEDGER: &str = "LL";
-pub const XACT_ACCOUNT: &str = "LA";
+const LEN: usize = 2;
 
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
-pub struct LedgerXactTypeCode {
+pub struct JournalTypeCode {
     inner: FixedLenChar<LEN>,
 }
 
-impl LedgerXactTypeCode {
-    pub const LENGTH: usize = LEN;
+impl JournalTypeCode {
+    const _LENGTH: usize = LEN;
 
     pub fn as_bytes(&self) -> [u8; LEN] {
         self.inner.as_bytes()
@@ -25,7 +21,7 @@ impl LedgerXactTypeCode {
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, InvalidLengthError> {
-        let res = LedgerXactTypeCode::try_from(bytes)?;
+        let res = JournalTypeCode::try_from(bytes)?;
 
         Ok(res)
     }
@@ -39,13 +35,13 @@ impl LedgerXactTypeCode {
     }
 }
 
-impl From<&str> for LedgerXactTypeCode {
+impl From<&str> for JournalTypeCode {
     fn from(value: &str) -> Self {
-        LedgerXactTypeCode::from(value.to_string())
+        JournalTypeCode::from(value.to_string())
     }
 }
 
-impl From<String> for LedgerXactTypeCode {
+impl From<String> for JournalTypeCode {
     fn from(value: String) -> Self {
         Self {
             inner: FixedLenChar::<LEN>::from(value),
@@ -53,7 +49,7 @@ impl From<String> for LedgerXactTypeCode {
     }
 }
 
-impl std::str::FromStr for LedgerXactTypeCode {
+impl std::str::FromStr for JournalTypeCode {
     type Err = InvalidLengthError;
 
     fn from_str(src: &str) -> Result<Self, Self::Err> {
@@ -63,7 +59,7 @@ impl std::str::FromStr for LedgerXactTypeCode {
     }
 }
 
-impl TryFrom<&[u8]> for LedgerXactTypeCode {
+impl TryFrom<&[u8]> for JournalTypeCode {
     type Error = InvalidLengthError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
@@ -73,13 +69,13 @@ impl TryFrom<&[u8]> for LedgerXactTypeCode {
     }
 }
 
-impl std::fmt::Display for LedgerXactTypeCode {
+impl std::fmt::Display for JournalTypeCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.inner.as_str())
     }
 }
 
-impl Deref for LedgerXactTypeCode {
+impl std::ops::Deref for JournalTypeCode {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -87,14 +83,14 @@ impl Deref for LedgerXactTypeCode {
     }
 }
 
-impl<'a> FromSql<'a> for LedgerXactTypeCode {
+impl<'a> FromSql<'a> for JournalTypeCode {
     fn from_sql(
         ty: &postgres_types::Type,
         raw: &'a [u8],
     ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
         let res = <&str as FromSql>::from_sql(ty, raw).map(ToString::to_string)?;
 
-        Ok(LedgerXactTypeCode::from(res))
+        Ok(JournalTypeCode::from(res))
     }
 
     fn accepts(ty: &postgres_types::Type) -> bool {
@@ -102,7 +98,7 @@ impl<'a> FromSql<'a> for LedgerXactTypeCode {
     }
 }
 
-impl ToSql for LedgerXactTypeCode {
+impl ToSql for JournalTypeCode {
     fn to_sql(
         &self,
         ty: &postgres_types::Type,
@@ -132,28 +128,28 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        let code: LedgerXactTypeCode = LedgerXactTypeCode::from_str("SS").unwrap();
+        let code = JournalTypeCode::from_str("SS").unwrap();
         common_assert(code);
     }
 
     #[test]
     fn test_from_bytes() {
-        let code = LedgerXactTypeCode::from_bytes("AL".as_bytes()).unwrap();
+        let code = JournalTypeCode::from_bytes("SS".as_bytes()).unwrap();
         common_assert(code);
         assert_eq!(
             code.as_bytes(),
-            "AL".as_bytes(),
+            "SS".as_bytes(),
             "Converting back as bytes is same as original string"
         )
     }
 
     #[test]
-    fn test_try_from() {
-        let code: LedgerXactTypeCode = LedgerXactTypeCode::try_from("SS".as_bytes()).unwrap();
+    fn test_tryfrom() {
+        let code = JournalTypeCode::try_from("SS".as_bytes()).unwrap();
         common_assert(code);
     }
 
-    fn common_assert(code: LedgerXactTypeCode) {
+    fn common_assert(code: JournalTypeCode) {
         assert_eq!(code.len(), LEN, "length of code is {LEN}");
         assert!(!code.is_empty(), "code is NOT empty");
 

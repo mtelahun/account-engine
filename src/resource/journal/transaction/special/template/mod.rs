@@ -1,4 +1,4 @@
-use crate::domain::{ArrayLongString, SpecJournalTemplateId};
+use crate::domain::{ArrayLongString, SubJournalTemplateId};
 
 pub mod column;
 
@@ -9,6 +9,15 @@ pub struct Model {
 
 #[derive(Clone, Copy, Debug)]
 pub struct ActiveModel {
-    pub id: SpecJournalTemplateId,
+    pub id: SubJournalTemplateId,
     pub name: ArrayLongString,
+}
+
+impl From<&Model> for ActiveModel {
+    fn from(value: &Model) -> Self {
+        Self {
+            id: SubJournalTemplateId::new(),
+            name: value.name,
+        }
+    }
 }

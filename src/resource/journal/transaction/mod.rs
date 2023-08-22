@@ -1,9 +1,13 @@
 use postgres_types::{FromSql, ToSql};
 
-use crate::{domain::LedgerId, resource::LedgerKey};
+use crate::{
+    domain::{AccountId, LedgerId},
+    resource::LedgerKey,
+};
 
 pub mod general;
 pub mod record;
+pub mod reference;
 pub mod special;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, ToSql, FromSql)]
@@ -25,9 +29,43 @@ pub enum TransactionAccountType {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ToSql, FromSql)]
-pub struct PostingRef {
+pub struct LedgerPostingRef {
     pub(crate) key: LedgerKey,
-    pub(crate) account_id: LedgerId,
+    pub(crate) ledger_id: LedgerId,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ToSql, FromSql)]
+pub struct AccountPostingRef {
+    pub(crate) key: LedgerKey,
+    pub(crate) account_id: AccountId,
+}
+
+impl LedgerPostingRef {
+    pub fn new(key: LedgerKey, ledger_id: LedgerId) -> Self {
+        Self { key, ledger_id }
+    }
+
+    pub fn key(&self) -> LedgerKey {
+        self.key
+    }
+
+    pub fn ledger_id(&self) -> LedgerId {
+        self.ledger_id
+    }
+}
+
+impl AccountPostingRef {
+    pub fn new(key: LedgerKey, account_id: AccountId) -> Self {
+        Self { key, account_id }
+    }
+
+    pub fn key(&self) -> LedgerKey {
+        self.key
+    }
+
+    pub fn account_id(&self) -> AccountId {
+        self.account_id
+    }
 }
 
 impl std::fmt::Display for TransactionState {

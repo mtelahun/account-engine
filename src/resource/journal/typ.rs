@@ -1,12 +1,12 @@
-use crate::domain::{ids::JournalTypeId, ArrayLongString};
+use crate::domain::{ids::JournalTypeId, ArrayString128};
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub struct Model {
-    pub name: ArrayLongString,
+    pub name: ArrayString128,
 }
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub struct ActiveModel {
     pub id: JournalTypeId,
-    pub name: ArrayLongString,
+    pub name: ArrayString128,
 }

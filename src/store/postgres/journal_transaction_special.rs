@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::{
-    domain::JournalTransactionId,
+    domain::{ExternalXactTypeCode, JournalTransactionId},
     resource::journal,
     store::{postgres::store::PostgresStore, OrmError, Resource, ResourceOperations},
 };
@@ -10,21 +10,20 @@ use crate::{
 #[async_trait]
 impl
     ResourceOperations<
-        journal::transaction::special::column::Model,
-        journal::transaction::special::column::ActiveModel,
+        journal::transaction::special::Model,
+        journal::transaction::special::ActiveModel,
         JournalTransactionId,
     > for PostgresStore
 {
     async fn insert(
         &self,
-        model: &journal::transaction::special::column::Model,
-    ) -> Result<journal::transaction::special::column::ActiveModel, OrmError> {
+        model: &journal::transaction::special::Model,
+    ) -> Result<journal::transaction::special::ActiveModel, OrmError> {
         let conn = self.get_connection().await?;
         let sql = format!(
-            "INSERT INTO 
-                {}(journal_id, timestamp, dr_ledger_id, cr_ledger_id, amount, state, posting_ref) 
-                    VALUES($1, $2, $3, $4) RETURNING *",
-            journal::transaction::special::column::ActiveModel::NAME
+            "INSERT INTO {}(journal_id, timestamp, template_id, transaction_type_external_code) 
+                VALUES($1, $2, $3, $4) RETURNING *",
+            journal::transaction::special::ActiveModel::NAME
         );
         let res = conn
             .query_one(
@@ -32,33 +31,25 @@ impl
                 &[
                     &model.journal_id,
                     &model.timestamp,
-                    &model.dr_ledger_id,
-                    &model.cr_ledger_id,
-                    &model.amount,
-                    &model.state,
-                    &model.column_total_id,
+                    &model.template_id,
+                    &model.xact_type_external,
                 ],
             )
             .await
             .map_err(|e| OrmError::Internal(e.to_string()))?;
 
-        Ok(journal::transaction::special::column::ActiveModel::from(
-            res,
-        ))
+        Ok(journal::transaction::special::ActiveModel::from(res))
     }
 
     async fn get(
         &self,
         ids: Option<&Vec<JournalTransactionId>>,
-    ) -> Result<Vec<journal::transaction::special::column::ActiveModel>, OrmError> {
+    ) -> Result<Vec<journal::transaction::special::ActiveModel>, OrmError> {
         let search_one = format!(
             "SELECT * FROM {} WHERE journal_id=$1::JournalId AND timestamp=$2",
-            journal::transaction::special::column::ActiveModel::NAME
+            journal::transaction::special::ActiveModel::NAME
         );
-        let search_all = format!(
-            "SELECT * FROM {}",
-            journal::transaction::special::column::ActiveModel::NAME
-        );
+        let search_all = format!("SELECT * FROM {}", journal::transaction::ActiveModel::NAME);
         let conn = self.get_connection().await?;
         let rows: Vec<Row> = match ids {
             Some(ids) => {
@@ -80,9 +71,9 @@ impl
                 .await
                 .map_err(|e| OrmError::Internal(e.to_string()))?,
         };
-        let mut records = Vec::<journal::transaction::special::column::ActiveModel>::new();
+        let mut records = Vec::<journal::transaction::special::ActiveModel>::new();
         for row in rows {
-            let am = journal::transaction::special::column::ActiveModel::from(row);
+            let am = journal::transaction::special::ActiveModel::from(row);
             records.push(am);
         }
 
@@ -92,13 +83,13 @@ impl
     async fn search(
         &self,
         _domain: &str,
-    ) -> Result<Vec<journal::transaction::special::column::ActiveModel>, OrmError> {
+    ) -> Result<Vec<journal::transaction::special::ActiveModel>, OrmError> {
         todo!()
     }
 
     async fn save(
         &self,
-        _model: &journal::transaction::special::column::ActiveModel,
+        _model: &journal::transaction::special::ActiveModel,
     ) -> Result<u64, OrmError> {
         todo!()
     }
@@ -110,8 +101,8 @@ impl
     async fn archive(&self, id: JournalTransactionId) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
-            "UPDATE {} SET archived = true, WHERE journal_id=$1::JournalId AND timestamp=$2",
-            journal::transaction::special::column::ActiveModel::NAME
+            "UPDATE {} SET archived = true, state = 'archived' WHERE journal_id=$1::JournalId AND timestamp=$2",
+            journal::transaction::special::ActiveModel::NAME
         );
 
         conn.execute(query.as_str(), &[&id.journal_id(), &id.timestamp()])
@@ -123,7 +114,7 @@ impl
         let conn = self.get_connection().await?;
         let query = format!(
             "UPDATE {} SET archived = false WHERE journal_id=$1::JournalId AND timestamp=$2",
-            journal::transaction::special::column::ActiveModel::NAME
+            journal::transaction::special::ActiveModel::NAME
         );
 
         conn.execute(query.as_str(), &[&id.journal_id(), &id.timestamp()])
@@ -132,19 +123,15 @@ impl
     }
 }
 
-impl From<Row> for journal::transaction::special::column::ActiveModel {
+impl From<Row> for journal::transaction::special::ActiveModel {
     fn from(value: Row) -> Self {
-        let sequence: u32 = value.get("sequence");
-        let sequence = sequence as usize;
+        let xact_type_external_code: String = value.get("transaction_type_external_code");
+        let xact_type_external_code = ExternalXactTypeCode::from(xact_type_external_code);
         Self {
             journal_id: value.get("journal_id"),
             timestamp: value.get("timestamp"),
-            sequence,
-            dr_ledger_id: value.get("dr_ledger_id"),
-            cr_ledger_id: value.get("cr_ledger_id"),
-            amount: value.get("amount"),
-            state: value.get("state"),
-            column_total_id: value.get("column_total_id"),
+            xact_type_external: Some(xact_type_external_code),
+            template_id: value.get("template_id"),
         }
     }
 }

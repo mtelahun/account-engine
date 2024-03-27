@@ -19,7 +19,7 @@ impl ResourceOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, LedgerId
         if inner.ledger_intermediate.contains_key(&leaf.id) {
             return Err(OrmError::DuplicateRecord(model.id.to_string()));
         }
-        inner.ledger_account.insert(leaf.id, leaf);
+        inner.ledger_leaf.insert(leaf.id, leaf);
 
         Ok(leaf)
     }
@@ -31,13 +31,13 @@ impl ResourceOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, LedgerId
         let mut res = Vec::<ledger::leaf::ActiveModel>::new();
         let inner = self.inner.read().await;
         if let Some(ids) = ids {
-            for account in inner.ledger_account.values() {
+            for account in inner.ledger_leaf.values() {
                 if ids.iter().any(|i| *i == account.id) {
                     res.push(*account);
                 }
             }
         } else {
-            for account in inner.ledger_account.values() {
+            for account in inner.ledger_leaf.values() {
                 res.push(*account);
             }
         }

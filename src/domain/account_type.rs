@@ -1,3 +1,5 @@
+use postgres_types::{to_sql_checked, FromSql, ToSql};
+
 use super::{fixed_len_char::InvalidLengthError, FixedLenChar};
 
 const LEN: usize = 2;
@@ -33,6 +35,14 @@ impl AccountType {
     }
 }
 
+impl From<String> for AccountType {
+    fn from(value: String) -> Self {
+        Self {
+            inner: FixedLenChar::<LEN>::from(value),
+        }
+    }
+}
+
 impl std::str::FromStr for AccountType {
     type Err = InvalidLengthError;
 
@@ -57,6 +67,51 @@ impl std::fmt::Display for AccountType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.inner.as_str())
     }
+}
+
+impl std::ops::Deref for AccountType {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.inner.as_str()
+    }
+}
+
+impl<'a> FromSql<'a> for AccountType {
+    fn from_sql(
+        ty: &postgres_types::Type,
+        raw: &'a [u8],
+    ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
+        let res = <&str as FromSql>::from_sql(ty, raw).map(ToString::to_string)?;
+
+        Ok(AccountType::from(res))
+    }
+
+    fn accepts(ty: &postgres_types::Type) -> bool {
+        <&str as FromSql>::accepts(ty)
+    }
+}
+
+impl ToSql for AccountType {
+    fn to_sql(
+        &self,
+        ty: &postgres_types::Type,
+        out: &mut postgres_types::private::BytesMut,
+    ) -> Result<postgres_types::IsNull, Box<dyn std::error::Error + Sync + Send>>
+    where
+        Self: Sized,
+    {
+        <&str as ToSql>::to_sql(&&**self, ty, out)
+    }
+
+    fn accepts(ty: &postgres_types::Type) -> bool
+    where
+        Self: Sized,
+    {
+        <&str as ToSql>::accepts(ty)
+    }
+
+    to_sql_checked!();
 }
 
 #[cfg(test)]

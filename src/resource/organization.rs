@@ -1,20 +1,20 @@
-use crate::domain::{ArrayCodeString, ArrayLongString, ArrayShortString};
+use crate::domain::{ArrayString128, ArrayString24, ArrayString3};
 
 use super::account_engine::EngineError;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Model {
-    _code: ArrayShortString,
-    _legal_name: ArrayLongString,
-    _default_currency_code: ArrayCodeString,
+    _code: ArrayString24,
+    _legal_name: ArrayString128,
+    _default_currency_code: ArrayString3,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct ActiveModel {
     _id: uuid::Uuid,
-    _code: ArrayShortString,
-    _legal_name: ArrayLongString,
-    _default_currency_code: ArrayCodeString,
+    _code: ArrayString24,
+    _legal_name: ArrayString128,
+    _default_currency_code: ArrayString3,
 }
 
 impl ActiveModel {

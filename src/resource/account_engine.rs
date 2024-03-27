@@ -1,7 +1,7 @@
 use crate::{
     domain::{
-        ids::JournalId, AccountId, GeneralLedgerId, JournalTransactionId, LedgerId,
-        LedgerXactTypeCode, PeriodId, SubLedgerId,
+        composite_ids::JournalTransactionColumnId, ids::JournalId, AccountId, GeneralLedgerId,
+        JournalTransactionId, LedgerId, LedgerXactTypeCode, PeriodId, SubLedgerId,
     },
     service::ServiceError,
     store::ResourceOperations,
@@ -25,8 +25,8 @@ where
             LedgerKey,
         > + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
         + ResourceOperations<
-            crate::resource::journal::transaction::record::Model,
-            crate::resource::journal::transaction::record::ActiveModel,
+            crate::resource::journal::transaction::Model,
+            crate::resource::journal::transaction::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
             crate::resource::journal::transaction::special::Model,
@@ -62,8 +62,8 @@ where
             LedgerKey,
         > + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
         + ResourceOperations<
-            crate::resource::journal::transaction::record::Model,
-            crate::resource::journal::transaction::record::ActiveModel,
+            crate::resource::journal::transaction::Model,
+            crate::resource::journal::transaction::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
             crate::resource::journal::transaction::special::Model,
@@ -73,6 +73,14 @@ where
             journal::transaction::general::line::Model,
             journal::transaction::general::line::ActiveModel,
             JournalTransactionId,
+        > + ResourceOperations<
+            journal::transaction::column::account_dr::Model,
+            journal::transaction::column::account_dr::ActiveModel,
+            JournalTransactionColumnId,
+        > + ResourceOperations<
+            journal::transaction::column::account_cr::Model,
+            journal::transaction::column::account_cr::ActiveModel,
+            JournalTransactionColumnId,
         > + ResourceOperations<
             journal::transaction::special::column::Model,
             journal::transaction::special::column::ActiveModel,

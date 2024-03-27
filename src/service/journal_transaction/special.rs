@@ -10,29 +10,31 @@ use rust_decimal::Decimal;
 
 use crate::{
     domain::{
+        composite_ids::JournalTransactionColumnId,
         ids::{InterimPeriodId, JournalId},
-        AccountId, ColumnTotalId, ExternalXactTypeCode, GeneralLedgerId, JournalTransactionId,
-        LedgerId, LedgerXactTypeCode, PeriodId, SubJournalTemplateColId, SubJournalTemplateId,
-        SubLedgerId, XactType, XACT_ACCOUNT, XACT_LEDGER,
+        AccountId, AccountTransactionId, ColumnTotalId, ExternalXactTypeCode, GeneralLedgerId,
+        JournalTransactionId, LedgerId, LedgerXactTypeCode, PeriodId, Sequence,
+        SpecialJournalTemplateId, SubLedgerId, TemplateColumnId,
     },
     resource::{
         account_engine::AccountEngine,
         accounting_period, external, general_ledger,
-        journal::{self, AccountPostingRef},
-        ledger, ledger_xact_type, subsidiary_ledger, LedgerKey, TransactionState,
+        journal::{self, transaction::AccountPostingRef},
+        ledger, ledger_xact_type, subsidiary_ledger, LedgerKey, SubsidiaryLedgerKey,
+        TransactionState,
     },
     service::{
-        GeneralJournalService, GeneralLedgerService, JournalTransactionService, ServiceError,
-        SubsidiaryJournalService, SubsidiaryLedgerService,
+        journal_transaction::JournalTransactionColumn, GeneralJournalService, GeneralLedgerService,
+        JournalTransactionService, ServiceError, SpecialJournalService, SubsidiaryLedgerService,
     },
-    store::{memory::store::MemoryStore, ResourceOperations},
+    store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
     Store,
 };
 
 #[async_trait]
-pub trait SubsidiaryJournalTransactionService<R>:
+pub trait SpecialJournalTransactionService<R>:
     GeneralJournalService<R>
-    + SubsidiaryJournalService<R>
+    + SpecialJournalService<R>
     + GeneralLedgerService<R>
     + SubsidiaryLedgerService<R>
     + JournalTransactionService<R>
@@ -40,6 +42,7 @@ where
     R: Store
         + ResourceOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
         + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
+        + ResourceOperations<ledger::derived::Model, ledger::derived::ActiveModel, LedgerId>
         + ResourceOperations<ledger::intermediate::Model, ledger::intermediate::ActiveModel, LedgerId>
         + ResourceOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, LedgerId>
         + ResourceOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
@@ -50,9 +53,25 @@ where
             accounting_period::interim_period::ActiveModel,
             InterimPeriodId,
         > + ResourceOperations<
-            journal::transaction::record::Model,
-            journal::transaction::record::ActiveModel,
+            journal::transaction::Model,
+            journal::transaction::ActiveModel,
             JournalTransactionId,
+        > + ResourceOperations<
+            journal::transaction::column::ledger_drcr::Model,
+            journal::transaction::column::ledger_drcr::ActiveModel,
+            JournalTransactionColumnId,
+        > + ResourceOperations<
+            journal::transaction::column::text::Model,
+            journal::transaction::column::text::ActiveModel,
+            JournalTransactionColumnId,
+        > + ResourceOperations<
+            journal::transaction::column::account_dr::Model,
+            journal::transaction::column::account_dr::ActiveModel,
+            JournalTransactionColumnId,
+        > + ResourceOperations<
+            journal::transaction::column::account_cr::Model,
+            journal::transaction::column::account_cr::ActiveModel,
+            JournalTransactionColumnId,
         > + ResourceOperations<
             journal::transaction::general::line::Model,
             journal::transaction::general::line::ActiveModel,
@@ -62,16 +81,16 @@ where
             journal::transaction::special::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
-            journal::transaction::special::totals::Model,
-            journal::transaction::special::totals::ActiveModel,
+            journal::transaction::special::summary::Model,
+            journal::transaction::special::summary::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
             journal::transaction::special::column::Model,
             journal::transaction::special::column::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
-            journal::transaction::special::column::total::Model,
-            journal::transaction::special::column::total::ActiveModel,
+            journal::transaction::special::column::sum::Model,
+            journal::transaction::special::column::sum::ActiveModel,
             ColumnTotalId,
         > + ResourceOperations<ledger::transaction::Model, ledger::transaction::ActiveModel, LedgerKey>
         + ResourceOperations<
@@ -81,11 +100,11 @@ where
         > + ResourceOperations<
             journal::transaction::special::template::Model,
             journal::transaction::special::template::ActiveModel,
-            SubJournalTemplateId,
+            SpecialJournalTemplateId,
         > + ResourceOperations<
             journal::transaction::special::template::column::Model,
             journal::transaction::special::template::column::ActiveModel,
-            SubJournalTemplateColId,
+            TemplateColumnId,
         > + ResourceOperations<
             ledger::transaction::account::Model,
             ledger::transaction::account::ActiveModel,
@@ -97,6 +116,10 @@ where
         > + ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
         + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
         + ResourceOperations<
+            external::account::transaction::Model,
+            external::account::transaction::ActiveModel,
+            AccountTransactionId,
+        > + ResourceOperations<
             external::transaction_type::Model,
             external::transaction_type::ActiveModel,
             ExternalXactTypeCode,
@@ -107,146 +130,227 @@ where
 {
     fn store(&self) -> &R;
 
-    async fn post_subsidiary_ledger(&self, id: JournalTransactionId) -> Result<bool, ServiceError> {
-        let jxact = <R as ResourceOperations<
-            journal::transaction::special::Model,
-            journal::transaction::special::ActiveModel,
-            JournalTransactionId,
-        >>::get(
-            SubsidiaryJournalTransactionService::store(self),
-            Some(&vec![id]),
-        )
-        .await?;
-        if jxact.is_empty() {
-            return Ok(false);
-        }
-        let mut jxact = jxact[0];
-
-        let account =
-            SubsidiaryLedgerService::get_accounts(self, Some(&vec![jxact.account_id])).await?;
-        if account.is_empty() {
-            return Ok(false);
-        }
-        let account = account[0];
-
-        let subledger = SubsidiaryLedgerService::get_subsidiary_ledgers(
-            self,
-            Some(&vec![account.subledger_id]),
-        )
-        .await?;
-        if subledger.is_empty() {
-            return Ok(false);
-        }
-        let subledger = subledger[0];
-
-        let control_account =
-            GeneralLedgerService::get_ledgers(self, Some(&vec![subledger.ledger_account_id]))
-                .await?;
-        if control_account.is_empty() {
-            return Ok(false);
-        }
-        let control_account = control_account[0];
-
-        let journal =
-            GeneralLedgerService::get_journals(self, Some(&vec![jxact.journal_id])).await?;
-        if journal.is_empty() {
-            return Ok(false);
+    async fn post_to_account(&self, id: JournalTransactionId) -> Result<bool, ServiceError> {
+        fn filter_cr(col: &JournalTransactionColumn) -> bool {
+            match col {
+                JournalTransactionColumn::LedgerDrCr(_) => true,
+                JournalTransactionColumn::Text(_) => false,
+                JournalTransactionColumn::AccountDr(_) => false,
+                JournalTransactionColumn::AccountCr(_) => false,
+            }
         }
 
-        let jxact_lines = <R as ResourceOperations<
-            journal::transaction::special::column::Model,
-            journal::transaction::special::column::ActiveModel,
-            JournalTransactionId,
-        >>::get(
-            SubsidiaryJournalTransactionService::store(self),
-            Some(&vec![id]),
-        )
-        .await?;
-        let cr_xact_lines = jxact_lines
+        fn filter_dr(col: &JournalTransactionColumn) -> bool {
+            match col {
+                JournalTransactionColumn::LedgerDrCr(_) => true,
+                JournalTransactionColumn::Text(_) => false,
+                JournalTransactionColumn::AccountDr(_) => false,
+                JournalTransactionColumn::AccountCr(_) => false,
+            }
+        }
+
+        // let jxact = <R as ResourceOperations<
+        //     journal::transaction::special::Model,
+        //     journal::transaction::special::ActiveModel,
+        //     JournalTransactionId,
+        // >>::get(
+        //     SpecialJournalTransactionService::store(self),
+        //     Some(&vec![id]),
+        // )
+        // .await?;
+        // if jxact.is_empty() {
+        //     return Ok(false);
+        // }
+        // let jxact = jxact[0];
+
+        // let journal =
+        //     GeneralLedgerService::get_journals(self, Some(&vec![jxact.journal_id])).await?;
+        // if journal.is_empty() {
+        //     return Ok(false);
+        // }
+        // let journal = journal[0];
+
+        // let control_ledger = GeneralLedgerService::get_ledgers(
+        //     self,
+        //     Some(&vec![journal.control_ledger_id.unwrap()]),
+        // )
+        // .await?;
+        // if control_ledger.is_empty() {
+        //     return Ok(false);
+        // }
+        // let control_ledger = match control_ledger[0] {
+        //     LedgerAccount::Derived(l) => l,
+        //     _ => {
+        //         return Err(ServiceError::Validation(
+        //             "journal control account is not a derived ledger account".into(),
+        //         ))
+        //     }
+        // };
+
+        // let subledger = SubsidiaryLedgerService::get_subsidiary_ledgers(
+        //     self,
+        //     Some(&vec![control_ledger.subsidiary_ledger_id()]),
+        // )
+        // .await?;
+        // if subledger.is_empty() {
+        //     return Ok(false);
+        // }
+        // let subledger = subledger[0];
+
+        let jx = SpecialJournalService::get_special_transactions(self, Some(&vec![id])).await?;
+        let (_, jx_cols) = &jx[0];
+        let cr_xact_lines = jx_cols
             .iter()
-            .filter(|am| am.cr_ledger_id.is_some())
+            .filter(|am| filter_cr(am))
             .collect::<Vec<_>>();
-        let dr_xact_lines = jxact_lines
+        let dr_xact_lines = jx_cols
             .iter()
-            .filter(|am| am.dr_ledger_id.is_some())
+            .filter(|am| filter_dr(am))
             .collect::<Vec<_>>();
 
         let sum_cr = cr_xact_lines
             .iter()
-            .fold(Decimal::ZERO, |acc, el| acc + el.amount);
+            .fold(Decimal::ZERO, |acc, el| acc + el.amount());
         let sum_dr = dr_xact_lines
             .iter()
-            .fold(Decimal::ZERO, |acc, el| acc + el.amount);
+            .fold(Decimal::ZERO, |acc, el| acc + el.amount());
         if sum_dr == Decimal::ZERO || sum_dr != sum_cr {
             return Err(ServiceError::Validation(
-                "the Dr and Cr sides of the transaction must be equal".to_string(),
+                "the Dr and Cr sides of the transaction must be equal and must be non-zero"
+                    .to_string(),
             ));
         }
 
-        let mut jrnl_ledger_xact_type = XactType::Cr;
-        let ledger_xact_type_account = LedgerXactTypeCode::from(XACT_ACCOUNT);
-        let ledger_xact_type_ledger = LedgerXactTypeCode::from(XACT_LEDGER);
-
-        for col in jxact_lines.iter() {
-            if col.dr_ledger_id.is_none() && col.cr_ledger_id.is_none() {
-                break;
-            }
-            let key_ledger_id = col.cr_ledger_id.unwrap_or(col.dr_ledger_id.unwrap());
-            let mut is_account_entry = false;
-            if col.dr_ledger_id.is_some() && col.dr_ledger_id.unwrap() == control_account.id {
-                is_account_entry = true;
-            }
-            if col.cr_ledger_id.is_some() && col.cr_ledger_id.unwrap() == control_account.id {
-                jrnl_ledger_xact_type = XactType::Dr;
-                is_account_entry = true;
-            }
-            let key = LedgerKey {
-                ledger_id: key_ledger_id,
-                timestamp: col.timestamp,
-            };
-            let entry = ledger::transaction::Model {
-                ledger_id: key.ledger_id,
-                timestamp: key.timestamp,
-                ledger_xact_type_code: match is_account_entry {
-                    true => ledger_xact_type_account,
-                    false => ledger_xact_type_ledger,
-                },
-                amount: col.amount,
-                journal_ref: id,
-            };
-            let _ = SubsidiaryJournalTransactionService::store(self)
-                .insert(&entry)
-                .await?;
-            if is_account_entry {
-                let account_line = ledger::transaction::account::Model {
-                    ledger_id: key.ledger_id,
-                    timestamp: key.timestamp,
-                    account_id: jxact.account_id,
-                    xact_type_code: jrnl_ledger_xact_type,
-                    xact_type_external_code: jxact.xact_type_external.unwrap(),
-                };
-                let _ = SubsidiaryJournalTransactionService::store(self)
-                    .insert(&account_line)
+        for col in jx_cols.iter() {
+            match col {
+                JournalTransactionColumn::AccountDr(inner) => {
+                    let atx = external::account::transaction::Model {
+                        external_account_id: inner.account_id,
+                        timestamp: col.id().timestamp(),
+                        xact_type_code: crate::domain::XactType::Dr,
+                        amount: col.amount(),
+                    };
+                    let atx = <R as ResourceOperations<
+                        external::account::transaction::Model,
+                        external::account::transaction::ActiveModel,
+                        AccountTransactionId,
+                    >>::insert(
+                        SpecialJournalTransactionService::store(self), &atx
+                    )
                     .await?;
-                jxact.posting_ref = Some(AccountPostingRef {
-                    key,
-                    account_id: jxact.account_id,
-                });
-                jxact.account_posted_state = TransactionState::Posted;
-                let _ = SubsidiaryJournalTransactionService::store(self)
-                    .save(&jxact)
+                    let key = SubsidiaryLedgerKey {
+                        account_id: atx.external_account_id,
+                        timestamp: atx.timestamp,
+                    };
+                    let mut model = *inner;
+                    model.posting_ref = Some(AccountPostingRef { key });
+                    let _ = <R as ResourceOperations<
+                        journal::transaction::column::account_dr::Model,
+                        journal::transaction::column::account_dr::ActiveModel,
+                        JournalTransactionColumnId,
+                    >>::save(
+                        SpecialJournalTransactionService::store(self), &model
+                    )
                     .await?;
-            } else {
-                let ledger_line = ledger::transaction::ledger::Model {
-                    ledger_id: key.ledger_id,
-                    timestamp: key.timestamp,
-                    ledger_dr_id: col.dr_ledger_id.unwrap(),
-                };
-                let _ = SubsidiaryJournalTransactionService::store(self)
-                    .insert(&ledger_line)
+                }
+                JournalTransactionColumn::AccountCr(inner) => {
+                    let atx = external::account::transaction::Model {
+                        external_account_id: inner.account_id,
+                        timestamp: col.id().timestamp(),
+                        xact_type_code: crate::domain::XactType::Cr,
+                        amount: col.amount(),
+                    };
+                    let atx = <R as ResourceOperations<
+                        external::account::transaction::Model,
+                        external::account::transaction::ActiveModel,
+                        AccountTransactionId,
+                    >>::insert(
+                        SpecialJournalTransactionService::store(self), &atx
+                    )
                     .await?;
+                    let key = SubsidiaryLedgerKey {
+                        account_id: atx.external_account_id,
+                        timestamp: atx.timestamp,
+                    };
+                    let mut model = *inner;
+                    model.posting_ref = Some(AccountPostingRef { key });
+                    let _ = <R as ResourceOperations<
+                        journal::transaction::column::account_cr::Model,
+                        journal::transaction::column::account_cr::ActiveModel,
+                        JournalTransactionColumnId,
+                    >>::save(
+                        SpecialJournalTransactionService::store(self), &model
+                    )
+                    .await?;
+                }
+                _ => continue,
             }
         }
+
+        // let mut jrnl_ledger_xact_type = XactType::Cr;
+        // let ledger_xact_type_account = LedgerXactTypeCode::from(XACT_ACCOUNT);
+        // let ledger_xact_type_ledger = LedgerXactTypeCode::from(XACT_LEDGER);
+
+        // for col in jx_cols.iter() {
+        //     if col.dr_ledger_id.is_none() && col.cr_ledger_id.is_none() {
+        //         break;
+        //     }
+        //     let key_ledger_id = col.cr_ledger_id.unwrap_or(col.dr_ledger_id.unwrap());
+        //     let mut is_account_entry = false;
+        //     if col.dr_ledger_id.is_some() && col.dr_ledger_id.unwrap() == control_ledger.id {
+        //         is_account_entry = true;
+        //     }
+        //     if col.cr_ledger_id.is_some() && col.cr_ledger_id.unwrap() == control_ledger.id {
+        //         jrnl_ledger_xact_type = XactType::Dr;
+        //         is_account_entry = true;
+        //     }
+        //     let key = LedgerKey {
+        //         ledger_id: key_ledger_id,
+        //         timestamp: col.timestamp,
+        //     };
+        //     let entry = ledger::transaction::Model {
+        //         ledger_id: key.ledger_id,
+        //         timestamp: key.timestamp,
+        //         ledger_xact_type_code: match is_account_entry {
+        //             true => ledger_xact_type_account,
+        //             false => ledger_xact_type_ledger,
+        //         },
+        //         amount: col.amount,
+        //         journal_ref: id,
+        //     };
+        //     let _ = SpecialJournalTransactionService::store(self)
+        //         .insert(&entry)
+        //         .await?;
+        //     if is_account_entry {
+        //         let account_line = ledger::transaction::account::Model {
+        //             ledger_id: key.ledger_id,
+        //             timestamp: key.timestamp,
+        //             account_id: jxact.account_id,
+        //             xact_type_code: jrnl_ledger_xact_type,
+        //             xact_type_external_code: jxact.xact_type_external.unwrap(),
+        //         };
+        //         let _ = SpecialJournalTransactionService::store(self)
+        //             .insert(&account_line)
+        //             .await?;
+        //         jxact.posting_ref = Some(AccountPostingRef {
+        //             key,
+        //             account_id: jxact.account_id,
+        //         });
+        //         jxact.account_posted_state = TransactionState::Posted;
+        //         let _ = SpecialJournalTransactionService::store(self)
+        //             .save(&jxact)
+        //             .await?;
+        //     } else {
+        //         let ledger_line = ledger::transaction::ledger::Model {
+        //             ledger_id: key.ledger_id,
+        //             timestamp: key.timestamp,
+        //             ledger_dr_id: col.dr_ledger_id.unwrap(),
+        //         };
+        //         let _ = SpecialJournalTransactionService::store(self)
+        //             .insert(&ledger_line)
+        //             .await?;
+        //     }
+        // }
 
         Ok(true)
     }
@@ -261,7 +365,7 @@ where
                 journal::transaction::special::Model,
                 journal::transaction::special::ActiveModel,
                 JournalTransactionId,
-            >>::get(SubsidiaryJournalTransactionService::store(self), Some(ids))
+            >>::get(SpecialJournalTransactionService::store(self), Some(ids))
             .await?;
         let journal_transactions: Vec<journal::transaction::special::ActiveModel> =
             journal_transactions
@@ -272,18 +376,16 @@ where
             .iter()
             .map(|tx| tx.id())
             .collect::<Vec<JournalTransactionId>>();
-        let mut transaction_columns = <R as ResourceOperations<
-            journal::transaction::special::column::Model,
-            journal::transaction::special::column::ActiveModel,
-            JournalTransactionId,
-        >>::get(
-            SubsidiaryJournalTransactionService::store(self),
-            Some(&tx_ids),
-        )
-        .await?;
+        let mut transaction_columns =
+            <R as ResourceOperations<
+                journal::transaction::special::column::Model,
+                journal::transaction::special::column::ActiveModel,
+                JournalTransactionId,
+            >>::get(SpecialJournalTransactionService::store(self), Some(&tx_ids))
+            .await?;
         let journal =
             <R as ResourceOperations<journal::Model, journal::ActiveModel, JournalId>>::get(
-                SubsidiaryJournalTransactionService::store(self),
+                SpecialJournalTransactionService::store(self),
                 Some(&vec![journal_id]),
             )
             .await?;
@@ -294,7 +396,7 @@ where
         }
         let journal = journal[0];
 
-        let template_columns = SubsidiaryJournalTransactionService::store(self)
+        let template_columns = SpecialJournalTransactionService::store(self)
             .get_journal_transaction_template_columns(journal.template_id.unwrap_or_default())
             .await?;
         if template_columns.is_empty() {
@@ -304,7 +406,7 @@ where
             )));
         }
 
-        let mut totals = HashMap::<usize, Decimal>::new();
+        let mut totals = HashMap::<Sequence, Decimal>::new();
         for tplcol in template_columns.iter() {
             totals.insert(tplcol.sequence, Decimal::ZERO);
         }
@@ -324,20 +426,20 @@ where
             .as_micros();
         let now = NaiveDateTime::from_timestamp_micros(now.try_into().unwrap()).unwrap();
 
-        let transaction_totals = journal::transaction::special::totals::Model {
+        let transaction_totals = journal::transaction::special::summary::Model {
             journal_id: journal.id,
             timestamp: now,
         };
         let transaction_totals =
             <R as ResourceOperations<
-                journal::transaction::special::totals::Model,
-                journal::transaction::special::totals::ActiveModel,
+                journal::transaction::special::summary::Model,
+                journal::transaction::special::summary::ActiveModel,
                 JournalTransactionId,
-            >>::insert(SubsidiaryJournalService::store(self), &transaction_totals)
+            >>::insert(SpecialJournalService::store(self), &transaction_totals)
             .await?;
 
         for col in transaction_columns.iter_mut() {
-            let total = *totals.get(&col.sequence).unwrap();
+            let amount = *totals.get(&col.sequence).unwrap();
             let tpl_col: Option<&journal::transaction::special::template::column::ActiveModel> =
                 template_columns.iter().find(|c| c.sequence == col.sequence);
             let tpl_col = tpl_col.ok_or({
@@ -365,41 +467,33 @@ where
                     ledger_id: tpl_col.dr_ledger_id.unwrap(),
                 });
             }
-            let column_total = journal::transaction::special::column::total::Model {
-                total,
-                transaction_id: transaction_totals.id(),
+            let column_total = journal::transaction::special::column::sum::Model {
+                amount,
+                summary_id: transaction_totals.id(),
                 sequence: col.sequence,
                 posting_ref_cr: ref_cr,
                 posting_ref_dr: ref_dr,
             };
             let column_total =
                 <R as ResourceOperations<
-                    journal::transaction::special::column::total::Model,
-                    journal::transaction::special::column::total::ActiveModel,
+                    journal::transaction::special::column::sum::Model,
+                    journal::transaction::special::column::sum::ActiveModel,
                     ColumnTotalId,
-                >>::insert(SubsidiaryJournalService::store(self), &column_total)
+                >>::insert(SpecialJournalService::store(self), &column_total)
                 .await?;
             let dr_line = journal::transaction::general::line::Model {
                 journal_id,
                 timestamp: now,
-                ledger_id: tpl_col.dr_ledger_id.unwrap(),
-                xact_type: XactType::Dr,
-                amount: total,
-                ..Default::default()
-            };
-            let cr_line = journal::transaction::general::line::Model {
-                journal_id,
-                timestamp: now,
-                ledger_id: tpl_col.cr_ledger_id.unwrap(),
-                xact_type: XactType::Cr,
-                amount: total,
+                dr_ledger_id: tpl_col.dr_ledger_id.unwrap(),
+                cr_ledger_id: tpl_col.cr_ledger_id.unwrap(),
+                amount,
                 ..Default::default()
             };
             let gj_tx = journal::transaction::general::Model {
                 journal_id: journal.id,
                 timestamp: now,
                 explanation: "blah".into(),
-                lines: vec![cr_line, dr_line],
+                lines: vec![dr_line],
             };
             let gj_tx = GeneralJournalService::create_general_transaction(self, &gj_tx).await?;
             if !JournalTransactionService::post_transaction(self, gj_tx.id()).await? {
@@ -415,7 +509,7 @@ where
                 journal::transaction::special::column::Model,
                 journal::transaction::special::column::ActiveModel,
                 JournalTransactionId,
-            >>::save(SubsidiaryJournalService::store(self), col)
+            >>::save(SpecialJournalService::store(self), col)
             .await?;
         }
 
@@ -425,13 +519,13 @@ where
     async fn get_column_total(
         &self,
         id: JournalTransactionId,
-        sequence: usize,
-    ) -> Result<journal::transaction::special::column::total::ActiveModel, ServiceError> {
+        sequence: Sequence,
+    ) -> Result<journal::transaction::special::column::sum::ActiveModel, ServiceError> {
         let cols = <R as ResourceOperations<
             journal::transaction::special::column::Model,
             journal::transaction::special::column::ActiveModel,
             JournalTransactionId,
-        >>::get(SubsidiaryJournalService::store(self), Some(&vec![id]))
+        >>::get(SpecialJournalService::store(self), Some(&vec![id]))
         .await?;
 
         for col in cols {
@@ -452,11 +546,11 @@ where
                     }
                 };
                 let col_total = <R as ResourceOperations<
-                    journal::transaction::special::column::total::Model,
-                    journal::transaction::special::column::total::ActiveModel,
+                    journal::transaction::special::column::sum::Model,
+                    journal::transaction::special::column::sum::ActiveModel,
                     ColumnTotalId,
                 >>::get(
-                    SubsidiaryJournalService::store(self), Some(&vec![total_id])
+                    SpecialJournalService::store(self), Some(&vec![total_id])
                 )
                 .await?;
                 if col_total.is_empty() {
@@ -475,9 +569,13 @@ where
     }
 }
 
-// impl SubsidiaryJournalTransactionService<PostgresStore> for AccountEngine<PostgresStore> {}
+impl SpecialJournalTransactionService<PostgresStore> for AccountEngine<PostgresStore> {
+    fn store(&self) -> &PostgresStore {
+        &self.repository
+    }
+}
 
-impl SubsidiaryJournalTransactionService<MemoryStore> for AccountEngine<MemoryStore> {
+impl SpecialJournalTransactionService<MemoryStore> for AccountEngine<MemoryStore> {
     fn store(&self) -> &MemoryStore {
         &self.repository
     }

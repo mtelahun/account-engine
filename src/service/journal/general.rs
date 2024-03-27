@@ -21,8 +21,8 @@ where
         + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
         + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
         + ResourceOperations<
-            journal::transaction::record::Model,
-            journal::transaction::record::ActiveModel,
+            journal::transaction::Model,
+            journal::transaction::ActiveModel,
             JournalTransactionId,
         > + ResourceOperations<
             journal::transaction::general::line::Model,
@@ -45,26 +45,38 @@ where
         for line in model.lines.iter() {
             if <R as ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>>::get(
                 self.store(),
-                Some(&vec![line.ledger_id]),
+                Some(&vec![line.dr_ledger_id]),
             )
             .await?
             .is_empty()
             {
                 return Err(ServiceError::EmptyRecord(format!(
-                    "account id: {}",
-                    line.ledger_id
+                    "ledger id: {}",
+                    line.dr_ledger_id
+                )));
+            }
+            if <R as ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>>::get(
+                self.store(),
+                Some(&vec![line.cr_ledger_id]),
+            )
+            .await?
+            .is_empty()
+            {
+                return Err(ServiceError::EmptyRecord(format!(
+                    "ledger id: {}",
+                    line.cr_ledger_id
                 )));
             }
         }
 
-        let jtx = journal::transaction::record::Model {
+        let jtx = journal::transaction::Model {
             journal_id: model.journal_id,
             timestamp: model.timestamp,
             explanation: model.explanation,
         };
         let record = <R as ResourceOperations<
-            journal::transaction::record::Model,
-            journal::transaction::record::ActiveModel,
+            journal::transaction::Model,
+            journal::transaction::ActiveModel,
             JournalTransactionId,
         >>::insert(self.store(), &jtx)
         .await?;
@@ -94,8 +106,8 @@ where
     ) -> Result<Vec<journal::transaction::general::ActiveModel>, ServiceError> {
         let mut res = Vec::<journal::transaction::general::ActiveModel>::new();
         let xacts = <R as ResourceOperations<
-            journal::transaction::record::Model,
-            journal::transaction::record::ActiveModel,
+            journal::transaction::Model,
+            journal::transaction::ActiveModel,
             JournalTransactionId,
         >>::get(self.store(), ids)
         .await?;

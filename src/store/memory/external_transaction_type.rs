@@ -20,11 +20,7 @@ impl
         &self,
         model: &external::transaction_type::Model,
     ) -> Result<external::transaction_type::ActiveModel, OrmError> {
-        let tx_type = external::transaction_type::ActiveModel {
-            code: model.code,
-            entity_type_code: model.entity_type_code,
-            description: model.description,
-        };
+        let tx_type = external::transaction_type::ActiveModel::from(model);
         let mut inner = self.inner.write().await;
         let is_duplicate = inner
             .external_xact_type
@@ -70,18 +66,13 @@ impl
     }
 
     async fn save(&self, model: &external::transaction_type::ActiveModel) -> Result<u64, OrmError> {
-        let tx_type = external::transaction_type::ActiveModel {
-            code: model.code,
-            entity_type_code: model.entity_type_code,
-            description: model.description,
-        };
         let mut inner = self.inner.write().await;
         let exists = inner
             .external_xact_type
             .iter()
             .any(|(k, _)| *k == model.code);
         if exists {
-            inner.external_xact_type.insert(model.code, tx_type);
+            inner.external_xact_type.insert(model.code, *model);
 
             return Ok(1);
         }

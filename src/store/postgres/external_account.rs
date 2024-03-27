@@ -19,7 +19,7 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
     ) -> Result<external::account::ActiveModel, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
-            "INSERT INTO {}(id, subsidiary_ledger, entity_code, account_no, opened_date) VALUES($1, $2, $3, $4, $5) RETURNING *",
+            "INSERT INTO {}(id, subsidiary_ledger_id, external_entity_id, account_no, name, date_opened) VALUES($1, $2, $3, $4, $5, $6) RETURNING *",
             external::account::ActiveModel::NAME
         );
         let res = conn
@@ -28,8 +28,9 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
                 &[
                     &AccountId::new(),
                     &model.subledger_id,
-                    &model.entity_type_code,
+                    &model.entity_id,
                     &model.account_no,
+                    &model.name,
                     &model.date_opened,
                 ],
             )
@@ -70,7 +71,7 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
     async fn save(&self, model: &external::account::ActiveModel) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
-            "UPDATE {} SET subsidiary_ledger_id = $1, entity_code = $2, account_no = $3, date_opened = $4 WHERE id = $5::AccountId;",
+            "UPDATE {} SET subsidiary_ledger_id = $1, external_entity_id = $2, account_no = $3, date_opened = $4 WHERE id = $5::AccountId;",
             external::account::ActiveModel::NAME
         );
 
@@ -78,7 +79,7 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
             query.as_str(),
             &[
                 &model.subledger_id,
-                &model.entity_type_code,
+                &model.entity_id,
                 &model.account_no,
                 &model.date_opened,
                 &model.id,
@@ -114,9 +115,10 @@ impl From<Row> for external::account::ActiveModel {
         Self {
             id: value.get("id"),
             subledger_id: value.get("subsidiary_ledger_id"),
-            entity_type_code: value.get("entity_type_code"),
+            entity_id: value.get("external_entity_id"),
             account_no: value.get("account_no"),
-            date_opened: value.get("opened_date"),
+            name: value.get("name"),
+            date_opened: value.get("date_opened"),
         }
     }
 }

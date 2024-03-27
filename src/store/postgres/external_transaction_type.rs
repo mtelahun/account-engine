@@ -23,14 +23,11 @@ impl
     ) -> Result<external::transaction_type::ActiveModel, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
-            "INSERT INTO {}(code, entity_code_type, description) VALUES($1, $2, $3) RETURNING *",
+            "INSERT INTO {}(code, description) VALUES($1, $2) RETURNING *",
             external::transaction_type::ActiveModel::NAME
         );
         let res = conn
-            .query_one(
-                &query,
-                &[&model.code, &model.entity_type_code, &model.description],
-            )
+            .query_one(&query, &[&model.code, &model.description])
             .await
             .map_err(|e| OrmError::Internal(e.to_string()))?;
 
@@ -74,16 +71,13 @@ impl
     async fn save(&self, model: &external::transaction_type::ActiveModel) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
-            "UPDATE {} SET entity_type_code = $1, description = $2 WHERE code = $3",
+            "UPDATE {} SET description = $1 WHERE code = $2",
             external::transaction_type::ActiveModel::NAME
         );
 
-        conn.execute(
-            query.as_str(),
-            &[&model.entity_type_code, &model.description, &model.code],
-        )
-        .await
-        .map_err(|e| OrmError::Internal(e.to_string()))
+        conn.execute(query.as_str(), &[&model.description, &model.code])
+            .await
+            .map_err(|e| OrmError::Internal(e.to_string()))
     }
 
     async fn delete(&self, id: ExternalXactTypeCode) -> Result<u64, OrmError> {
@@ -111,8 +105,7 @@ impl From<Row> for external::transaction_type::ActiveModel {
     fn from(value: Row) -> Self {
         Self {
             code: value.get("code"),
-            entity_type_code: value.get("entity_type_code"),
-            description: value.get("desctiption"),
+            description: value.get("description"),
         }
     }
 }

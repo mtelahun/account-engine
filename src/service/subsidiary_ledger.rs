@@ -5,7 +5,7 @@ use crate::{
     resource::{
         account_engine::AccountEngine,
         external,
-        journal::AccountPostingRef,
+        journal::LedgerAccountPostingRef,
         ledger::{self, journal_entry::LedgerKey},
         subsidiary_ledger,
     },
@@ -13,7 +13,10 @@ use crate::{
     Store,
 };
 
-use super::ServiceError;
+use super::{
+    external::{ExternalAccount, ExternalAccountBuilder},
+    ServiceError,
+};
 
 #[async_trait]
 pub trait SubsidiaryLedgerService<R>
@@ -51,9 +54,9 @@ where
 
     async fn create_account(
         &self,
-        model: &external::account::Model,
-    ) -> Result<external::account::ActiveModel, ServiceError> {
-        Ok(self.store().insert(model).await?)
+        builder: ExternalAccountBuilder,
+    ) -> Result<ExternalAccount, ServiceError> {
+        Ok(self.store().insert(&builder.to_model()).await?.into())
     }
 
     async fn get_accounts(
@@ -65,7 +68,7 @@ where
 
     async fn get_journal_entry_transaction_account(
         &self,
-        posting_ref: &AccountPostingRef,
+        posting_ref: &LedgerAccountPostingRef,
     ) -> Result<ledger::transaction::account::ActiveModel, ServiceError> {
         let xact = self.store().get(Some(&vec![posting_ref.key])).await?;
         if xact.is_empty() {

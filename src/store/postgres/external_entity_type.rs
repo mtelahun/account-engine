@@ -99,7 +99,7 @@ impl From<Row> for external::entity_type::ActiveModel {
     fn from(value: Row) -> Self {
         Self {
             code: value.get("code"),
-            description: value.get("desctiption"),
+            description: value.get("description"),
         }
     }
 }

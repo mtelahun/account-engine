@@ -1,3 +1,4 @@
+#![allow(clippy::diverging_sub_expression)]
 use async_trait::async_trait;
 use chronoutil::RelativeDuration;
 use tokio_postgres::Row;

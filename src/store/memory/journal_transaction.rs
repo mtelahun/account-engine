@@ -10,16 +10,16 @@ use super::store::MemoryStore;
 #[async_trait]
 impl
     ResourceOperations<
-        journal::transaction::record::Model,
-        journal::transaction::record::ActiveModel,
+        journal::transaction::Model,
+        journal::transaction::ActiveModel,
         JournalTransactionId,
     > for MemoryStore
 {
     async fn insert(
         &self,
-        model: &journal::transaction::record::Model,
-    ) -> Result<journal::transaction::record::ActiveModel, OrmError> {
-        let jtx_record = journal::transaction::record::ActiveModel {
+        model: &journal::transaction::Model,
+    ) -> Result<journal::transaction::ActiveModel, OrmError> {
+        let jtx_record = journal::transaction::ActiveModel {
             journal_id: model.journal_id,
             timestamp: model.timestamp,
             explanation: model.explanation,
@@ -40,8 +40,8 @@ impl
     async fn get(
         &self,
         ids: Option<&Vec<JournalTransactionId>>,
-    ) -> Result<Vec<journal::transaction::record::ActiveModel>, OrmError> {
-        let mut res = Vec::<journal::transaction::record::ActiveModel>::new();
+    ) -> Result<Vec<journal::transaction::ActiveModel>, OrmError> {
+        let mut res = Vec::<journal::transaction::ActiveModel>::new();
         let inner = self.inner.read().await;
         if let Some(ids) = ids {
             for value in inner.journal_xact.values() {
@@ -61,14 +61,11 @@ impl
     async fn search(
         &self,
         _domain: &str,
-    ) -> Result<Vec<journal::transaction::record::ActiveModel>, OrmError> {
+    ) -> Result<Vec<journal::transaction::ActiveModel>, OrmError> {
         todo!()
     }
 
-    async fn save(
-        &self,
-        _model: &journal::transaction::record::ActiveModel,
-    ) -> Result<u64, OrmError> {
+    async fn save(&self, _model: &journal::transaction::ActiveModel) -> Result<u64, OrmError> {
         todo!()
     }
 

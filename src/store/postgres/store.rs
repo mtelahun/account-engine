@@ -1,3 +1,4 @@
+#![allow(clippy::diverging_sub_expression)]
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -6,7 +7,9 @@ use mobc::{Connection, Pool};
 use mobc_postgres::PgConnectionManager;
 use tokio_postgres::{Config, NoTls};
 
-use crate::domain::{ArrayShortString, JournalTransactionId, LedgerId, SubJournalTemplateId};
+use crate::domain::{
+    ArrayString24, JournalTransactionId, LedgerId, Sequence, SpecialJournalTemplateId,
+};
 use crate::resource::{
     accounting_period, journal,
     ledger::{self, transaction},
@@ -104,8 +107,8 @@ impl Store for PostgresStore {
         let conn = self.get_connection().await?;
         let sql = format!(
             "UPDATE {} 
-                SET state=$1, posting_ref=$2
-                    WHERE journal_id=$3::JournalId AND timestamp=$4 and ledger_id=$5::LedgerId",
+                SET state=$1, dr_posting_ref=$2, cr_posting_ref=$3
+                    WHERE journal_id=$4::JournalId AND timestamp=$5",
             journal::transaction::general::line::ActiveModel::NAME
         );
         let res = conn
@@ -113,10 +116,10 @@ impl Store for PostgresStore {
                 sql.as_str(),
                 &[
                     &TransactionState::Posted,
-                    &line.posting_ref,
+                    &line.dr_posting_ref,
+                    &line.cr_posting_ref,
                     &id.journal_id(),
                     &id.timestamp(),
-                    &line.ledger_id,
                 ],
             )
             .await
@@ -127,7 +130,7 @@ impl Store for PostgresStore {
 
     async fn find_ledger_by_no(
         &self,
-        no: ArrayShortString,
+        no: ArrayString24,
     ) -> Result<Option<ledger::ActiveModel>, OrmError> {
         let sql = format!(
             "SELECT * FROM {} WHERE ledger_no=$1",
@@ -244,14 +247,14 @@ impl Store for PostgresStore {
     async fn get_journal_transaction_columns<'a>(
         &self,
         _ids: &'a [JournalTransactionId],
-        _sequence: usize,
+        _sequence: Sequence,
     ) -> Result<Vec<journal::transaction::special::column::ActiveModel>, OrmError> {
         todo!()
     }
 
     async fn get_journal_transaction_template_columns(
         &self,
-        _id: SubJournalTemplateId,
+        _id: SpecialJournalTemplateId,
     ) -> Result<Vec<journal::transaction::special::template::column::ActiveModel>, OrmError> {
         todo!()
     }

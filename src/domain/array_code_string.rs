@@ -3,16 +3,16 @@ use std::ops::Deref;
 use arrayvec::ArrayString;
 use postgres_types::{to_sql_checked, FromSql, ToSql};
 
-use super::{fixed_len_char::InvalidLengthError, DEFAULT_CODE_LEN};
+use super::{fixed_len_char::InvalidLengthError, STRING3_LEN};
 
 #[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq)]
-pub struct ArrayCodeString(ArrayString<DEFAULT_CODE_LEN>);
+pub struct ArrayString3(ArrayString<STRING3_LEN>);
 
-impl ArrayCodeString {
-    pub const LENGTH: usize = DEFAULT_CODE_LEN;
+impl ArrayString3 {
+    pub const LENGTH: usize = STRING3_LEN;
 
     pub fn new() -> Self {
-        ArrayCodeString(ArrayString::new())
+        ArrayString3(ArrayString::new())
     }
 
     pub fn as_bytes(&self) -> &[u8] {
@@ -36,50 +36,49 @@ impl ArrayCodeString {
     }
 }
 
-impl std::fmt::Display for ArrayCodeString {
+impl std::fmt::Display for ArrayString3 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0.as_str())
     }
 }
 
-impl std::str::FromStr for ArrayCodeString {
+impl std::str::FromStr for ArrayString3 {
     type Err = InvalidLengthError;
 
     fn from_str(src: &str) -> Result<Self, Self::Err> {
-        let inner =
-            ArrayString::<DEFAULT_CODE_LEN>::from_str(src).map_err(|_| InvalidLengthError {
-                expected: DEFAULT_CODE_LEN,
-                actual: 0,
-            })?;
+        let inner = ArrayString::<STRING3_LEN>::from_str(src).map_err(|_| InvalidLengthError {
+            expected: STRING3_LEN,
+            actual: 0,
+        })?;
 
         Ok(Self(inner))
     }
 }
 
-impl From<&str> for ArrayCodeString {
+impl From<&str> for ArrayString3 {
     fn from(value: &str) -> Self {
-        ArrayCodeString::from(value.to_string())
+        ArrayString3::from(value.to_string())
     }
 }
 
-impl From<String> for ArrayCodeString {
+impl From<String> for ArrayString3 {
     fn from(value: String) -> Self {
         let mut value = value;
-        if value.len() > DEFAULT_CODE_LEN {
-            value.truncate(DEFAULT_CODE_LEN);
+        if value.len() > STRING3_LEN {
+            value.truncate(STRING3_LEN);
         }
 
-        Self(ArrayString::<DEFAULT_CODE_LEN>::from(&value).unwrap())
+        Self(ArrayString::<STRING3_LEN>::from(&value).unwrap())
     }
 }
 
-impl From<ArrayString<DEFAULT_CODE_LEN>> for ArrayCodeString {
-    fn from(value: ArrayString<DEFAULT_CODE_LEN>) -> Self {
+impl From<ArrayString<STRING3_LEN>> for ArrayString3 {
+    fn from(value: ArrayString<STRING3_LEN>) -> Self {
         Self(value)
     }
 }
 
-impl Deref for ArrayCodeString {
+impl Deref for ArrayString3 {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -87,26 +86,26 @@ impl Deref for ArrayCodeString {
     }
 }
 
-impl PartialEq<ArrayCodeString> for str {
-    fn eq(&self, other: &ArrayCodeString) -> bool {
+impl PartialEq<ArrayString3> for str {
+    fn eq(&self, other: &ArrayString3) -> bool {
         *self == *other.as_str()
     }
 }
 
-impl PartialEq<str> for ArrayCodeString {
-    fn eq(&self, other: &str) -> bool {
-        self == other
+impl AsRef<str> for ArrayString3 {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
     }
 }
 
-impl<'a> FromSql<'a> for ArrayCodeString {
+impl<'a> FromSql<'a> for ArrayString3 {
     fn from_sql(
         ty: &postgres_types::Type,
         raw: &'a [u8],
     ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
         let res = <&str as FromSql>::from_sql(ty, raw).map(ToString::to_string)?;
 
-        Ok(ArrayCodeString::from(res))
+        Ok(ArrayString3::from(res))
     }
 
     fn accepts(ty: &postgres_types::Type) -> bool {
@@ -114,7 +113,7 @@ impl<'a> FromSql<'a> for ArrayCodeString {
     }
 }
 
-impl ToSql for ArrayCodeString {
+impl ToSql for ArrayString3 {
     fn to_sql(
         &self,
         ty: &postgres_types::Type,

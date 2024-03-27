@@ -11,16 +11,16 @@ use super::store::MemoryStore;
 #[async_trait]
 impl
     ResourceOperations<
-        journal::transaction::special::totals::Model,
-        journal::transaction::special::totals::ActiveModel,
+        journal::transaction::special::summary::Model,
+        journal::transaction::special::summary::ActiveModel,
         JournalTransactionId,
     > for MemoryStore
 {
     async fn insert(
         &self,
-        model: &journal::transaction::special::totals::Model,
-    ) -> Result<journal::transaction::special::totals::ActiveModel, OrmError> {
-        let active_model = journal::transaction::special::totals::ActiveModel::from_model(model);
+        model: &journal::transaction::special::summary::Model,
+    ) -> Result<journal::transaction::special::summary::ActiveModel, OrmError> {
+        let active_model = journal::transaction::special::summary::ActiveModel::from_model(model);
         let mut inner = self.inner.write().await;
         if inner
             .journal_xact_special_totals
@@ -41,8 +41,8 @@ impl
     async fn get(
         &self,
         ids: Option<&Vec<JournalTransactionId>>,
-    ) -> Result<Vec<journal::transaction::special::totals::ActiveModel>, OrmError> {
-        let mut res = Vec::<journal::transaction::special::totals::ActiveModel>::new();
+    ) -> Result<Vec<journal::transaction::special::summary::ActiveModel>, OrmError> {
+        let mut res = Vec::<journal::transaction::special::summary::ActiveModel>::new();
         let inner = self.inner.read().await;
         if let Some(ids) = ids {
             for (key, value) in inner.journal_xact_special_totals.iter() {
@@ -62,13 +62,13 @@ impl
     async fn search(
         &self,
         _domain: &str,
-    ) -> Result<Vec<journal::transaction::special::totals::ActiveModel>, OrmError> {
+    ) -> Result<Vec<journal::transaction::special::summary::ActiveModel>, OrmError> {
         todo!()
     }
 
     async fn save(
         &self,
-        model: &journal::transaction::special::totals::ActiveModel,
+        model: &journal::transaction::special::summary::ActiveModel,
     ) -> Result<u64, OrmError> {
         let mut inner = self.inner.write().await;
         if let std::collections::hash_map::Entry::Occupied(mut e) =

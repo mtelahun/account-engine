@@ -22,7 +22,7 @@ impl
         let conn = self.get_connection().await?;
         let sql = format!(
             "INSERT INTO 
-                {}(journal_id, timestamp, ledger_id, xact_type, amount, state) 
+                {}(journal_id, timestamp, dr_ledger_id, cr_ledger_id, amount, state) 
                     VALUES($1, $2, $3, $4, $5, $6) RETURNING *",
             journal::transaction::general::line::ActiveModel::NAME
         );
@@ -32,8 +32,8 @@ impl
                 &[
                     &model.journal_id,
                     &model.timestamp,
-                    &model.ledger_id,
-                    &model.xact_type,
+                    &model.dr_ledger_id,
+                    &model.cr_ledger_id,
                     &model.amount,
                     &model.state,
                 ],
@@ -49,11 +49,11 @@ impl
         ids: Option<&Vec<JournalTransactionId>>,
     ) -> Result<Vec<journal::transaction::general::line::ActiveModel>, OrmError> {
         let search_one = format!(
-            "SELECT * FROM {} WHERE journal_id=$1::JournalId AND timestamp=$2 ORDER BY xact_type DESC",
+            "SELECT * FROM {} WHERE journal_id=$1::JournalId AND timestamp=$2",
             journal::transaction::general::line::ActiveModel::NAME
         );
         let search_all = format!(
-            "SELECT * FROM {} ORDER BY xact_type DESC",
+            "SELECT * FROM {} ORDER BY timestamp",
             journal::transaction::general::line::ActiveModel::NAME
         );
         let conn = self.get_connection().await?;
@@ -134,11 +134,12 @@ impl From<Row> for journal::transaction::general::line::ActiveModel {
         Self {
             journal_id: value.get("journal_id"),
             timestamp: value.get("timestamp"),
-            ledger_id: value.get("ledger_id"),
-            xact_type: value.get("xact_type"),
+            dr_ledger_id: value.get("dr_ledger_id"),
+            cr_ledger_id: value.get("cr_ledger_id"),
             amount: value.get("amount"),
             state: value.get("state"),
-            posting_ref: value.get("posting_ref"),
+            dr_posting_ref: value.get("dr_posting_ref"),
+            cr_posting_ref: value.get("cr_posting_ref"),
         }
     }
 }

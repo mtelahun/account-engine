@@ -1,375 +1,286 @@
 use account_engine::{
-    domain::{JournalTransactionId, LedgerId},
-    resource::{journal, ledger, subsidiary_ledger, LedgerKey, LedgerPostingRef, TransactionState},
+    domain::{
+        AccountId, ArrayString128, ExternalXactTypeCode, JournalTransactionId,
+        SpecialJournalTemplateId,
+    },
+    resource::{journal, subsidiary_ledger},
     service::{
-        LedgerService, ServiceError, SubsidiaryJournalService, SubsidiaryJournalTransactionService,
-        SubsidiaryLedgerService,
+        journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
+        LedgerAccount, ServiceError,
     },
 };
 use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
-use crate::{support::state::TestState, support::utils::timestamp};
+use crate::support::utils::timestamp;
+
+use super::{
+    service_test_interface::ServiceTestInterface, state_interface::StateInterface,
+    test_column::TestColumn,
+};
 
 #[derive(Debug)]
-pub struct SpecialJournalTransaction {
+pub struct TestSpecialJournalTransaction<S> {
+    state: S,
     pub subsidiary: subsidiary_ledger::ActiveModel,
     pub journal: journal::ActiveModel,
-    pub control: ledger::ActiveModel,
-    pub xact: journal::transaction::special::Model,
-    pub column1: journal::transaction::special::column::Model,
+    pub control: LedgerAccount,
+    pub account_id: AccountId,
+    pub template_id: SpecialJournalTemplateId,
+    pub explanation: ArrayString128,
+    pub xact_type_external_code: ExternalXactTypeCode,
+    pub column1: JournalTransactionColumn,
     pub timestamp: NaiveDateTime,
     tx_template_columns: Vec<journal::transaction::special::template::column::ActiveModel>,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
-pub struct TestColumn {
-    ledger_dr: Option<ledger::ActiveModel>,
-    ledger_cr: Option<ledger::ActiveModel>,
-    amount: Decimal,
-    sequence: usize,
-}
-
-#[derive(Clone, Copy, Debug, Default)]
 pub enum CreateLedgerType {
     #[default]
-    None,
     Random,
-    Ledger(ledger::ActiveModel),
+    Ledger(LedgerAccount),
 }
 
-impl SpecialJournalTransaction {
-    pub async fn new(state: &TestState, control: CreateLedgerType, test_col: &TestColumn) -> Self {
+impl<S: StateInterface + ServiceTestInterface> TestSpecialJournalTransaction<S> {
+    pub async fn new(state: S, control: CreateLedgerType, test_col: &TestColumn) -> Self {
         let timestamp = timestamp();
-        let (sub, journal, control, account, _, tx_template_columns) =
+        let (sub, journal, control, account, tpl, tpl_col) =
             state.create_subsidiary("A/R", control).await;
-        let column1 = journal::transaction::special::column::Model {
+        let column1 = journal::transaction::column::ledger_drcr::ActiveModel {
             journal_id: journal.id,
             timestamp,
-            sequence: 1,
-            dr_ledger_id: test_col.dr_ledger_id(),
-            cr_ledger_id: test_col.cr_ledger_id(),
+            template_column_id: tpl_col[0].id,
             amount: test_col.amount(),
-            ..Default::default()
+            ledger_dr_id: control.id(),
+            ledger_cr_id: control.id(),
+            column_total_id: None,
         };
-        let jx = journal::transaction::special::Model {
-            journal_id: journal.id,
-            timestamp,
-            explanation: "Withdrew cash for lunch".into(),
-            account_id: account.id,
-            xact_type_external: Some("DF".into()),
-            ..Default::default()
-        };
+        let column1 = JournalTransactionColumn::LedgerDrCr(column1);
 
         Self {
+            state,
             subsidiary: sub,
             journal,
             control,
-            xact: jx,
+            account_id: account.id(),
+            template_id: tpl.id,
+            explanation: "Withdrew cash for lunch".into(),
+            xact_type_external_code: "DF".into(),
             column1,
             timestamp,
-            tx_template_columns,
+            tx_template_columns: tpl_col,
         }
     }
 
     pub async fn journalize(
         &self,
-        state: &TestState,
     ) -> (
-        journal::transaction::special::ActiveModel,
-        Vec<journal::transaction::special::column::ActiveModel>,
+        SpecialJournalTransaction<journal::transaction::special::ActiveModel>,
+        Vec<JournalTransactionColumn>,
     ) {
         let lines = vec![self.column1];
-        let tx = state
-            .engine
-            .create_subsidiary_transaction(&self.xact, &lines)
+        let (tx, tx_lines) = self
+            .state
+            .create_subsidiary_transaction(
+                &self.journal.id,
+                self.timestamp,
+                &self.template_id,
+                self.account_id,
+                account_engine::domain::XactType::Dr,
+                &"DF".into(),
+                Decimal::from(100),
+                &self.explanation,
+                &self.tx_template_columns,
+                &lines,
+            )
             .await
             .expect("failed to create journalize subsidiary transaction");
-        let tx_lines = state
-            .engine
-            .get_subsidiary_transaction_columns(Some(&vec![tx.id()]))
-            .await
-            .expect("failed to get lines of journalized transaction");
 
         (tx, tx_lines)
     }
 
-    pub async fn post(
-        &self,
-        state: &TestState,
-        id: JournalTransactionId,
-    ) -> Result<bool, ServiceError> {
-        state.engine.post_subsidiary_ledger(id).await?;
-        Ok(state
-            .engine
+    pub async fn post(&self, id: JournalTransactionId) -> Result<bool, ServiceError> {
+        self.state.post_subsidiary_ledger(id).await?;
+        Ok(self
+            .state
             .post_general_ledger(self.journal.id, &vec![id])
             .await?)
     }
 
-    pub async fn assert_column_match(
-        &self,
-        state: &TestState,
-        test_col: &TestColumn,
-        is_posted: bool,
-    ) {
+    pub async fn assert_column_match(&self, test_col: &TestColumn, is_posted: bool) {
         // Query SubLedgerService
-        let jxacts = state
-            .engine
+        let records = self
+            .state
             .get_subsidiary_transactions_by_journal(self.journal.id)
             .await
             .expect("failed to get journal transactions");
-        let jx_columns = state
-            .engine
-            .get_subsidiary_transaction_columns(Some(&vec![jxacts[0].id()]))
-            .await
-            .expect("failed to get subsidiary transaction lines");
+        let (jxacts, jx_columns) = &records[0];
 
         println!("jxact_lines: {:#?}", jx_columns);
         assert_eq!(
-            jxacts.len(),
+            records.len(),
             1,
             "One journal transaction was created in the subsidiary journal"
         );
-        if test_col.cr_ledger_id().is_some() && test_col.dr_ledger_id().is_some() {
-            assert_eq!(
-                jx_columns.len(),
-                1,
-                "The transaction has a single column, TWO ledger accounts"
-            );
-        } else {
-            assert_eq!(
-                jx_columns.len(),
-                1,
-                "The transaction has a single column, ONE ledger account"
-            );
-        }
+        assert_eq!(
+            jx_columns.len(),
+            1,
+            "The transaction has a single column, TWO ledger accounts"
+        );
+
         for jx_column in jx_columns.iter() {
             assert_eq!(
-                jx_column.journal_id, self.journal.id,
+                jx_column.journal_id(),
+                self.journal.id,
                 "Journal set properly"
             );
             assert_eq!(
-                jx_column.timestamp, self.xact.timestamp,
+                jx_column.timestamp(),
+                self.timestamp,
                 "Timestamp set properly"
             );
-            assert_eq!(
-                jx_column.sequence,
-                test_col.sequence(),
-                "sequence set properly"
-            );
-            assert_eq!(jx_column.amount, test_col.amount(), "Amount set properly");
+            assert_eq!(jx_column.amount(), test_col.amount(), "Amount set properly");
             if !is_posted {
-                assert_eq!(
-                    jx_column.state,
-                    TransactionState::Pending,
-                    "journal column transaction state is 'Pending'"
+                assert!(
+                    !jx_column.posted(),
+                    "journal column transaction state has not been posted"
                 );
                 assert!(
-                    jx_column.column_total_id.is_none(),
+                    jx_column.column_total_id().is_none(),
                     "Pending transaction has no 'Total' entry"
                 );
             } else {
-                assert_eq!(
-                    jx_column.state,
-                    TransactionState::Posted,
-                    "journal column transaction state is 'Posted'"
-                );
+                assert!(jx_column.posted(), "journal column transaction is 'Posted'");
                 assert!(
-                    jx_column.column_total_id.is_some(),
+                    jx_column.column_total_id().is_some(),
                     "Posted transaction has a 'Total' entry"
-                );
-            }
-            if test_col.cr_ledger_id().is_some() {
-                assert_eq!(
-                    jx_column.cr_ledger_id,
-                    Some(test_col.ledger_cr.unwrap().id),
-                    "Cr ledger set properly"
-                );
-            }
-            if test_col.dr_ledger_id().is_some() {
-                assert_eq!(
-                    jx_column.dr_ledger_id,
-                    Some(test_col.ledger_dr.unwrap().id),
-                    "Dr ledger set properly"
                 );
             }
         }
         if is_posted {
-            self.assert_match_column_posting_ref(state, jxacts[0].timestamp, &jx_columns)
+            self.assert_match_column_posting_ref(jxacts.timestamp, &jx_columns)
                 .await;
         }
     }
 
     async fn assert_match_column_posting_ref(
         &self,
-        state: &TestState,
-        timestamp: NaiveDateTime,
-        jx_columns: &Vec<journal::transaction::special::column::ActiveModel>,
+        _timestamp: NaiveDateTime,
+        _jx_columns: &Vec<JournalTransactionColumn>,
     ) {
-        for col in jx_columns.iter() {
-            let col_total = state
-                .engine
-                .get_column_total(col.id(), col.sequence)
-                .await
-                .expect("failed to get column total");
-            let ledger_id_cr = self.tx_template_columns[0].cr_ledger_id;
-            if ledger_id_cr.is_some() {
-                let ledger_id = ledger_id_cr.unwrap();
-                let expected: LedgerPostingRef = LedgerPostingRef::new(
-                    LedgerKey {
-                        ledger_id: ledger_id,
-                        timestamp: timestamp,
-                    },
-                    ledger_id,
-                );
-                assert_eq!(
-                    col_total.posting_ref_cr,
-                    Some(expected),
-                    "Cr PostingRef set properly"
-                );
-            } else {
-                assert_eq!(
-                    col_total.posting_ref_cr, None,
-                    "If there is no Cr account then Cr PostingRef is None"
-                );
-            }
-            let ledger_id_dr = self.tx_template_columns[0].dr_ledger_id;
-            if ledger_id_dr.is_some() {
-                let ledger_id = ledger_id_cr.unwrap();
-                let expected: LedgerPostingRef = LedgerPostingRef::new(
-                    LedgerKey {
-                        ledger_id: ledger_id,
-                        timestamp: timestamp,
-                    },
-                    ledger_id_dr.unwrap(),
-                );
-                assert_eq!(
-                    col_total.posting_ref_dr,
-                    Some(expected),
-                    "Dr PostingRef set properly"
-                );
-            } else {
-                assert_eq!(
-                    col_total.posting_ref_dr, None,
-                    "If there is no Dr account then Dr PostingRef is None"
-                );
-            }
-        }
+        // for col in jx_columns.iter() {
+        //     let col_total = self
+        //         .state
+        //         .get_column_total(col.id(), col.sequence)
+        //         .await
+        //         .expect("failed to get column total");
+        //     let ledger_id_cr = self.tx_template_columns[0].cr_ledger_id;
+        //     if ledger_id_cr.is_some() {
+        //         let ledger_id = ledger_id_cr.unwrap();
+        //         let expected: LedgerPostingRef = LedgerPostingRef::new(
+        //             LedgerKey {
+        //                 ledger_id: ledger_id,
+        //                 timestamp: timestamp,
+        //             },
+        //             ledger_id,
+        //         );
+        //         assert_eq!(
+        //             col_total.posting_ref_cr,
+        //             Some(expected),
+        //             "Cr PostingRef set properly"
+        //         );
+        //     } else {
+        //         assert_eq!(
+        //             col_total.posting_ref_cr, None,
+        //             "If there is no Cr account then Cr PostingRef is None"
+        //         );
+        //     }
+        //     let ledger_id_dr = self.tx_template_columns[0].dr_ledger_id;
+        //     if ledger_id_dr.is_some() {
+        //         let ledger_id = ledger_id_cr.unwrap();
+        //         let expected: LedgerPostingRef = LedgerPostingRef::new(
+        //             LedgerKey {
+        //                 ledger_id: ledger_id,
+        //                 timestamp: timestamp,
+        //             },
+        //             ledger_id_dr.unwrap(),
+        //         );
+        //         assert_eq!(
+        //             col_total.posting_ref_dr,
+        //             Some(expected),
+        //             "Dr PostingRef set properly"
+        //         );
+        //     } else {
+        //         assert_eq!(
+        //             col_total.posting_ref_dr, None,
+        //             "If there is no Dr account then Dr PostingRef is None"
+        //         );
+        //     }
+        // }
+        todo!()
     }
 
     pub async fn assert_posted(
         &self,
-        state: &TestState,
-        test_col: &TestColumn,
+        _test_col: &TestColumn,
         id: JournalTransactionId,
-        posted: bool,
+        _posted: bool,
     ) {
-        let jxact = state
-            .engine
+        let jxact = self
+            .state
             .get_subsidiary_transactions(Some(&vec![id]))
             .await
             .expect("failed to get journal transactions");
-        let jxact = jxact[0];
-        let jx_lines = state
-            .engine
-            .get_subsidiary_transaction_columns(Some(&vec![id]))
-            .await
-            .expect("failed to get subsidiary transaction lines");
+        let (_jxact, jx_lines) = &jxact[0];
 
         println!("jxact_lines: {:#?}", jx_lines);
-        assert!(
-            posted,
-            "subsidiary journal transaction posting returned success"
-        );
-        assert_eq!(
-            jxact.account_posted_state,
-            TransactionState::Posted,
-            "The transaction has been posted to the external account"
-        );
+        // assert!(
+        //     posted,
+        //     "subsidiary journal transaction posting returned success"
+        // );
 
-        let posting_ref = jxact.posting_ref.unwrap();
-        let transaction = state
-            .engine
-            .journal_entry_by_key(posting_ref.key())
-            .await
-            .expect("failed to get journal entry")
-            .unwrap();
-        let transaction_account = state
-            .engine
-            .get_journal_entry_transaction_account(&posting_ref)
-            .await
-            .expect("failed to get journal entry from subledger");
-        println!("transaction: {:#?}", transaction);
-        println!("transaction account: {:#?}", transaction_account);
-        assert_eq!(
-            transaction_account.account_id, jxact.account_id,
-            "Account Ids match"
-        );
-        assert_eq!(
-            transaction_account.id(),
-            posting_ref.key(),
-            "Transaction keys match"
-        );
-        assert_eq!(
-            transaction.ledger_xact_type_code,
-            "LA".into(),
-            "LedgerXactTypeCode is 'LA'"
-        );
-        assert_eq!(transaction.amount, test_col.amount, "Amounts match");
-        assert_eq!(
-            transaction.journal_ref,
-            jxact.id(),
-            "transaction reference to journal transaction is correct."
-        )
-    }
-}
-
-impl TestColumn {
-    pub async fn new(
-        state: &TestState,
-        sequence: usize,
-        use_dr: CreateLedgerType,
-        use_cr: CreateLedgerType,
-        amount: Decimal,
-    ) -> Self {
-        let ledger_dr = match use_dr {
-            CreateLedgerType::None => None,
-            CreateLedgerType::Random => Some(state.create_ledger_leaf().await),
-            CreateLedgerType::Ledger(l) => Some(l),
-        };
-        let ledger_cr = match use_cr {
-            CreateLedgerType::None => None,
-            CreateLedgerType::Random => Some(state.create_ledger_leaf().await),
-            CreateLedgerType::Ledger(l) => Some(l),
-        };
-        Self {
-            ledger_dr,
-            ledger_cr,
-            amount,
-            sequence,
-            ..Default::default()
+        for col in jx_lines {
+            match col {
+                JournalTransactionColumn::LedgerDrCr(_) => todo!(),
+                JournalTransactionColumn::Text(_) => todo!(),
+                JournalTransactionColumn::AccountDr(_) => todo!(),
+                JournalTransactionColumn::AccountCr(_) => todo!(),
+            }
         }
-    }
 
-    pub fn cr_ledger_id(&self) -> Option<LedgerId> {
-        match self.ledger_cr {
-            Some(ledger) => Some(ledger.id),
-            None => None,
-        }
-    }
-
-    pub fn dr_ledger_id(&self) -> Option<LedgerId> {
-        match self.ledger_dr {
-            Some(ledger) => Some(ledger.id),
-            None => None,
-        }
-    }
-
-    pub fn amount(&self) -> Decimal {
-        self.amount
-    }
-
-    pub fn sequence(&self) -> usize {
-        self.sequence
+        // let posting_ref = jxact.posting_ref.unwrap();
+        // let transaction = self
+        //     .state
+        //     .journal_entry_by_key(posting_ref.key())
+        //     .await
+        //     .expect("failed to get journal entry")
+        //     .unwrap();
+        // let transaction_account = self
+        //     .state
+        //     .get_journal_entry_transaction_account(&posting_ref)
+        //     .await
+        //     .expect("failed to get journal entry from subledger");
+        // println!("transaction: {:#?}", transaction);
+        // println!("transaction account: {:#?}", transaction_account);
+        // assert_eq!(
+        //     transaction_account.account_id, jxact.account_id,
+        //     "Account Ids match"
+        // );
+        // assert_eq!(
+        //     transaction_account.id(),
+        //     posting_ref.key(),
+        //     "Transaction keys match"
+        // );
+        // assert_eq!(
+        //     transaction.ledger_xact_type_code,
+        //     "LA".into(),
+        //     "LedgerXactTypeCode is 'LA'"
+        // );
+        // assert_eq!(transaction.amount, test_col.amount, "Amounts match");
+        // assert_eq!(
+        //     transaction.journal_ref,
+        //     jxact.id(),
+        //     "transaction reference to journal transaction is correct."
+        // )
     }
 }

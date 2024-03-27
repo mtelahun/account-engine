@@ -20,11 +20,11 @@ impl ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel
         let subledger = subsidiary_ledger::ActiveModel {
             id,
             name: model.name,
-            ledger_account_id: model.ledger_account_id,
+            ledger_id: model.ledger_id,
         };
         let mut inner = self.inner.write().await;
         let is_duplicate = inner
-            .subsidary_ledger
+            .subsidiary_ledger
             .iter()
             .any(|(k, _)| *k == subledger.id);
         if is_duplicate {
@@ -33,7 +33,7 @@ impl ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel
                 subledger.id
             )));
         }
-        inner.subsidary_ledger.insert(subledger.id, subledger);
+        inner.subsidiary_ledger.insert(subledger.id, subledger);
 
         Ok(subledger)
     }
@@ -45,13 +45,13 @@ impl ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel
         let mut res = Vec::<subsidiary_ledger::ActiveModel>::new();
         let inner = self.inner.read().await;
         if let Some(ids) = ids {
-            for value in inner.subsidary_ledger.values() {
+            for value in inner.subsidiary_ledger.values() {
                 if ids.iter().any(|id| *id == value.id) {
                     res.push(*value)
                 }
             }
         } else {
-            for value in inner.subsidary_ledger.values() {
+            for value in inner.subsidiary_ledger.values() {
                 res.push(*value)
             }
         }
@@ -67,12 +67,12 @@ impl ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel
         let subledger = subsidiary_ledger::ActiveModel {
             id: model.id,
             name: model.name,
-            ledger_account_id: model.ledger_account_id,
+            ledger_id: model.ledger_id,
         };
         let mut inner = self.inner.write().await;
-        let exists = inner.subsidary_ledger.iter().any(|(k, _)| *k == model.id);
+        let exists = inner.subsidiary_ledger.iter().any(|(k, _)| *k == model.id);
         if exists {
-            inner.subsidary_ledger.insert(model.id, subledger);
+            inner.subsidiary_ledger.insert(model.id, subledger);
 
             return Ok(1);
         }
@@ -85,7 +85,7 @@ impl ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel
 
     async fn delete(&self, id: SubLedgerId) -> Result<u64, OrmError> {
         let mut inner = self.inner.write().await;
-        match inner.subsidary_ledger.remove(&id) {
+        match inner.subsidiary_ledger.remove(&id) {
             Some(_) => return Ok(1),
             None => return Err(OrmError::RecordNotFound(format!("subledger: {id}"))),
         }

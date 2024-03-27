@@ -1,10 +1,11 @@
+#![allow(clippy::diverging_sub_expression)]
 use std::str::FromStr;
 
 use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::{
-    domain::{ArrayLongString, ArrayShortString, LedgerId},
+    domain::{ArrayString128, ArrayString24, LedgerId},
     resource::ledger,
     store::{postgres::store::PostgresStore, OrmError, Resource, ResourceOperations},
 };
@@ -47,7 +48,7 @@ impl ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId> for Postgr
                 query.as_str(),
                 &[
                     &LedgerId::new(),
-                    &model.ledger_no.as_str(),
+                    &model.number.as_str(),
                     &model.name.as_str(),
                     &model.ledger_type,
                     &model.parent_id,
@@ -74,7 +75,7 @@ impl ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId> for Postgr
                 &model.currency_code,
                 &model.parent_id,
                 &model.ledger_type,
-                &model.ledger_no,
+                &model.number,
                 &model.id,
             ],
         )
@@ -123,8 +124,8 @@ impl From<Row> for ledger::ActiveModel {
     fn from(value: Row) -> Self {
         Self {
             id: value.get("id"),
-            name: ArrayLongString::from_str(value.get("name")).unwrap_or_default(),
-            ledger_no: ArrayShortString::from_str(value.get("ledger_no")).unwrap_or_default(),
+            name: ArrayString128::from_str(value.get("name")).unwrap_or_default(),
+            number: ArrayString24::from_str(value.get("ledger_no")).unwrap_or_default(),
             ledger_type: value.get("ledger_type"),
             parent_id: value.get("parent_id"),
             currency_code: value.get("currency_code"),

@@ -2,17 +2,17 @@ use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
 use crate::{
-    domain::{ids::JournalId, ColumnTotalId, JournalTransactionId, LedgerId},
+    domain::{ids::JournalId, ColumnTotalId, JournalTransactionId, LedgerId, Sequence},
     resource::TransactionState,
 };
 
-pub mod total;
+pub mod sum;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Model {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
-    pub sequence: usize,
+    pub sequence: Sequence,
     pub dr_ledger_id: Option<LedgerId>,
     pub cr_ledger_id: Option<LedgerId>,
     pub amount: Decimal,
@@ -24,7 +24,7 @@ pub struct Model {
 pub struct ActiveModel {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
-    pub sequence: usize,
+    pub sequence: Sequence,
     pub dr_ledger_id: Option<LedgerId>,
     pub cr_ledger_id: Option<LedgerId>,
     pub amount: Decimal,

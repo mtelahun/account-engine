@@ -49,32 +49,48 @@ impl Resource for journal::transaction::general::line::ActiveModel {
     const NAME: &'static str = "journal_transaction_general";
 }
 
+impl Resource for journal::transaction::column::ledger_drcr::ActiveModel {
+    const NAME: &'static str = "journal_transaction_column_ledger_drcr";
+}
+
+impl Resource for journal::transaction::column::text::ActiveModel {
+    const NAME: &'static str = "journal_transaction_column_text";
+}
+
+impl Resource for journal::transaction::column::account_dr::ActiveModel {
+    const NAME: &'static str = "journal_transaction_column_account_dr";
+}
+
+impl Resource for journal::transaction::column::account_cr::ActiveModel {
+    const NAME: &'static str = "journal_transaction_column_account_cr";
+}
+
 impl Resource for journal::transaction::special::column::ActiveModel {
-    const NAME: &'static str = "journal_transaction_subsidiary_line";
+    const NAME: &'static str = "journal_transaction_special_column";
 }
 
-impl Resource for journal::transaction::special::totals::ActiveModel {
-    const NAME: &'static str = "journal_transaction_subsidiary_totals";
+impl Resource for journal::transaction::special::summary::ActiveModel {
+    const NAME: &'static str = "journal_transaction_special_totals";
 }
 
-impl Resource for journal::transaction::special::column::total::ActiveModel {
-    const NAME: &'static str = "journal_transaction_subsidiary_column_total";
+impl Resource for journal::transaction::special::column::sum::ActiveModel {
+    const NAME: &'static str = "journal_transaction_special_column_total";
 }
 
 impl Resource for journal::transaction::special::template::ActiveModel {
-    const NAME: &'static str = "journal_transaction_subsidiary_template";
+    const NAME: &'static str = "journal_transaction_special_template";
 }
 
 impl Resource for journal::transaction::special::template::column::ActiveModel {
-    const NAME: &'static str = "journal_transaction_subsidiary_template_column";
+    const NAME: &'static str = "journal_transaction_special_template_column";
 }
 
-impl Resource for journal::transaction::record::ActiveModel {
-    const NAME: &'static str = "journal_transaction_record";
+impl Resource for journal::transaction::ActiveModel {
+    const NAME: &'static str = "journal_transaction";
 }
 
 impl Resource for journal::transaction::special::ActiveModel {
-    const NAME: &'static str = "journal_transaction_subsidiary";
+    const NAME: &'static str = "journal_transaction_special";
 }
 
 /// The journal_transaction::ActiveModel is only ever used to communicate with
@@ -85,6 +101,14 @@ impl Resource for journal::transaction::general::ActiveModel {
 
 impl Resource for journal::ActiveModel {
     const NAME: &'static str = "journal";
+}
+
+impl Resource for ledger::ActiveModel {
+    const NAME: &'static str = "ledger";
+}
+
+impl Resource for ledger::derived::ActiveModel {
+    const NAME: &'static str = "ledger_derived";
 }
 
 impl Resource for ledger::intermediate::ActiveModel {
@@ -111,20 +135,20 @@ impl Resource for ledger_xact_type::ActiveModel {
     const NAME: &'static str = "ledger_transaction_type";
 }
 
-impl Resource for ledger::ActiveModel {
-    const NAME: &'static str = "ledger";
-}
-
-impl Resource for ledger::derived::ActiveModel {
-    const NAME: &'static str = "ledger_derived";
-}
-
 impl Resource for accounting_period::ActiveModel {
     const NAME: &'static str = "accounting_period";
 }
 
 impl Resource for external::account::ActiveModel {
     const NAME: &'static str = "external_account";
+}
+
+impl Resource for external::account::transaction::ActiveModel {
+    const NAME: &'static str = "external_account_transaction";
+}
+
+impl Resource for external::entity::ActiveModel {
+    const NAME: &'static str = "external_entity";
 }
 
 impl Resource for external::entity_type::ActiveModel {

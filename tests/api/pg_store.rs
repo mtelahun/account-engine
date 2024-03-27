@@ -1,24 +1,16 @@
-use std::str::FromStr;
-
 use account_engine::{
-    domain::{
-        ids::JournalId, ArrayCodeString, ArrayLongString, ArrayShortString, LedgerId, XactType,
-    },
-    resource::{
-        account_engine::AccountEngine, accounting_period, general_ledger, journal, ledger,
-        InterimType, LedgerType, TransactionState,
-    },
-    service::ServiceError,
+    domain::LedgerId,
+    resource::{accounting_period, journal, InterimType, LedgerType, TransactionState},
     service::{
         AccountingPeriodService, GeneralJournalService, GeneralLedgerService,
-        JournalTransactionService, LedgerService,
+        JournalTransactionService, LedgerService, ServiceError,
     },
-    store::{postgres::store::PostgresStore, OrmError},
+    store::OrmError,
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 
-use crate::support::utils::timestamp;
+use crate::support::{pgstore::state::TestState, utils::timestamp};
 
 #[tokio::test]
 async fn non_existant_ledger() {
@@ -32,10 +24,10 @@ async fn non_existant_ledger() {
         .unwrap();
 
     // Assert
-    let all: Vec<ledger::ActiveModel> = GeneralLedgerService::get_ledgers(&state.engine, None)
+    let all = GeneralLedgerService::get_ledgers(&state.engine, None)
         .await
         .unwrap();
-    assert_eq!(all.len(), 1, "0 ledgers (minus root) in the list");
+    assert_eq!(all.len(), 1, "1 ledger (incl. root) in the list");
     assert_eq!(
         res.len(),
         0,
@@ -54,7 +46,7 @@ async fn unique_account_number() {
             "1000",
             "Assets",
             LedgerType::Leaf,
-            Some(state.general_ledger.root),
+            state.general_ledger.root,
         )
         .await
         .expect("first ledger account");
@@ -63,53 +55,24 @@ async fn unique_account_number() {
             "1000",
             "Assets",
             LedgerType::Leaf,
-            Some(state.general_ledger.root),
+            state.general_ledger.root,
         )
         .await;
 
     assert!(assets_same_gl.is_err(), "failed to create second account");
     assert_eq!(
         assets_same_gl.err().unwrap(),
-        Err::<(), ServiceError>(ServiceError::Validation(
-            "duplicate ledger number: 1000".into(),
-        ))
+        Err::<(), ServiceError>(ServiceError::Resource(OrmError::Internal(
+            "db error: ERROR: duplicate key value violates unique constraint \"ledger_ledger_no_key\"\nDETAIL: Key (ledger_no)=(1000) already exists.".into(),
+        )))
         .err()
         .unwrap()
     );
-    let gl1_accounts: Vec<ledger::ActiveModel> = state.engine.get_ledgers(None).await.unwrap();
+    let gl1_accounts = state.engine.get_ledgers(None).await.unwrap();
     assert_eq!(
         gl1_accounts.len(),
         2,
-        "Only one account (+ root) in the 1st ledger"
-    );
-}
-
-#[tokio::test]
-async fn account_parent_is_not_null() {
-    // Arrange
-    let state = TestState::new().await;
-
-    // Act
-    let _ = state
-        .create_account(
-            "1000",
-            "Assets",
-            LedgerType::Intermediate,
-            Some(state.general_ledger.root),
-        )
-        .await
-        .expect("Assets intermediate ledger creation failed");
-    let cash = state
-        .create_account("1001", "Cash", LedgerType::Leaf, None)
-        .await;
-
-    // Assert
-    assert!(cash.is_err(), "ledger creation w/out parent_id must fail");
-    assert_eq!(
-        cash.err().unwrap(),
-        Err::<(), ServiceError>(ServiceError::Validation("ledger must have parent".into(),))
-            .err()
-            .unwrap()
+        "Only 2 accounts (incl. root) in the 1st general ledger"
     );
 }
 
@@ -124,12 +87,12 @@ async fn parent_is_intermediate() {
             "1000",
             "Assets",
             LedgerType::Leaf,
-            Some(state.general_ledger.root),
+            state.general_ledger.root,
         )
         .await
         .unwrap();
     let cash = state
-        .create_account("1001", "Cash", LedgerType::Leaf, Some(assets.id))
+        .create_account("1001", "Cash", LedgerType::Leaf, assets.id())
         .await;
 
     // Assert
@@ -153,7 +116,7 @@ async fn duplicate_account_name_ok() {
             "1000",
             "Assets",
             LedgerType::Leaf,
-            Some(state.general_ledger.root),
+            state.general_ledger.root,
         )
         .await
         .expect("failed to create original account");
@@ -164,14 +127,15 @@ async fn duplicate_account_name_ok() {
             "1001",
             "Assets",
             LedgerType::Leaf,
-            Some(state.general_ledger.root),
+            state.general_ledger.root,
         )
         .await
         .expect("failed to create account with duplicate name");
 
     // Assert
     assert_eq!(
-        assets_original.name, assets_same_gl.name,
+        assets_original.name(),
+        assets_same_gl.name(),
         "account with duplicate name created successfully"
     );
     let gl1_accounts = state
@@ -387,21 +351,11 @@ async fn journal_transaction_creation() {
     // Arrange
     let state = TestState::new().await;
     let cash1 = state
-        .create_account(
-            "1001",
-            "Cash",
-            LedgerType::Leaf,
-            Some(state.general_ledger.root),
-        )
+        .create_account("1001", "Cash", LedgerType::Leaf, state.general_ledger.root)
         .await
         .unwrap();
     let bank1 = state
-        .create_account(
-            "1002",
-            "Bank",
-            LedgerType::Leaf,
-            Some(state.general_ledger.root),
-        )
+        .create_account("1002", "Bank", LedgerType::Leaf, state.general_ledger.root)
         .await
         .unwrap();
 
@@ -409,23 +363,15 @@ async fn journal_transaction_creation() {
     let jx1_line1 = journal::transaction::general::line::Model {
         journal_id: state.journal.id,
         timestamp: now,
-        ledger_id: cash1.id,
-        xact_type: XactType::Dr,
-        ..Default::default()
-    };
-    let jx1_line2 = journal::transaction::general::line::Model {
-        journal_id: state.journal.id,
-        timestamp: now,
-        ledger_id: bank1.id,
-        xact_type: XactType::Cr,
-        posting_ref: None,
+        dr_ledger_id: cash1.id(),
+        cr_ledger_id: bank1.id(),
         ..Default::default()
     };
     let jx1 = journal::transaction::general::Model {
         journal_id: state.journal.id,
         timestamp: now,
         explanation: "Withdrew cash for lunch".into(),
-        lines: vec![jx1_line1, jx1_line2],
+        lines: vec![jx1_line1],
     };
     let jx_same_ledger = jx1.clone();
 
@@ -443,7 +389,7 @@ async fn journal_transaction_creation() {
     // Assert
     assert!(jx_same_ledger.is_err());
     let err_str = format!(
-        "db error: ERROR: duplicate key value violates unique constraint \"journal_transaction_record_pkey\"\nDETAIL: Key (journal_id, \"timestamp\")=({}, {}) already exists.",
+        "db error: ERROR: duplicate key value violates unique constraint \"journal_transaction_pkey\"\nDETAIL: Key (journal_id, \"timestamp\")=({}, {}) already exists.",
         state.journal.id,
         now
     );
@@ -471,12 +417,7 @@ async fn journal_transaction_creation_invalid() {
     let fake_account_id = LedgerId::new();
     let state = TestState::new().await;
     let bank = state
-        .create_account(
-            "1002",
-            "Bank",
-            LedgerType::Leaf,
-            Some(state.general_ledger.root),
-        )
+        .create_account("1002", "Bank", LedgerType::Leaf, state.general_ledger.root)
         .await
         .unwrap();
     let jxact = state.simple_xact_model();
@@ -484,26 +425,25 @@ async fn journal_transaction_creation_invalid() {
         (
             {
                 let mut jx_line1 = jxact.line1.clone();
-                jx_line1.ledger_id = fake_account_id;
+                jx_line1.dr_ledger_id = fake_account_id;
                 let mut jx1 = jxact.jx.clone();
-                jx1.lines = vec![jx_line1, jxact.line2];
+                jx1.lines = vec![jx_line1];
                 jx1
             },
-            ServiceError::EmptyRecord(format!("account id: {fake_account_id}",)),
-            "line1: ledger_id is fake",
+            ServiceError::EmptyRecord(format!("ledger id: {fake_account_id}",)),
+            "line1: dr_ledger_id is fake",
         ),
         (
             {
                 let mut jx_line1 = jxact.line1.clone();
-                jx_line1.ledger_id = bank.id;
-                let mut jx_line2 = jxact.line2.clone();
-                jx_line2.ledger_id = fake_account_id;
+                jx_line1.dr_ledger_id = bank.id();
+                jx_line1.cr_ledger_id = fake_account_id;
                 let mut jx1 = jxact.jx.clone();
-                jx1.lines = vec![jx_line1, jx_line2];
+                jx1.lines = vec![jx_line1];
                 jx1
             },
-            ServiceError::EmptyRecord(format!("account id: {fake_account_id}",)),
-            "line2: ledger_id is fake",
+            ServiceError::EmptyRecord(format!("ledger id: {fake_account_id}",)),
+            "line1: cr_ledger_id is fake",
         ),
         // (
         //     {
@@ -574,25 +514,21 @@ async fn post_journal_transaction_happy_path() {
     // Arrange
     let state = TestState::new().await;
     let cash = state
-        .create_account(
-            "1001",
-            "Cash",
-            LedgerType::Leaf,
-            Some(state.general_ledger.root),
-        )
+        .create_account("1001", "Cash", LedgerType::Leaf, state.general_ledger.root)
         .await
         .expect("failed to creae Cash account");
     let bank = state
-        .create_account(
-            "1002",
-            "Bank",
-            LedgerType::Leaf,
-            Some(state.general_ledger.root),
-        )
+        .create_account("1002", "Bank", LedgerType::Leaf, state.general_ledger.root)
         .await
         .expect("failed to create Bank account");
     let jxact = state
-        .create_journal_xact(Decimal::from(100), cash.id, bank.id, "Withdrew cash", None)
+        .create_journal_xact(
+            Decimal::from(100),
+            cash.id(),
+            bank.id(),
+            "Withdrew cash",
+            None,
+        )
         .await
         .expect("failed to create journal transaction: Withdrew cash");
 
@@ -607,12 +543,12 @@ async fn post_journal_transaction_happy_path() {
     assert!(posted, "the call to 'post' the journal tx succeeded");
     let bank_entries = state
         .engine
-        .journal_entries(bank.id)
+        .journal_entries(bank.id())
         .await
         .expect("failed to get journal enries for Bank ledger");
     let cash_entries = state
         .engine
-        .journal_entries(cash.id)
+        .journal_entries(cash.id())
         .await
         .expect("failed to get journal entries for Cash ledger");
     let jxact = state
@@ -624,13 +560,13 @@ async fn post_journal_transaction_happy_path() {
         .expect("unable to fetch journal transaction");
     let entry1 = state
         .engine
-        .journal_entry_by_posting_ref(jxact.lines[0].posting_ref.unwrap())
+        .journal_entry_by_posting_ref(jxact.lines[0].dr_posting_ref.unwrap())
         .await
         .expect("failed to fech journal entry #1 by posting ref.")
         .expect("journal entry #1 is empty");
     let entry2 = state
         .engine
-        .journal_entry_by_posting_ref(jxact.lines[1].posting_ref.unwrap())
+        .journal_entry_by_posting_ref(jxact.lines[0].cr_posting_ref.unwrap())
         .await
         .expect("failed to fech journal entry #2 by posting ref.")
         .expect("journal entry #2 is empty");
@@ -659,22 +595,24 @@ async fn post_journal_transaction_happy_path() {
         entry2, bank_entries[0],
         "the 2nd posting ref points to the CR account"
     );
-    let cr_account: ledger::ActiveModel = state
+    let cr_account = state
         .engine
-        .get_ledgers(Some(&vec![bank.id]))
+        .get_ledgers(Some(&vec![bank.id()]))
         .await
         .expect("unexpected search error")[0];
-    let dr_account: ledger::ActiveModel = state
+    let dr_account = state
         .engine
-        .get_ledgers(Some(&vec![cash.id]))
+        .get_ledgers(Some(&vec![cash.id()]))
         .await
         .expect("unexpected search error")[0];
     assert_eq!(
-        cr_account.id, jxact.lines[1].ledger_id,
+        cr_account.id(),
+        jxact.lines[0].cr_ledger_id,
         "ledger CR ac. matches journal"
     );
     assert_eq!(
-        dr_account.id, jxact.lines[0].ledger_id,
+        dr_account.id(),
+        jxact.lines[0].dr_ledger_id,
         "ledger DR ac. matches journal"
     );
     assert_eq!(
@@ -691,155 +629,129 @@ async fn post_journal_transaction_happy_path() {
         "accounts ARE different"
     );
     assert_ne!(
-        jxact.lines[0].ledger_id, jxact.lines[1].ledger_id,
+        jxact.lines[0].dr_ledger_id, jxact.lines[0].cr_ledger_id,
         "journal transaction dr and cr accounts are different"
     );
 }
 
-pub struct TestState {
-    pub db_name: String,
-    pub engine: AccountEngine<PostgresStore>,
-    pub general_ledger: general_ledger::ActiveModel,
-    pub journal: journal::ActiveModel,
-}
+// #[tokio::test]
+// async fn special_journal_dr_account_plus_one_double_ledger_column() {
+//     // Arrange
+//     // Account | Ledger Dr/Cr |
+//     // --------|-----------|
+//     //   abc   |  100.00   |
+//     let state = TestState::new().await;
+//     let (_subledger, jrn, _ledger, acct, tpl, tpl_col) =
+//         state.create_subsidiary_ledger("Subsidiary", XactType::Dr).await;
 
-impl TestState {
-    pub async fn new() -> TestState {
-        let db_name = uuid::Uuid::new_v4().to_string();
-        let postgres_url = format!("postgres://postgres:password@localhost:5432");
-        let store = PostgresStore::new_schema(&db_name, &postgres_url)
-            .await
-            .expect("failed to connect to newly created database: {db_name}");
-        let engine = AccountEngine::new(store)
-            .await
-            .expect("failed to instantiate account-engine");
-        println!("Database name: {db_name}");
+//     // Act 1
+//     let (stx, stx_cols) = state
+//         .create_special_transaction(&jrn, &tpl.id, acct.id(), XactType::Dr, Decimal::from(100), &tpl_col)
+//         .await
+//         .expect("failed to create special journal transaction");
 
-        let general_ledger = general_ledger::Model {
-            name: ArrayLongString::from_str("My Compnay").unwrap(),
-            currency_code: ArrayCodeString::from_str("USD").unwrap(),
-        };
-        let general_ledger = GeneralLedgerService::update_general_ledger(&engine, &general_ledger)
-            .await
-            .expect("failed to update general ledger");
-        let journal = journal::Model {
-            name: "General Journal".into(),
-            code: "G".into(),
-            ..Default::default()
-        };
-        let journal = engine.create_journal(&journal).await.unwrap();
+//     // Assert 1
+//     assert_eq!(
+//         stx.journal_id, jrn.id,
+//         "transaction journal_id matches input"
+//     );
+//     assert_eq!(
+//         stx_cols[0].amount(),
+//         Decimal::from(100),
+//         "special journal account amount is 100.00"
+//     );
+//     assert_eq!(
+//         stx_cols[0].amount(),
+//         stx_cols[1].amount(),
+//         "special journal account and ledger amounts are equal"
+//     );
+//     assert_eq!(
+//         stx_cols[0].account_id().unwrap(),
+//         acct.id(),
+//         "special journal account is set correctly"
+//     );
+//     assert_eq!(
+//         stx_cols[1].ledger_cr_id().unwrap(),
+//         tpl_col[1].cr_ledger_id.unwrap(),
+//         "special journal column ledger Cr side identical to template column"
+//     );
+//     assert_eq!(
+//         stx_cols[1].ledger_dr_id().unwrap(),
+//         tpl_col[1].dr_ledger_id.unwrap(),
+//         "special journal column ledger Dr side identical to template column"
+//     );
 
-        Self {
-            engine,
-            general_ledger,
-            journal,
-            db_name,
-        }
-    }
+//     // Act 2
+//     let res = SpecialJournalTransactionService::post_to_account(&state.engine, stx.id())
+//         .await
+//         .expect("failed to post transaction to accounts");
+//     let records =
+//         SpecialJournalService::get_special_transactions(&state.engine, Some(&vec![stx.id()]))
+//             .await
+//             .expect("failed to retrieve transaction posted to accounts");
+//     let (stx, stx_cols) = &records[0];
 
-    pub async fn create_account(
-        &self,
-        number: &'static str,
-        name: &'static str,
-        typ: LedgerType,
-        parent_id: Option<LedgerId>,
-    ) -> Result<ledger::ActiveModel, ServiceError> {
-        let account = ledger::Model {
-            ledger_no: ArrayShortString::from_str(number).unwrap(),
-            ledger_type: typ,
-            parent_id,
-            name: ArrayLongString::from_str(name).unwrap(),
-            currency_code: None,
-        };
+//     // Assert 2
+//     assert!(res, "post to account succeeded");
+//     assert_eq!(stx_cols.len(), 2, "there are 2 columns in the transaction");
+//     assert_eq!(
+//         stx_cols[0].column_type(),
+//         JournalTransactionColumnType::AccountDr,
+//         "the column is a Dr Account"
+//     );
+//     assert!(
+//         stx_cols[0].posted(),
+//         "special transaction was posted to the account"
+//     );
+//     assert_eq!(
+//         stx_cols[0].account_posting_ref(),
+//         Some(AccountPostingRef::new(&acct.id(), stx.timestamp)),
+//         "the account contains a posting reference"
+//     );
+// }
 
-        GeneralLedgerService::create_ledger(&self.engine, &account).await
-    }
+// #[tokio::test]
+// async fn subsidiary_journal_tx_one_column_one_ledger() {
+//     // Arrange
+//     // Account | Ledger Dr |
+//     // --------|-----------|
+//     //         |  100.00   |
+//     let state = TestState::new().await;
+//     let column = TestColumn::new(
+//         &state,
+//         Sequence::new(1).unwrap(),
+//         crate::CreateLedgerType::Random,
+//         crate::CreateLedgerType::None,
+//         Decimal::ONE_HUNDRED,
+//     )
+//     .await;
+//     let jxact = SpecialJournalTransaction::new(&state, CreateLedgerType::Random, &column).await;
 
-    pub async fn create_journal(
-        &self,
-        code: &'static str,
-        name: &'static str,
-    ) -> Result<journal::ActiveModel, ServiceError> {
-        let model = journal::Model {
-            name: name.into(),
-            code: code.into(),
-            ..Default::default()
-        };
+//     // Act
+//     let (tx, _) = jxact.journalize(&state).await;
 
-        GeneralLedgerService::create_journal(&self.engine, &model).await
-    }
+//     // Assert
+//     jxact.assert_column_match(&state, &column, false).await;
 
-    pub async fn create_journal_xact(
-        &self,
-        amount: Decimal,
-        account_dr_id: LedgerId,
-        account_cr_id: LedgerId,
-        desc: &str,
-        journal_id: Option<JournalId>,
-    ) -> Result<journal::transaction::general::ActiveModel, ServiceError> {
-        let timestamp = timestamp();
-        let journal_id: JournalId = journal_id.unwrap_or(self.journal.id);
-        let line1 = journal::transaction::general::line::Model {
-            journal_id: journal_id,
-            timestamp,
-            ledger_id: account_dr_id,
-            xact_type: XactType::Dr,
-            amount,
-            ..Default::default()
-        };
-        let line2 = journal::transaction::general::line::Model {
-            journal_id: journal_id,
-            timestamp,
-            ledger_id: account_cr_id,
-            xact_type: XactType::Cr,
-            amount,
-            ..Default::default()
-        };
-        let model = journal::transaction::general::Model {
-            journal_id,
-            timestamp,
-            explanation: ArrayLongString::from(desc),
-            lines: vec![line1, line2],
-        };
+//     // Act
+//     let posted = jxact.post(&state, tx.id()).await;
 
-        self.engine.create_general_transaction(&model).await
-    }
-
-    pub fn simple_xact_model(&self) -> SimpleJournalTransaction {
-        let timestamp = timestamp();
-        let line1 = journal::transaction::general::line::Model {
-            journal_id: self.journal.id,
-            timestamp,
-            xact_type: XactType::Dr,
-            amount: Decimal::ZERO,
-            ..Default::default()
-        };
-        let line2 = journal::transaction::general::line::Model {
-            journal_id: self.journal.id,
-            timestamp,
-            xact_type: XactType::Cr,
-            amount: Decimal::ZERO,
-            ..Default::default()
-        };
-        let jx = journal::transaction::general::Model {
-            journal_id: self.journal.id,
-            timestamp,
-            explanation: "Withdrew cash for lunch".into(),
-            lines: Vec::<journal::transaction::general::line::Model>::new(),
-        };
-
-        SimpleJournalTransaction {
-            jx,
-            line1,
-            line2,
-            _timestamp: timestamp,
-        }
-    }
-}
+//     // Assert
+//     assert!(
+//         posted.is_err(),
+//         "A special journal with only ONE column AND ONE account is unbalanced and must fail"
+//     );
+//     assert_eq!(
+//         posted.unwrap_err(),
+//         ServiceError::Validation(
+//             "the Dr and Cr sides of the transaction must be equal".to_string()
+//         ),
+//         "The unbalanced transaction error is correctly returned"
+//     );
+// }
 
 pub struct SimpleJournalTransaction {
-    jx: journal::transaction::general::Model,
-    line1: journal::transaction::general::line::Model,
-    line2: journal::transaction::general::line::Model,
-    _timestamp: NaiveDateTime,
+    pub jx: journal::transaction::general::Model,
+    pub line1: journal::transaction::general::line::Model,
+    pub timestamp: NaiveDateTime,
 }

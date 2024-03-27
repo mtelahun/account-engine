@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::{
-    domain::JournalTransactionId,
+    domain::{JournalTransactionId, Sequence},
     resource::journal,
     store::{postgres::store::PostgresStore, OrmError, Resource, ResourceOperations},
 };
@@ -10,43 +10,54 @@ use crate::{
 #[async_trait]
 impl
     ResourceOperations<
-        journal::transaction::record::Model,
-        journal::transaction::record::ActiveModel,
+        journal::transaction::special::column::Model,
+        journal::transaction::special::column::ActiveModel,
         JournalTransactionId,
     > for PostgresStore
 {
     async fn insert(
         &self,
-        model: &journal::transaction::record::Model,
-    ) -> Result<journal::transaction::record::ActiveModel, OrmError> {
+        model: &journal::transaction::special::column::Model,
+    ) -> Result<journal::transaction::special::column::ActiveModel, OrmError> {
         let conn = self.get_connection().await?;
         let sql = format!(
-            "INSERT INTO {}(journal_id, timestamp, explanation) 
-                VALUES($1, $2, $3) RETURNING *",
-            journal::transaction::record::ActiveModel::NAME
+            "INSERT INTO 
+                {}(journal_id, timestamp, dr_ledger_id, cr_ledger_id, amount, state, posting_ref) 
+                    VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+            journal::transaction::special::column::ActiveModel::NAME
         );
         let res = conn
             .query_one(
                 sql.as_str(),
-                &[&model.journal_id, &model.timestamp, &model.explanation],
+                &[
+                    &model.journal_id,
+                    &model.timestamp,
+                    &model.dr_ledger_id,
+                    &model.cr_ledger_id,
+                    &model.amount,
+                    &model.state,
+                    &model.column_total_id,
+                ],
             )
             .await
             .map_err(|e| OrmError::Internal(e.to_string()))?;
 
-        Ok(journal::transaction::record::ActiveModel::from(res))
+        Ok(journal::transaction::special::column::ActiveModel::from(
+            res,
+        ))
     }
 
     async fn get(
         &self,
         ids: Option<&Vec<JournalTransactionId>>,
-    ) -> Result<Vec<journal::transaction::record::ActiveModel>, OrmError> {
+    ) -> Result<Vec<journal::transaction::special::column::ActiveModel>, OrmError> {
         let search_one = format!(
             "SELECT * FROM {} WHERE journal_id=$1::JournalId AND timestamp=$2",
-            journal::transaction::record::ActiveModel::NAME
+            journal::transaction::special::column::ActiveModel::NAME
         );
         let search_all = format!(
             "SELECT * FROM {}",
-            journal::transaction::record::ActiveModel::NAME
+            journal::transaction::special::column::ActiveModel::NAME
         );
         let conn = self.get_connection().await?;
         let rows: Vec<Row> = match ids {
@@ -69,9 +80,9 @@ impl
                 .await
                 .map_err(|e| OrmError::Internal(e.to_string()))?,
         };
-        let mut records = Vec::<journal::transaction::record::ActiveModel>::new();
+        let mut records = Vec::<journal::transaction::special::column::ActiveModel>::new();
         for row in rows {
-            let am = journal::transaction::record::ActiveModel::from(row);
+            let am = journal::transaction::special::column::ActiveModel::from(row);
             records.push(am);
         }
 
@@ -81,26 +92,34 @@ impl
     async fn search(
         &self,
         _domain: &str,
-    ) -> Result<Vec<journal::transaction::record::ActiveModel>, OrmError> {
+    ) -> Result<Vec<journal::transaction::special::column::ActiveModel>, OrmError> {
         todo!()
     }
 
     async fn save(
         &self,
-        _model: &journal::transaction::record::ActiveModel,
+        _model: &journal::transaction::special::column::ActiveModel,
     ) -> Result<u64, OrmError> {
         todo!()
     }
 
-    async fn delete(&self, _id: JournalTransactionId) -> Result<u64, OrmError> {
-        todo!()
+    async fn delete(&self, id: JournalTransactionId) -> Result<u64, OrmError> {
+        let conn = self.get_connection().await?;
+        let query = format!(
+            "DELETE FROM {} WHERE journal_id=$1::JournalId AND timestamp=$2",
+            journal::transaction::special::column::ActiveModel::NAME
+        );
+
+        conn.execute(query.as_str(), &[&id.journal_id(), &id.timestamp()])
+            .await
+            .map_err(|e| OrmError::Internal(e.to_string()))
     }
 
     async fn archive(&self, id: JournalTransactionId) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
-            "UPDATE {} SET archived = true, state = 'archived' WHERE journal_id=$1::JournalId AND timestamp=$2",
-            journal::transaction::record::ActiveModel::NAME
+            "UPDATE {} SET archived = true, WHERE journal_id=$1::JournalId AND timestamp=$2",
+            journal::transaction::special::column::ActiveModel::NAME
         );
 
         conn.execute(query.as_str(), &[&id.journal_id(), &id.timestamp()])
@@ -112,7 +131,7 @@ impl
         let conn = self.get_connection().await?;
         let query = format!(
             "UPDATE {} SET archived = false WHERE journal_id=$1::JournalId AND timestamp=$2",
-            journal::transaction::record::ActiveModel::NAME
+            journal::transaction::special::column::ActiveModel::NAME
         );
 
         conn.execute(query.as_str(), &[&id.journal_id(), &id.timestamp()])
@@ -121,12 +140,19 @@ impl
     }
 }
 
-impl From<Row> for journal::transaction::record::ActiveModel {
+impl From<Row> for journal::transaction::special::column::ActiveModel {
     fn from(value: Row) -> Self {
+        let sequence: i16 = value.get("sequence");
+        let sequence = Sequence::try_from(sequence).unwrap();
         Self {
             journal_id: value.get("journal_id"),
             timestamp: value.get("timestamp"),
-            explanation: value.get("explanation"),
+            sequence,
+            dr_ledger_id: value.get("dr_ledger_id"),
+            cr_ledger_id: value.get("cr_ledger_id"),
+            amount: value.get("amount"),
+            state: value.get("state"),
+            column_total_id: value.get("column_total_id"),
         }
     }
 }

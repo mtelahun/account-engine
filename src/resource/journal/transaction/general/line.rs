@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
 use crate::{
-    domain::{ids::JournalId, xact_type::XactType, JournalTransactionId, LedgerId},
+    domain::{ids::JournalId, JournalTransactionId, LedgerId},
     resource::{LedgerPostingRef, TransactionState},
 };
 
@@ -10,22 +10,24 @@ use crate::{
 pub struct Model {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
-    pub ledger_id: LedgerId,
-    pub xact_type: XactType,
+    pub dr_ledger_id: LedgerId,
+    pub cr_ledger_id: LedgerId,
     pub amount: Decimal,
     pub state: TransactionState,
-    pub posting_ref: Option<LedgerPostingRef>,
+    pub dr_posting_ref: Option<LedgerPostingRef>,
+    pub cr_posting_ref: Option<LedgerPostingRef>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ActiveModel {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
-    pub ledger_id: LedgerId,
-    pub xact_type: XactType,
+    pub dr_ledger_id: LedgerId,
+    pub cr_ledger_id: LedgerId,
     pub amount: Decimal,
     pub state: TransactionState,
-    pub posting_ref: Option<LedgerPostingRef>,
+    pub dr_posting_ref: Option<LedgerPostingRef>,
+    pub cr_posting_ref: Option<LedgerPostingRef>,
 }
 
 impl ActiveModel {
@@ -39,11 +41,12 @@ impl From<&Model> for ActiveModel {
         Self {
             journal_id: value.journal_id,
             timestamp: value.timestamp,
-            ledger_id: value.ledger_id,
-            xact_type: value.xact_type,
+            dr_ledger_id: value.dr_ledger_id,
+            cr_ledger_id: value.cr_ledger_id,
             amount: value.amount,
             state: value.state,
-            posting_ref: value.posting_ref,
+            dr_posting_ref: value.dr_posting_ref,
+            cr_posting_ref: value.cr_posting_ref,
         }
     }
 }

@@ -1489,7 +1489,7 @@ impl
                     .is_empty()
                 {
                     return Err(OrmError::RecordNotFound(format!(
-                        "account id: {}",
+                        "ledger id: {}",
                         line.ledger_id.unwrap()
                     )));
                 }
@@ -1500,7 +1500,7 @@ impl
                 //         .is_empty()
                 //     {
                 //         return Err(OrmError::RecordNotFound(format!(
-                //             "account id: {}",
+                //             "ledger id: {}",
                 //             line.ledger_id.unwrap()
                 //         )));
                 //     }

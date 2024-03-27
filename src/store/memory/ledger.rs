@@ -13,21 +13,17 @@ impl ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId> for Memory
     async fn insert(&self, model: &ledger::Model) -> Result<ledger::ActiveModel, OrmError> {
         let ledger = ledger::ActiveModel {
             id: LedgerId::new(),
-            ledger_no: model.ledger_no,
+            number: model.number,
             ledger_type: model.ledger_type,
             parent_id: model.parent_id,
             name: model.name,
             currency_code: model.currency_code,
         };
         let mut inner = self.inner.write().await;
-        if inner
-            .ledger
-            .iter()
-            .any(|(_k, v)| v.ledger_no == ledger.ledger_no)
-        {
+        if inner.ledger.iter().any(|(_k, v)| v.number == ledger.number) {
             return Err(OrmError::DuplicateRecord(format!(
                 "account {}",
-                ledger.ledger_no
+                ledger.number
             )));
         }
         inner.ledger.insert(ledger.id, ledger);

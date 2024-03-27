@@ -5,11 +5,13 @@ use tokio::sync::RwLock;
 
 use crate::{
     domain::{
+        composite_ids::JournalTransactionColumnId,
         entity_code::EntityCode,
-        ids::{InterimPeriodId, JournalId},
-        AccountId, ArrayCodeString, ArrayLongString, ArrayShortString, ColumnTotalId,
-        ExternalXactTypeCode, GeneralLedgerId, JournalTransactionId, LedgerId, LedgerXactTypeCode,
-        PeriodId, SubJournalTemplateColId, SubJournalTemplateId, SubLedgerId,
+        ids::{EntityId, InterimPeriodId, JournalId},
+        AccountId, AccountTransactionId, ArrayString128, ArrayString24, ArrayString3,
+        ColumnTotalId, ExternalXactTypeCode, GeneralLedgerId, JournalTransactionId, LedgerId,
+        LedgerXactTypeCode, PeriodId, Sequence, SpecialJournalTemplateId, SubLedgerId,
+        TemplateColumnId,
     },
     resource::{
         accounting_period, external, general_ledger,
@@ -32,39 +34,50 @@ pub(crate) struct Inner {
     _uri: String,
     pub(crate) general_ledger: HashMap<GeneralLedgerId, general_ledger::ActiveModel>,
     pub(crate) ledger: HashMap<LedgerId, ledger::ActiveModel>,
+    pub(crate) ledger_derived: HashMap<LedgerId, ledger::derived::ActiveModel>,
     pub(crate) ledger_intermediate: HashMap<LedgerId, ledger::intermediate::ActiveModel>,
-    pub(crate) ledger_account: HashMap<LedgerId, ledger::leaf::ActiveModel>,
+    pub(crate) ledger_leaf: HashMap<LedgerId, ledger::leaf::ActiveModel>,
     pub(crate) period: HashMap<PeriodId, accounting_period::ActiveModel>,
     pub(crate) interim_period:
         HashMap<InterimPeriodId, accounting_period::interim_period::ActiveModel>,
     pub(crate) journal: HashMap<JournalId, journal::ActiveModel>,
-    pub(crate) journal_xact:
-        HashMap<JournalTransactionId, journal::transaction::record::ActiveModel>,
+    pub(crate) journal_xact: HashMap<JournalTransactionId, journal::transaction::ActiveModel>,
     pub(crate) journal_xact_record_sub:
         HashMap<JournalTransactionId, journal::transaction::special::ActiveModel>,
     pub(crate) journal_xact_general:
         HashMap<JournalTransactionId, Vec<journal::transaction::general::line::ActiveModel>>,
     pub(crate) journal_xact_special_totals:
-        HashMap<JournalTransactionId, journal::transaction::special::totals::ActiveModel>,
+        HashMap<JournalTransactionId, journal::transaction::special::summary::ActiveModel>,
     pub(crate) journal_xact_special_column:
         HashMap<JournalTransactionId, Vec<journal::transaction::special::column::ActiveModel>>,
-    pub(crate) journal_xact_special_colum_total:
-        HashMap<ColumnTotalId, journal::transaction::special::column::total::ActiveModel>,
-    pub(crate) journal_xact_sub_template:
-        HashMap<SubJournalTemplateId, journal::transaction::special::template::ActiveModel>,
-    pub(crate) journal_xact_sub_template_column: HashMap<
-        SubJournalTemplateColId,
-        journal::transaction::special::template::column::ActiveModel,
+    pub(crate) journal_xact_column_ledger_drcr: HashMap<
+        JournalTransactionColumnId,
+        Vec<journal::transaction::column::ledger_drcr::ActiveModel>,
     >,
+    pub(crate) journal_xact_column_text:
+        HashMap<JournalTransactionColumnId, Vec<journal::transaction::column::text::ActiveModel>>,
+    pub(crate) journal_xact_column_account_dr:
+        HashMap<JournalTransactionColumnId, journal::transaction::column::account_dr::ActiveModel>,
+    pub(crate) journal_xact_column_account_cr:
+        HashMap<JournalTransactionColumnId, journal::transaction::column::account_cr::ActiveModel>,
+    pub(crate) journal_xact_special_colum_total:
+        HashMap<ColumnTotalId, journal::transaction::special::column::sum::ActiveModel>,
+    pub(crate) journal_xact_sub_template:
+        HashMap<SpecialJournalTemplateId, journal::transaction::special::template::ActiveModel>,
+    pub(crate) journal_xact_sub_template_column:
+        HashMap<TemplateColumnId, journal::transaction::special::template::column::ActiveModel>,
     pub(crate) journal_entry: HashMap<LedgerKey, ledger::transaction::ActiveModel>,
     pub(crate) ledger_xact_account: HashMap<LedgerKey, ledger::transaction::account::ActiveModel>,
     pub(crate) ledger_xact_ledger: HashMap<LedgerKey, ledger::transaction::ledger::ActiveModel>,
     pub(crate) ledger_xact_type: HashMap<LedgerXactTypeCode, ledger_xact_type::ActiveModel>,
     pub(crate) external_xact_type:
         HashMap<ExternalXactTypeCode, external::transaction_type::ActiveModel>,
-    pub(crate) subsidary_ledger: HashMap<SubLedgerId, subsidiary_ledger::ActiveModel>,
+    pub(crate) subsidiary_ledger: HashMap<SubLedgerId, subsidiary_ledger::ActiveModel>,
     pub(crate) external_account: HashMap<AccountId, external::account::ActiveModel>,
-    pub(crate) _entity_type: HashMap<EntityCode, external::entity_type::ActiveModel>,
+    pub(crate) external_account_transaction:
+        HashMap<AccountTransactionId, external::account::transaction::ActiveModel>,
+    pub(crate) external_entity: HashMap<EntityId, external::entity::ActiveModel>,
+    pub(crate) entity_type: HashMap<EntityCode, external::entity_type::ActiveModel>,
 }
 
 impl MemoryStore {
@@ -88,16 +101,16 @@ impl Inner {
             _uri: uri.to_string(),
             general_ledger: HashMap::<GeneralLedgerId, general_ledger::ActiveModel>::new(),
             ledger: HashMap::<LedgerId, ledger::ActiveModel>::new(),
+            ledger_derived: HashMap::<LedgerId, ledger::derived::ActiveModel>::new(),
             ledger_intermediate: HashMap::<LedgerId, ledger::intermediate::ActiveModel>::new(),
-            ledger_account: HashMap::<LedgerId, ledger::leaf::ActiveModel>::new(),
+            ledger_leaf: HashMap::<LedgerId, ledger::leaf::ActiveModel>::new(),
             period: HashMap::<PeriodId, accounting_period::ActiveModel>::new(),
             interim_period: HashMap::<
                 InterimPeriodId,
                 accounting_period::interim_period::ActiveModel,
             >::new(),
             journal: HashMap::<JournalId, journal::ActiveModel>::new(),
-            journal_xact:
-                HashMap::<JournalTransactionId, journal::transaction::record::ActiveModel>::new(),
+            journal_xact: HashMap::<JournalTransactionId, journal::transaction::ActiveModel>::new(),
             journal_xact_record_sub: HashMap::<
                 JournalTransactionId,
                 journal::transaction::special::ActiveModel,
@@ -108,22 +121,38 @@ impl Inner {
             >::new(),
             journal_xact_special_totals: HashMap::<
                 JournalTransactionId,
-                journal::transaction::special::totals::ActiveModel,
+                journal::transaction::special::summary::ActiveModel,
             >::new(),
             journal_xact_special_column: HashMap::<
                 JournalTransactionId,
                 Vec<journal::transaction::special::column::ActiveModel>,
             >::new(),
+            journal_xact_column_ledger_drcr: HashMap::<
+                JournalTransactionColumnId,
+                Vec<journal::transaction::column::ledger_drcr::ActiveModel>,
+            >::new(),
+            journal_xact_column_text: HashMap::<
+                JournalTransactionColumnId,
+                Vec<journal::transaction::column::text::ActiveModel>,
+            >::new(),
+            journal_xact_column_account_dr: HashMap::<
+                JournalTransactionColumnId,
+                journal::transaction::column::account_dr::ActiveModel,
+            >::new(),
+            journal_xact_column_account_cr: HashMap::<
+                JournalTransactionColumnId,
+                journal::transaction::column::account_cr::ActiveModel,
+            >::new(),
             journal_xact_special_colum_total: HashMap::<
                 ColumnTotalId,
-                journal::transaction::special::column::total::ActiveModel,
+                journal::transaction::special::column::sum::ActiveModel,
             >::new(),
             journal_xact_sub_template: HashMap::<
-                SubJournalTemplateId,
+                SpecialJournalTemplateId,
                 journal::transaction::special::template::ActiveModel,
             >::new(),
             journal_xact_sub_template_column: HashMap::<
-                SubJournalTemplateColId,
+                TemplateColumnId,
                 journal::transaction::special::template::column::ActiveModel,
             >::new(),
             journal_entry: HashMap::<LedgerKey, ledger::transaction::ActiveModel>::new(),
@@ -136,9 +165,14 @@ impl Inner {
                 ExternalXactTypeCode,
                 external::transaction_type::ActiveModel,
             >::new(),
-            subsidary_ledger: HashMap::<SubLedgerId, subsidiary_ledger::ActiveModel>::new(),
+            subsidiary_ledger: HashMap::<SubLedgerId, subsidiary_ledger::ActiveModel>::new(),
             external_account: HashMap::<AccountId, external::account::ActiveModel>::new(),
-            _entity_type: HashMap::<EntityCode, external::entity_type::ActiveModel>::new(),
+            external_account_transaction: HashMap::<
+                AccountTransactionId,
+                external::account::transaction::ActiveModel,
+            >::new(),
+            external_entity: HashMap::<EntityId, external::entity::ActiveModel>::new(),
+            entity_type: HashMap::<EntityCode, external::entity_type::ActiveModel>::new(),
         };
         let code = LedgerXactTypeCode::from_str("LL").unwrap();
         res.ledger_xact_type.insert(
@@ -154,17 +188,23 @@ impl Inner {
         res
     }
 
+    pub async fn new_schema(name: &str, uri: &str) -> Result<Self, OrmError> {
+        Ok(Self::new(name, uri))
+    }
+
     fn insert_ledger_root(&mut self) -> LedgerId {
         let root_id = LedgerId::new();
         let root = ledger::ActiveModel {
             id: root_id,
-            ledger_no: ArrayShortString::from_str("0").unwrap(),
+            number: ArrayString24::from_str("0").unwrap(),
             ledger_type: LedgerType::Intermediate,
             parent_id: None,
-            name: ArrayLongString::from_str("Root").unwrap(),
+            name: ArrayString128::from_str("Root").unwrap(),
             currency_code: None,
         };
         self.ledger.insert(root_id, root);
+        self.ledger_intermediate
+            .insert(root_id, ledger::intermediate::ActiveModel { id: root_id });
 
         root_id
     }
@@ -173,15 +213,11 @@ impl Inner {
         let id = GeneralLedgerId::new();
         let v = general_ledger::ActiveModel {
             id,
-            name: ArrayLongString::from_str("Root").unwrap(),
-            currency_code: ArrayCodeString::from_str("USD").unwrap(),
+            name: ArrayString128::from_str("Root").unwrap(),
+            currency_code: ArrayString3::from_str("USD").unwrap(),
             root: root_id,
         };
         self.general_ledger.insert(id, v);
-    }
-
-    pub async fn new_schema(name: &str, uri: &str) -> Result<Self, OrmError> {
-        Ok(Self::new(name, uri))
     }
 }
 
@@ -208,9 +244,10 @@ impl Store for MemoryStore {
         };
         let count = xact_lines.len();
         for jl in xact_lines.iter_mut() {
-            if jl.ledger_id == line.ledger_id {
+            if jl.dr_ledger_id == line.dr_ledger_id {
                 jl.state = TransactionState::Posted;
-                jl.posting_ref = line.posting_ref;
+                jl.dr_posting_ref = line.dr_posting_ref;
+                jl.cr_posting_ref = line.cr_posting_ref;
             }
         }
 
@@ -219,13 +256,13 @@ impl Store for MemoryStore {
 
     async fn find_ledger_by_no(
         &self,
-        no: ArrayShortString,
+        no: ArrayString24,
     ) -> Result<Option<ledger::ActiveModel>, OrmError> {
         let inner = self.inner.read().await;
         let list: Vec<(&LedgerId, &ledger::ActiveModel)> = inner
             .ledger
             .iter()
-            .filter(|(_, l)| l.ledger_no == no)
+            .filter(|(_, l)| l.number == no)
             .collect();
         match list.len() {
             0 => return Ok(None),
@@ -307,7 +344,7 @@ impl Store for MemoryStore {
     async fn get_journal_transaction_columns<'a>(
         &self,
         ids: &'a [JournalTransactionId],
-        sequence: usize,
+        sequence: Sequence,
     ) -> Result<Vec<journal::transaction::special::column::ActiveModel>, OrmError> {
         let mut result = Vec::<journal::transaction::special::column::ActiveModel>::new();
         let inner = self.inner.read().await;
@@ -328,7 +365,7 @@ impl Store for MemoryStore {
 
     async fn get_journal_transaction_template_columns(
         &self,
-        id: SubJournalTemplateId,
+        id: SpecialJournalTemplateId,
     ) -> Result<Vec<journal::transaction::special::template::column::ActiveModel>, OrmError> {
         let mut result = Vec::<journal::transaction::special::template::column::ActiveModel>::new();
         let inner = self.inner.read().await;

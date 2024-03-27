@@ -1,0 +1,98 @@
+use async_trait::async_trait;
+
+use crate::{
+    domain::ids::EntityId,
+    resource::external,
+    store::{OrmError, ResourceOperations},
+};
+
+use super::store::MemoryStore;
+
+#[async_trait]
+impl ResourceOperations<external::entity::Model, external::entity::ActiveModel, EntityId>
+    for MemoryStore
+{
+    async fn insert(
+        &self,
+        model: &external::entity::Model,
+    ) -> Result<external::entity::ActiveModel, OrmError> {
+        let id = EntityId::new();
+        let entity = external::entity::ActiveModel {
+            id,
+            entity_type_code: model.entity_type_code,
+            name: model.name,
+        };
+        let mut inner = self.inner.write().await;
+        let is_duplicate = inner.external_entity.iter().any(|(k, _)| *k == id);
+        if is_duplicate {
+            return Err(OrmError::Internal(format!(
+                "duplicate external entity: {}",
+                id
+            )));
+        }
+        inner.external_entity.insert(id, entity);
+
+        Ok(entity)
+    }
+
+    async fn get(
+        &self,
+        ids: Option<&Vec<EntityId>>,
+    ) -> Result<Vec<external::entity::ActiveModel>, OrmError> {
+        let mut res = Vec::<external::entity::ActiveModel>::new();
+        let inner = self.inner.read().await;
+        if let Some(ids) = ids {
+            for value in inner.external_entity.values() {
+                if ids.iter().any(|id| *id == value.id) {
+                    res.push(*value)
+                }
+            }
+        } else {
+            for value in inner.external_entity.values() {
+                res.push(*value)
+            }
+        }
+
+        Ok(res)
+    }
+
+    async fn search(&self, _domain: &str) -> Result<Vec<external::entity::ActiveModel>, OrmError> {
+        todo!()
+    }
+
+    async fn save(&self, model: &external::entity::ActiveModel) -> Result<u64, OrmError> {
+        let entity = external::entity::ActiveModel {
+            id: model.id,
+            entity_type_code: model.entity_type_code,
+            name: model.name,
+        };
+        let mut inner = self.inner.write().await;
+        let exists = inner.external_entity.iter().any(|(k, _)| *k == model.id);
+        if exists {
+            inner.external_entity.insert(model.id, entity);
+
+            return Ok(1);
+        }
+
+        return Err(OrmError::RecordNotFound(format!(
+            "external entity: ({}): {}",
+            model.name, model.id
+        )));
+    }
+
+    async fn delete(&self, id: EntityId) -> Result<u64, OrmError> {
+        let mut inner = self.inner.write().await;
+        match inner.external_entity.remove(&id) {
+            Some(_) => return Ok(1),
+            None => return Err(OrmError::RecordNotFound(format!("account id: {id}"))),
+        }
+    }
+
+    async fn archive(&self, _id: EntityId) -> Result<u64, OrmError> {
+        todo!()
+    }
+
+    async fn unarchive(&self, _id: EntityId) -> Result<u64, OrmError> {
+        todo!()
+    }
+}

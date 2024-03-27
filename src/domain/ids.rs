@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use postgres_types::{FromSql, ToSql};
+use uuid::Uuid;
 
 #[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
 #[postgres(name = "accountid")]
@@ -19,6 +20,37 @@ impl std::fmt::Display for AccountId {
 }
 
 impl Deref for AccountId {
+    type Target = uuid::Uuid;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
+#[postgres(name = "entityid")]
+pub struct EntityId(uuid::Uuid);
+
+impl EntityId {
+    pub fn new() -> Self {
+        Self(uuid::Uuid::new_v4())
+    }
+
+    pub fn parse_str(input: &str) -> Result<EntityId, String> {
+        let res = uuid::Uuid::parse_str(input)
+            .map_err(|e| format!("unable to parse JournalId: {}", e))?;
+
+        Ok(Self(res))
+    }
+}
+
+impl std::fmt::Display for EntityId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Deref for EntityId {
     type Target = uuid::Uuid;
 
     fn deref(&self) -> &Self::Target {
@@ -106,22 +138,30 @@ impl Deref for JournalId {
 }
 
 #[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
-#[postgres(name = "subjournaltemplateid")]
-pub struct SubJournalTemplateId(uuid::Uuid);
+#[postgres(name = "specialjournaltemplateid")]
+pub struct SpecialJournalTemplateId(uuid::Uuid);
 
-impl SubJournalTemplateId {
+impl SpecialJournalTemplateId {
     pub fn new() -> Self {
         Self(uuid::Uuid::new_v4())
     }
+
+    pub fn parse_str(input: &str) -> Result<SpecialJournalTemplateId, String> {
+        let result = Uuid::parse_str(input);
+        match result {
+            Ok(uuid) => Ok(Self(uuid)),
+            Err(e) => Err(format!("SpecialJournalTemplateId: {}", e)),
+        }
+    }
 }
 
-impl std::fmt::Display for SubJournalTemplateId {
+impl std::fmt::Display for SpecialJournalTemplateId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-impl Deref for SubJournalTemplateId {
+impl Deref for SpecialJournalTemplateId {
     type Target = uuid::Uuid;
 
     fn deref(&self) -> &Self::Target {
@@ -130,22 +170,29 @@ impl Deref for SubJournalTemplateId {
 }
 
 #[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
-#[postgres(name = "subjournaltemplatecolid")]
-pub struct SubJournalTemplateColId(uuid::Uuid);
+#[postgres(name = "templatecolumnid")]
+pub struct TemplateColumnId(uuid::Uuid);
 
-impl SubJournalTemplateColId {
+impl TemplateColumnId {
     pub fn new() -> Self {
         Self(uuid::Uuid::new_v4())
     }
+
+    pub fn parse_str(input: &str) -> Result<TemplateColumnId, String> {
+        let res = uuid::Uuid::parse_str(input)
+            .map_err(|e| format!("unable to parse JournalId: {}", e))?;
+
+        Ok(Self(res))
+    }
 }
 
-impl std::fmt::Display for SubJournalTemplateColId {
+impl std::fmt::Display for TemplateColumnId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-impl Deref for SubJournalTemplateColId {
+impl Deref for TemplateColumnId {
     type Target = uuid::Uuid;
 
     fn deref(&self) -> &Self::Target {
@@ -154,22 +201,22 @@ impl Deref for SubJournalTemplateColId {
 }
 
 #[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, ToSql, FromSql)]
-#[postgres(name = "specjournalcolid")]
-pub struct SpecJournalColId(uuid::Uuid);
+#[postgres(name = "specialjournalcolid")]
+pub struct SpecialJournalColId(uuid::Uuid);
 
-impl SpecJournalColId {
+impl SpecialJournalColId {
     pub fn new() -> Self {
         Self(uuid::Uuid::new_v4())
     }
 }
 
-impl std::fmt::Display for SpecJournalColId {
+impl std::fmt::Display for SpecialJournalColId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-impl Deref for SpecJournalColId {
+impl Deref for SpecialJournalColId {
     type Target = uuid::Uuid;
 
     fn deref(&self) -> &Self::Target {
@@ -326,15 +373,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_ac_id() {
+    fn test_ledger_id() {
         let acid = LedgerId::new();
-        assert_eq!(acid.to_string().len(), 36, "account ID is 36 chars long")
+        assert_eq!(acid.to_string().len(), 36, "ledger ID is 36 chars long")
     }
 
     #[test]
-    fn test_ledger_id() {
+    fn test_gl_id() {
         let lid = GeneralLedgerId::new();
-        assert_eq!(lid.to_string().len(), 36, "ledger ID is 36 chars long")
+        assert_eq!(
+            lid.to_string().len(),
+            36,
+            "general ledger ID is 36 chars long"
+        )
     }
 
     #[test]

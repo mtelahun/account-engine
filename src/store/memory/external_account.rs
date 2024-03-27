@@ -20,8 +20,9 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
         let account = external::account::ActiveModel {
             id,
             subledger_id: model.subledger_id,
-            entity_type_code: model.entity_type_code,
+            entity_id: model.entity_id,
             account_no: model.account_no,
+            name: model.name,
             date_opened: model.date_opened,
         };
         let mut inner = self.inner.write().await;
@@ -69,8 +70,9 @@ impl ResourceOperations<external::account::Model, external::account::ActiveModel
         let account = external::account::ActiveModel {
             id: model.id,
             subledger_id: model.subledger_id,
-            entity_type_code: model.entity_type_code,
+            entity_id: model.entity_id,
             account_no: model.account_no,
+            name: model.name,
             date_opened: model.date_opened,
         };
         let mut inner = self.inner.write().await;

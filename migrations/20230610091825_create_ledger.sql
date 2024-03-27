@@ -19,17 +19,19 @@ CREATE TABLE ledger(
 
 CREATE TABLE ledger_intermediate(
     id LedgerId UNIQUE NOT NULL,
+    PRIMARY KEY(id),
     CONSTRAINT fk_ledger_id FOREIGN KEY(id) REFERENCES ledger(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE ledger_leaf(
     id LedgerId UNIQUE NOT NULL,
+    PRIMARY KEY(id),
     CONSTRAINT fk_ledger_id FOREIGN KEY(id) REFERENCES ledger(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE ledger_derived(
     id LedgerId UNIQUE NOT NULL,
-    supporting_ledger_id SubLedgerId NOT NULL,
+    PRIMARY KEY(id),
     CONSTRAINT fk_ledger_id FOREIGN KEY(id) REFERENCES ledger(id) ON DELETE RESTRICT
 );
 
@@ -44,6 +46,9 @@ CREATE TABLE ledger_transaction_type(
 
 INSERT INTO ledger(id, ledger_no, name, ledger_type)
     VALUES(gen_random_uuid(), '0', 'Root', 'intermediate');
+
+INSERT INTO ledger_intermediate
+    SELECT id from ledger LIMIT 1;
 
 INSERT INTO general_ledger(id, name, currency_code, root)
     VALUES(gen_random_uuid(), 'Root', 'USD', (SELECT id from ledger LIMIT 1));

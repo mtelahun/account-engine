@@ -9,23 +9,27 @@ pub mod fixed_len_char;
 pub mod ids;
 pub mod journal_type_code;
 pub mod ledger_xact_type_code;
+pub mod sequence;
 pub mod unique_id;
 pub mod xact_type;
 
-const DEFAULT_CODE_LEN: usize = 3;
-const DEFAULT_LONGSTRING_LEN: usize = 256;
-const DEFAULT_SHORTSTRING_LEN: usize = 24;
+const STRING3_LEN: usize = 3;
+const STRING24_LEN: usize = 24;
+const STRING64_LEN: usize = 64;
 
 // Re-export
-pub use array_code_string::ArrayCodeString;
-pub use array_long_string::ArrayLongString;
-pub use array_short_string::ArrayShortString;
-pub use composite_ids::JournalTransactionId;
+pub use array_code_string::ArrayString3;
+pub use array_long_string::ArrayString128;
+pub use array_short_string::ArrayString24;
+pub use composite_ids::{AccountTransactionId, JournalTransactionColumnId, JournalTransactionId};
+pub use entity_code::EntityCode;
 pub use external_xact_type_code::ExternalXactTypeCode;
 pub use fixed_len_char::FixedLenChar;
 pub use ids::{
-    AccountId, ColumnTotalId, GeneralLedgerId, JournalId, JournalRefId, JournalTypeId, LedgerId,
-    PeriodId, SpecJournalColId, SubJournalTemplateColId, SubJournalTemplateId, SubLedgerId,
+    AccountId, ColumnTotalId, EntityId, GeneralLedgerId, JournalId, JournalRefId, JournalTypeId,
+    LedgerId, PeriodId, SpecialJournalColId, SpecialJournalTemplateId, SubLedgerId,
+    TemplateColumnId,
 };
 pub use ledger_xact_type_code::{LedgerXactTypeCode, XACT_ACCOUNT, XACT_LEDGER};
+pub use sequence::Sequence;
 pub use xact_type::XactType;

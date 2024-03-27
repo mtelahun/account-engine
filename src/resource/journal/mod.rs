@@ -1,13 +1,16 @@
 use postgres_types::{FromSql, ToSql};
 
 use crate::domain::{
-    ids::JournalId, ArrayLongString, ArrayShortString, LedgerId, SubJournalTemplateId,
+    ids::JournalId, ArrayString128, ArrayString24, LedgerId, SpecialJournalTemplateId,
 };
 
 pub mod transaction;
 pub mod typ;
 
-pub use transaction::{AccountPostingRef, LedgerPostingRef};
+// Re-exports
+pub use transaction::{
+    special::JournalTransactionSpecial, LedgerAccountPostingRef, LedgerPostingRef,
+};
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, FromSql, ToSql)]
 #[postgres(name = "journaltype")]
@@ -21,21 +24,21 @@ pub enum JournalType {
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Model {
-    pub name: ArrayLongString,
-    pub code: ArrayShortString,
+    pub name: ArrayString128,
+    pub code: ArrayString24,
     pub journal_type: JournalType,
-    pub ledger_id: Option<LedgerId>,
-    pub template_id: Option<SubJournalTemplateId>,
+    pub control_ledger_id: Option<LedgerId>,
+    pub template_id: Option<SpecialJournalTemplateId>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ActiveModel {
     pub id: JournalId,
-    pub name: ArrayLongString,
-    pub code: ArrayShortString,
+    pub name: ArrayString128,
+    pub code: ArrayString24,
     pub journal_type: JournalType,
-    pub ledger_id: Option<LedgerId>,
-    pub template_id: Option<SubJournalTemplateId>,
+    pub control_ledger_id: Option<LedgerId>,
+    pub template_id: Option<SpecialJournalTemplateId>,
 }
 
 impl From<&Model> for ActiveModel {
@@ -45,7 +48,7 @@ impl From<&Model> for ActiveModel {
             name: value.name,
             code: value.code,
             journal_type: value.journal_type,
-            ledger_id: value.ledger_id,
+            control_ledger_id: value.control_ledger_id,
             template_id: value.template_id,
         }
     }

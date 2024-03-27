@@ -3,16 +3,16 @@ use std::ops::Deref;
 use arrayvec::ArrayString;
 use postgres_types::{to_sql_checked, FromSql, ToSql};
 
-use super::{fixed_len_char::InvalidLengthError, DEFAULT_LONGSTRING_LEN};
+use super::{fixed_len_char::InvalidLengthError, STRING64_LEN};
 
 #[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq)]
-pub struct ArrayLongString(ArrayString<DEFAULT_LONGSTRING_LEN>);
+pub struct ArrayString128(ArrayString<STRING64_LEN>);
 
-impl ArrayLongString {
-    pub const LENGTH: usize = DEFAULT_LONGSTRING_LEN;
+impl ArrayString128 {
+    pub const LENGTH: usize = STRING64_LEN;
 
     pub fn new() -> Self {
-        ArrayLongString(ArrayString::<DEFAULT_LONGSTRING_LEN>::new())
+        ArrayString128(ArrayString::<STRING64_LEN>::new())
     }
 
     pub fn as_bytes(&self) -> &[u8] {
@@ -36,51 +36,49 @@ impl ArrayLongString {
     }
 }
 
-impl std::fmt::Display for ArrayLongString {
+impl std::fmt::Display for ArrayString128 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:#}", self.0.as_str())
     }
 }
 
-impl std::str::FromStr for ArrayLongString {
+impl std::str::FromStr for ArrayString128 {
     type Err = InvalidLengthError;
 
     fn from_str(src: &str) -> Result<Self, Self::Err> {
-        let inner = ArrayString::<DEFAULT_LONGSTRING_LEN>::from_str(src).map_err(|_| {
-            InvalidLengthError {
-                expected: DEFAULT_LONGSTRING_LEN,
-                actual: src.len(),
-            }
+        let inner = ArrayString::<STRING64_LEN>::from_str(src).map_err(|_| InvalidLengthError {
+            expected: STRING64_LEN,
+            actual: src.len(),
         })?;
 
         Ok(Self(inner))
     }
 }
 
-impl From<&str> for ArrayLongString {
+impl From<&str> for ArrayString128 {
     fn from(value: &str) -> Self {
         Self::from(value.to_string())
     }
 }
 
-impl From<String> for ArrayLongString {
+impl From<String> for ArrayString128 {
     fn from(value: String) -> Self {
         let mut value = value;
-        if value.len() > DEFAULT_LONGSTRING_LEN {
-            value.truncate(DEFAULT_LONGSTRING_LEN);
+        if value.len() > STRING64_LEN {
+            value.truncate(STRING64_LEN);
         }
 
-        Self(ArrayString::<DEFAULT_LONGSTRING_LEN>::from(&value).unwrap())
+        Self(ArrayString::<STRING64_LEN>::from(&value).unwrap())
     }
 }
 
-impl From<ArrayString<DEFAULT_LONGSTRING_LEN>> for ArrayLongString {
-    fn from(value: ArrayString<DEFAULT_LONGSTRING_LEN>) -> Self {
+impl From<ArrayString<STRING64_LEN>> for ArrayString128 {
+    fn from(value: ArrayString<STRING64_LEN>) -> Self {
         Self(value)
     }
 }
 
-impl Deref for ArrayLongString {
+impl Deref for ArrayString128 {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -88,26 +86,26 @@ impl Deref for ArrayLongString {
     }
 }
 
-impl PartialEq<ArrayLongString> for str {
-    fn eq(&self, other: &ArrayLongString) -> bool {
+impl PartialEq<ArrayString128> for str {
+    fn eq(&self, other: &ArrayString128) -> bool {
         *self == *other.as_str()
     }
 }
 
-impl PartialEq<str> for ArrayLongString {
-    fn eq(&self, other: &str) -> bool {
-        self == other
+impl AsRef<str> for ArrayString128 {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
     }
 }
 
-impl<'a> FromSql<'a> for ArrayLongString {
+impl<'a> FromSql<'a> for ArrayString128 {
     fn from_sql(
         ty: &postgres_types::Type,
         raw: &'a [u8],
     ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
         let res = <&str as FromSql>::from_sql(ty, raw).map(ToString::to_string)?;
 
-        Ok(ArrayLongString::from(res))
+        Ok(ArrayString128::from(res))
     }
 
     fn accepts(ty: &postgres_types::Type) -> bool {
@@ -115,7 +113,7 @@ impl<'a> FromSql<'a> for ArrayLongString {
     }
 }
 
-impl ToSql for ArrayLongString {
+impl ToSql for ArrayString128 {
     fn to_sql(
         &self,
         ty: &postgres_types::Type,

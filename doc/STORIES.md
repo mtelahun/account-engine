@@ -2,8 +2,7 @@
 # Ledger
 The ledger is the "engine" that records and tracks the financial position of any orgainization or entity. It
 is the ultimate goal of this project to provide the "accounting engine" that another larger application can
-use to drive its platform. It is meant to be used by ERPs, Fintech applications, financial tracking and
-management applications.
+use to drive its platform. It is meant to be used by ERPs, Fintech applications, financial tracking and management applications.
 
 #### Card
 As an accountant in charge of setting up my company's accounts I would like to create and maintain a ledger

@@ -11,17 +11,17 @@ use super::store::MemoryStore;
 #[async_trait]
 impl
     ResourceOperations<
-        journal::transaction::special::column::total::Model,
-        journal::transaction::special::column::total::ActiveModel,
+        journal::transaction::special::column::sum::Model,
+        journal::transaction::special::column::sum::ActiveModel,
         ColumnTotalId,
     > for MemoryStore
 {
     async fn insert(
         &self,
-        model: &journal::transaction::special::column::total::Model,
-    ) -> Result<journal::transaction::special::column::total::ActiveModel, OrmError> {
+        model: &journal::transaction::special::column::sum::Model,
+    ) -> Result<journal::transaction::special::column::sum::ActiveModel, OrmError> {
         let active_model =
-            journal::transaction::special::column::total::ActiveModel::from_model(model);
+            journal::transaction::special::column::sum::ActiveModel::from_model(model);
         let mut inner = self.inner.write().await;
         if inner
             .journal_xact_special_colum_total
@@ -42,8 +42,8 @@ impl
     async fn get(
         &self,
         ids: Option<&Vec<ColumnTotalId>>,
-    ) -> Result<Vec<journal::transaction::special::column::total::ActiveModel>, OrmError> {
-        let mut res = Vec::<journal::transaction::special::column::total::ActiveModel>::new();
+    ) -> Result<Vec<journal::transaction::special::column::sum::ActiveModel>, OrmError> {
+        let mut res = Vec::<journal::transaction::special::column::sum::ActiveModel>::new();
         let inner = self.inner.read().await;
         if let Some(ids) = ids {
             for (key, value) in inner.journal_xact_special_colum_total.iter() {
@@ -63,13 +63,13 @@ impl
     async fn search(
         &self,
         _domain: &str,
-    ) -> Result<Vec<journal::transaction::special::column::total::ActiveModel>, OrmError> {
+    ) -> Result<Vec<journal::transaction::special::column::sum::ActiveModel>, OrmError> {
         todo!()
     }
 
     async fn save(
         &self,
-        model: &journal::transaction::special::column::total::ActiveModel,
+        model: &journal::transaction::special::column::sum::ActiveModel,
     ) -> Result<u64, OrmError> {
         let mut inner = self.inner.write().await;
         if let std::collections::hash_map::Entry::Occupied(mut e) =

@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::{
     domain::{
         ids::{InterimPeriodId, JournalId},
-        GeneralLedgerId, LedgerId, PeriodId,
+        ArrayString128, ArrayString24, ArrayString3, GeneralLedgerId, LedgerId, PeriodId,
     },
     resource::{
         account_engine::AccountEngine,
@@ -15,7 +15,7 @@ use crate::{
     Store,
 };
 
-use super::ServiceError;
+use super::{Ledger, LedgerAccount, ServiceError};
 
 #[async_trait]
 pub trait GeneralLedgerService<R>
@@ -23,6 +23,7 @@ where
     R: Store
         + ResourceOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
         + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
+        + ResourceOperations<ledger::derived::Model, ledger::derived::ActiveModel, LedgerId>
         + ResourceOperations<ledger::intermediate::Model, ledger::intermediate::ActiveModel, LedgerId>
         + ResourceOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, LedgerId>
         + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
@@ -60,37 +61,46 @@ where
 
     async fn create_ledger(
         &self,
-        model: &ledger::Model,
-    ) -> Result<ledger::ActiveModel, ServiceError> {
-        let parent: Vec<ledger::ActiveModel> = match model.parent_id {
-            Some(id) => self.store().get(Some(&vec![id])).await?,
-            None => return Err(ServiceError::Validation("ledger must have parent".into())),
-        };
+        ledger_type: LedgerType,
+        parent_id: LedgerId,
+        name: &str,
+        number: &str,
+        currency_code: Option<ArrayString3>,
+    ) -> Result<LedgerAccount, ServiceError> {
+        let parent: Vec<ledger::ActiveModel> = self.store().get(Some(&vec![parent_id])).await?;
         if parent[0].ledger_type != LedgerType::Intermediate {
             return Err(ServiceError::Validation(
                 "parent ledger is not an Intermediate Ledger".into(),
             ));
         }
-
-        if self
-            .store()
-            .find_ledger_by_no(model.ledger_no)
-            .await?
-            .is_some()
-        {
-            return Err(ServiceError::Validation(format!(
-                "duplicate ledger number: {}",
-                model.ledger_no
-            )));
-        }
-        let ledger = self.store().insert(model).await?;
-        if model.ledger_type == LedgerType::Intermediate {
-            let intermediate = ledger::intermediate::Model { id: ledger.id };
-            let _ = self.store().insert(&intermediate).await?;
-        } else {
-            let account = ledger::leaf::Model { id: ledger.id };
-            let _ = self.store().insert(&account).await?;
-        }
+        let base = ledger::Model {
+            name: ArrayString128::from(name),
+            number: ArrayString24::from(number),
+            ledger_type,
+            parent_id: Some(parent_id),
+            currency_code,
+        };
+        let base = self.store().insert(&base).await?;
+        let ledger = match ledger_type {
+            LedgerType::Derived => {
+                let model = ledger::derived::Model { id: base.id };
+                let derived = self.store().insert(&model).await?;
+                let derived = Ledger::new(base, derived);
+                LedgerAccount::Derived(derived)
+            }
+            LedgerType::Intermediate => {
+                let model = ledger::intermediate::Model { id: base.id };
+                let intermediate = self.store().insert(&model).await?;
+                let intermediate = Ledger::new(base, intermediate);
+                LedgerAccount::Intermediate(intermediate)
+            }
+            LedgerType::Leaf => {
+                let model = ledger::leaf::Model { id: base.id };
+                let leaf = self.store().insert(&model).await?;
+                let leaf = Ledger::new(base, leaf);
+                LedgerAccount::Leaf(leaf)
+            }
+        };
 
         Ok(ledger)
     }
@@ -98,14 +108,56 @@ where
     async fn get_ledgers(
         &self,
         ids: Option<&Vec<LedgerId>>,
-    ) -> Result<Vec<ledger::ActiveModel>, ServiceError> {
-        Ok(
-            <R as ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>>::get(
-                self.store(),
-                ids,
-            )
-            .await?,
+    ) -> Result<Vec<LedgerAccount>, ServiceError> {
+        let ledgers = <R as ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>>::get(
+            self.store(),
+            ids,
         )
+        .await?;
+
+        let mut res = Vec::new();
+        for ledger in ledgers {
+            match ledger.ledger_type {
+                LedgerType::Derived => {
+                    let rows = <R as ResourceOperations<
+                        ledger::derived::Model,
+                        ledger::derived::ActiveModel,
+                        LedgerId,
+                    >>::get(self.store(), Some(&vec![ledger.id]))
+                    .await?;
+                    res.push(LedgerAccount::Derived(
+                        Ledger::<ledger::derived::ActiveModel>::new(ledger, rows[0]),
+                    ))
+                }
+                LedgerType::Intermediate => {
+                    let rows = <R as ResourceOperations<
+                        ledger::intermediate::Model,
+                        ledger::intermediate::ActiveModel,
+                        LedgerId,
+                    >>::get(self.store(), Some(&vec![ledger.id]))
+                    .await?;
+                    eprintln!("id: {}, rows: {:?}", ledger.id, rows);
+                    res.push(LedgerAccount::Intermediate(Ledger::<
+                        ledger::intermediate::ActiveModel,
+                    >::new(
+                        ledger, rows[0]
+                    )))
+                }
+                LedgerType::Leaf => {
+                    let rows = <R as ResourceOperations<
+                        ledger::leaf::Model,
+                        ledger::leaf::ActiveModel,
+                        LedgerId,
+                    >>::get(self.store(), Some(&vec![ledger.id]))
+                    .await?;
+                    res.push(LedgerAccount::Leaf(
+                        Ledger::<ledger::leaf::ActiveModel>::new(ledger, rows[0]),
+                    ))
+                }
+            }
+        }
+
+        Ok(res)
     }
 
     async fn update_ledger(

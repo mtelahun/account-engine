@@ -9,6 +9,7 @@ use crate::{
 
 use super::store::PostgresStore;
 
+#[allow(clippy::diverging_sub_expression)]
 #[async_trait]
 impl ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
     for PostgresStore
@@ -20,11 +21,11 @@ impl ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel
         let id = SubLedgerId::new();
         let conn = self.get_connection().await?;
         let query = format!(
-            "INSERT INTO {}(id, name, ledger_account_id) VALUES($1, $2, $3) RETURNING *",
+            "INSERT INTO {}(id, name, ledger_id) VALUES($1, $2, $3) RETURNING *",
             subsidiary_ledger::ActiveModel::NAME
         );
         let res = conn
-            .query_one(&query, &[&id, &model.name, &model.ledger_account_id])
+            .query_one(&query, &[&id, &model.name, &model.ledger_id])
             .await
             .map_err(|e| OrmError::Internal(e.to_string()))?;
 
@@ -62,16 +63,13 @@ impl ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel
     async fn save(&self, model: &subsidiary_ledger::ActiveModel) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
-            "UPDATE {} SET name = $1, ledger_account_id = $2 WHERE id = $3:SubLedgerId",
+            "UPDATE {} SET name = $1, ledger_id = $2 WHERE id = $3:SubLedgerId",
             subsidiary_ledger::ActiveModel::NAME
         );
 
-        conn.execute(
-            query.as_str(),
-            &[&model.name, &model.ledger_account_id, &model.id],
-        )
-        .await
-        .map_err(|e| OrmError::Internal(e.to_string()))
+        conn.execute(query.as_str(), &[&model.name, &model.ledger_id, &model.id])
+            .await
+            .map_err(|e| OrmError::Internal(e.to_string()))
     }
 
     async fn delete(&self, id: SubLedgerId) -> Result<u64, OrmError> {
@@ -100,7 +98,7 @@ impl From<Row> for subsidiary_ledger::ActiveModel {
         Self {
             id: value.get("id"),
             name: value.get("name"),
-            ledger_account_id: value.get("ledger_account_id"),
+            ledger_id: value.get("ledger_id"),
         }
     }
 }

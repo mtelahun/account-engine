@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::SubJournalTemplateColId,
+    domain::{SpecialJournalTemplateId, TemplateColumnId},
     resource::journal,
     store::{OrmError, ResourceOperations},
 };
@@ -13,7 +13,7 @@ impl
     ResourceOperations<
         journal::transaction::special::template::column::Model,
         journal::transaction::special::template::column::ActiveModel,
-        SubJournalTemplateColId,
+        TemplateColumnId,
     > for MemoryStore
 {
     async fn insert(
@@ -39,7 +39,7 @@ impl
 
     async fn get(
         &self,
-        ids: Option<&Vec<SubJournalTemplateColId>>,
+        ids: Option<&Vec<TemplateColumnId>>,
     ) -> Result<Vec<journal::transaction::special::template::column::ActiveModel>, OrmError> {
         let mut res = Vec::<journal::transaction::special::template::column::ActiveModel>::new();
         let inner = self.inner.read().await;
@@ -60,9 +60,28 @@ impl
 
     async fn search(
         &self,
-        _domain: &str,
+        domain: &str,
     ) -> Result<Vec<journal::transaction::special::template::column::ActiveModel>, OrmError> {
-        todo!()
+        let terms: Vec<&str> = domain.split('=').map(|t| t.trim()).collect();
+        if terms.len() != 2 {
+            return Err(OrmError::Validation("invalid domain".into()));
+        } else if terms[0] != "template_id" {
+            return Err(OrmError::Validation(format!(
+                "unknown term '{}' in domain",
+                terms[0]
+            )));
+        }
+        let t_id = SpecialJournalTemplateId::parse_str(terms[1]).map_err(OrmError::Validation)?;
+        let mut result = Vec::new();
+        let inner = self.inner.read().await;
+        for v in inner.journal_xact_sub_template_column.values() {
+            if v.template_id == t_id {
+                result.push(*v)
+            }
+        }
+        result.sort_by(|a, b| a.sequence.cmp(&b.sequence));
+
+        Ok(result)
     }
 
     async fn save(
@@ -72,15 +91,15 @@ impl
         todo!()
     }
 
-    async fn delete(&self, _id: SubJournalTemplateColId) -> Result<u64, OrmError> {
+    async fn delete(&self, _id: TemplateColumnId) -> Result<u64, OrmError> {
         todo!()
     }
 
-    async fn archive(&self, _id: SubJournalTemplateColId) -> Result<u64, OrmError> {
+    async fn archive(&self, _id: TemplateColumnId) -> Result<u64, OrmError> {
         todo!()
     }
 
-    async fn unarchive(&self, _id: SubJournalTemplateColId) -> Result<u64, OrmError> {
+    async fn unarchive(&self, _id: TemplateColumnId) -> Result<u64, OrmError> {
         todo!()
     }
 }

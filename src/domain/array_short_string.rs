@@ -3,16 +3,16 @@ use std::ops::Deref;
 use arrayvec::ArrayString;
 use postgres_types::{to_sql_checked, FromSql, ToSql};
 
-use super::{fixed_len_char::InvalidLengthError, DEFAULT_SHORTSTRING_LEN};
+use super::{fixed_len_char::InvalidLengthError, STRING24_LEN};
 
 #[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq)]
-pub struct ArrayShortString(ArrayString<DEFAULT_SHORTSTRING_LEN>);
+pub struct ArrayString24(ArrayString<STRING24_LEN>);
 
-impl ArrayShortString {
-    pub const LENGTH: usize = DEFAULT_SHORTSTRING_LEN;
+impl ArrayString24 {
+    pub const LENGTH: usize = STRING24_LEN;
 
     pub fn new() -> Self {
-        ArrayShortString(ArrayString::new())
+        ArrayString24(ArrayString::new())
     }
 
     pub fn as_bytes(&self) -> &[u8] {
@@ -36,51 +36,49 @@ impl ArrayShortString {
     }
 }
 
-impl std::fmt::Display for ArrayShortString {
+impl std::fmt::Display for ArrayString24 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0.as_str())
     }
 }
 
-impl std::str::FromStr for ArrayShortString {
+impl std::str::FromStr for ArrayString24 {
     type Err = InvalidLengthError;
 
     fn from_str(src: &str) -> Result<Self, Self::Err> {
-        let inner = ArrayString::<DEFAULT_SHORTSTRING_LEN>::from_str(src).map_err(|_| {
-            InvalidLengthError {
-                expected: DEFAULT_SHORTSTRING_LEN,
-                actual: 0,
-            }
+        let inner = ArrayString::<STRING24_LEN>::from_str(src).map_err(|_| InvalidLengthError {
+            expected: STRING24_LEN,
+            actual: 0,
         })?;
 
         Ok(Self(inner))
     }
 }
 
-impl From<&str> for ArrayShortString {
+impl From<&str> for ArrayString24 {
     fn from(value: &str) -> Self {
-        ArrayShortString::from(value.to_string())
+        ArrayString24::from(value.to_string())
     }
 }
 
-impl From<String> for ArrayShortString {
+impl From<String> for ArrayString24 {
     fn from(value: String) -> Self {
         let mut value = value;
-        if value.len() > DEFAULT_SHORTSTRING_LEN {
-            value.truncate(DEFAULT_SHORTSTRING_LEN);
+        if value.len() > STRING24_LEN {
+            value.truncate(STRING24_LEN);
         }
 
-        Self(ArrayString::<DEFAULT_SHORTSTRING_LEN>::from(&value).unwrap())
+        Self(ArrayString::<STRING24_LEN>::from(&value).unwrap())
     }
 }
 
-impl From<ArrayString<DEFAULT_SHORTSTRING_LEN>> for ArrayShortString {
-    fn from(value: ArrayString<DEFAULT_SHORTSTRING_LEN>) -> Self {
+impl From<ArrayString<STRING24_LEN>> for ArrayString24 {
+    fn from(value: ArrayString<STRING24_LEN>) -> Self {
         Self(value)
     }
 }
 
-impl Deref for ArrayShortString {
+impl Deref for ArrayString24 {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -88,32 +86,26 @@ impl Deref for ArrayShortString {
     }
 }
 
-impl PartialEq<ArrayShortString> for str {
-    fn eq(&self, other: &ArrayShortString) -> bool {
+impl PartialEq<ArrayString24> for str {
+    fn eq(&self, other: &ArrayString24) -> bool {
         *self == *other.as_str()
     }
 }
 
-impl PartialEq<str> for ArrayShortString {
-    fn eq(&self, other: &str) -> bool {
-        self == other
+impl AsRef<str> for ArrayString24 {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
     }
 }
 
-impl PartialEq<&str> for ArrayShortString {
-    fn eq(&self, other: &&str) -> bool {
-        self == other
-    }
-}
-
-impl<'a> FromSql<'a> for ArrayShortString {
+impl<'a> FromSql<'a> for ArrayString24 {
     fn from_sql(
         ty: &postgres_types::Type,
         raw: &'a [u8],
     ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
         let res = <&str as FromSql>::from_sql(ty, raw).map(ToString::to_string)?;
 
-        Ok(ArrayShortString::from(res))
+        Ok(ArrayString24::from(res))
     }
 
     fn accepts(ty: &postgres_types::Type) -> bool {
@@ -121,7 +113,7 @@ impl<'a> FromSql<'a> for ArrayShortString {
     }
 }
 
-impl ToSql for ArrayShortString {
+impl ToSql for ArrayString24 {
     fn to_sql(
         &self,
         ty: &postgres_types::Type,

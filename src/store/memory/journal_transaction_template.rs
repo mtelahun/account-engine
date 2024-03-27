@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::SubJournalTemplateId,
+    domain::SpecialJournalTemplateId,
     resource::journal,
     store::{OrmError, ResourceOperations},
 };
@@ -13,7 +13,7 @@ impl
     ResourceOperations<
         journal::transaction::special::template::Model,
         journal::transaction::special::template::ActiveModel,
-        SubJournalTemplateId,
+        SpecialJournalTemplateId,
     > for MemoryStore
 {
     async fn insert(
@@ -39,7 +39,7 @@ impl
 
     async fn get(
         &self,
-        ids: Option<&Vec<SubJournalTemplateId>>,
+        ids: Option<&Vec<SpecialJournalTemplateId>>,
     ) -> Result<Vec<journal::transaction::special::template::ActiveModel>, OrmError> {
         let mut res = Vec::<journal::transaction::special::template::ActiveModel>::new();
         let inner = self.inner.read().await;
@@ -72,15 +72,15 @@ impl
         todo!()
     }
 
-    async fn delete(&self, _id: SubJournalTemplateId) -> Result<u64, OrmError> {
+    async fn delete(&self, _id: SpecialJournalTemplateId) -> Result<u64, OrmError> {
         todo!()
     }
 
-    async fn archive(&self, _id: SubJournalTemplateId) -> Result<u64, OrmError> {
+    async fn archive(&self, _id: SpecialJournalTemplateId) -> Result<u64, OrmError> {
         todo!()
     }
 
-    async fn unarchive(&self, _id: SubJournalTemplateId) -> Result<u64, OrmError> {
+    async fn unarchive(&self, _id: SpecialJournalTemplateId) -> Result<u64, OrmError> {
         todo!()
     }
 }

@@ -1,13 +1,11 @@
-use crate::domain::{LedgerId, SubLedgerId};
+use crate::domain::LedgerId;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct Model {
     pub id: LedgerId,
-    pub subsidiary_ledger_id: SubLedgerId,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct ActiveModel {
     pub id: LedgerId,
-    pub subsidiary_ledger_id: SubLedgerId,
 }

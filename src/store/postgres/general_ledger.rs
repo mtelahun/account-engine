@@ -3,7 +3,7 @@ use std::str::FromStr;
 use async_trait::async_trait;
 use tokio_postgres::Row;
 
-use crate::domain::{ArrayLongString, GeneralLedgerId};
+use crate::domain::{ArrayString128, GeneralLedgerId};
 use crate::resource::general_ledger;
 use crate::store::postgres::store::PostgresStore;
 use crate::store::{OrmError, Resource, ResourceOperations};
@@ -97,7 +97,7 @@ impl From<Row> for general_ledger::ActiveModel {
     fn from(value: Row) -> Self {
         Self {
             id: value.get("id"),
-            name: ArrayLongString::from_str(value.get("name")).unwrap_or_default(),
+            name: ArrayString128::from_str(value.get("name")).unwrap_or_default(),
             root: value.get("root"),
             currency_code: value.get("currency_code"),
         }

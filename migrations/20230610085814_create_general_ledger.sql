@@ -25,3 +25,9 @@ CREATE TABLE subsidiary_ledger(
     ledger_id LedgerId NOT NULL,
     PRIMARY KEY(id)
 );
+
+INSERT INTO transaction_type(code, description)
+    VALUES('dr', 'Debit');
+
+INSERT INTO transaction_type(code, description)
+    VALUES('cr', 'Credit');

@@ -5,6 +5,7 @@ use account_engine::{
         AccountId, ArrayString128, ArrayString3, JournalId, LedgerId, Sequence,
         SpecialJournalTemplateId, XactType,
     },
+    infrastructure::data::db_context::postgres::PostgresStore,
     resource::{
         account_engine::AccountEngine,
         external, general_ledger,
@@ -20,7 +21,6 @@ use account_engine::{
         GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
         SpecialJournalService, SubsidiaryLedgerService,
     },
-    store::postgres::store::PostgresStore,
 };
 use chrono::NaiveDate;
 use fake::{faker::name::en::Name, Fake};

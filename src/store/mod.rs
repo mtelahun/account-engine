@@ -2,7 +2,6 @@ use async_trait::async_trait;
 
 pub mod error;
 pub mod memory;
-pub mod postgres;
 
 pub use error::OrmError;
 

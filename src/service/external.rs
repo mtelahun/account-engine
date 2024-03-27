@@ -3,8 +3,9 @@ use chrono::NaiveDate;
 
 use crate::{
     domain::{AccountId, ArrayString128, ArrayString24, EntityCode, EntityId, SubLedgerId},
+    infrastructure::data::db_context::postgres::PostgresStore,
     resource::{account_engine::AccountEngine, external},
-    store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
+    store::{memory::store::MemoryStore, ResourceOperations},
     Store,
 };
 

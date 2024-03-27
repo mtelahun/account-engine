@@ -9,6 +9,7 @@ use crate::{
         AccountId, ArrayString128, ExternalXactTypeCode, JournalTransactionId, LedgerId,
         LedgerXactTypeCode, SpecialJournalTemplateId, TemplateColumnId,
     },
+    infrastructure::data::db_context::postgres::PostgresStore,
     resource::{
         account_engine::AccountEngine,
         external,
@@ -19,9 +20,7 @@ use crate::{
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
         ServiceError,
     },
-    store::{
-        memory::store::MemoryStore, postgres::store::PostgresStore, OrmError, ResourceOperations,
-    },
+    store::{memory::store::MemoryStore, OrmError, ResourceOperations},
     Store,
 };
 

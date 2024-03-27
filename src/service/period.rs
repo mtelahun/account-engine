@@ -2,11 +2,12 @@ use async_trait::async_trait;
 
 use crate::{
     domain::{ids::InterimPeriodId, PeriodId},
+    infrastructure::data::db_context::postgres::PostgresStore,
     resource::{
         account_engine::AccountEngine,
         accounting_period::{self, interim_period},
     },
-    store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
+    store::{memory::store::MemoryStore, ResourceOperations},
     Store,
 };
 

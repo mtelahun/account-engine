@@ -6,11 +6,10 @@ use crate::{
     domain::{
         ids::JournalId, ledger_xact_type_code, JournalTransactionId, LedgerId, LedgerXactTypeCode,
     },
+    infrastructure::data::db_context::postgres::PostgresStore,
     resource::{account_engine::AccountEngine, journal, ledger, ledger_xact_type},
     service::ServiceError,
-    store::{
-        memory::store::MemoryStore, postgres::store::PostgresStore, OrmError, ResourceOperations,
-    },
+    store::{memory::store::MemoryStore, OrmError, ResourceOperations},
     Store,
 };
 

@@ -1,4 +1,5 @@
 pub mod domain;
+pub mod infrastructure;
 pub mod resource;
 pub mod service;
 pub mod store;

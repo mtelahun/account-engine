@@ -2,12 +2,13 @@ use async_trait::async_trait;
 
 use crate::{
     domain::{ids::JournalId, JournalTransactionId, LedgerId, LedgerXactTypeCode},
+    infrastructure::data::db_context::postgres::PostgresStore,
     resource::{
         account_engine::AccountEngine, journal, ledger, ledger_xact_type, LedgerKey,
         LedgerPostingRef, TransactionState,
     },
     service::{GeneralJournalService, ServiceError},
-    store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
+    store::{memory::store::MemoryStore, ResourceOperations},
     Store,
 };
 

@@ -5,13 +5,14 @@ use crate::{
         ids::{InterimPeriodId, JournalId},
         ArrayString128, ArrayString24, ArrayString3, GeneralLedgerId, LedgerId, PeriodId,
     },
+    infrastructure::data::db_context::postgres::PostgresStore,
     resource::{
         account_engine::AccountEngine,
         accounting_period, general_ledger, journal,
         ledger::{self, LedgerType},
         InterimType,
     },
-    store::{memory::store::MemoryStore, postgres::store::PostgresStore, ResourceOperations},
+    store::{memory::store::MemoryStore, ResourceOperations},
     Store,
 };
 

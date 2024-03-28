@@ -1,4 +1,7 @@
-use crate::shared_kernel::{ArrayString128, ExternalXactTypeCode};
+use crate::{
+    domain::subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
+    shared_kernel::ArrayString128,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Model {

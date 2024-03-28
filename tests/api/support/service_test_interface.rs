@@ -1,7 +1,7 @@
 use account_engine::{
     domain::{
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
-        subsidiary_ledger::account_id::AccountId,
+        subsidiary_ledger::{account_id::AccountId, external_xact_type_code::ExternalXactTypeCode},
         ServiceError,
     },
     resource::{
@@ -9,8 +9,8 @@ use account_engine::{
         ledger, LedgerKey,
     },
     shared_kernel::{
-        ArrayString128, ExternalXactTypeCode, JournalId, JournalTransactionId, Sequence,
-        SpecialJournalTemplateId, XactType,
+        ArrayString128, JournalId, JournalTransactionId, Sequence, SpecialJournalTemplateId,
+        XactType,
     },
 };
 use chrono::NaiveDateTime;

@@ -1,6 +1,6 @@
 use postgres_types::{to_sql_checked, FromSql, ToSql};
 
-use super::{fixed_len_char::InvalidLengthError, FixedLenChar};
+use crate::shared_kernel::{fixed_len_char::InvalidLengthError, FixedLenChar};
 
 const LEN: usize = 2;
 

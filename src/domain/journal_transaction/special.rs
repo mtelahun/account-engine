@@ -13,7 +13,10 @@ use crate::{
         general_ledger::{general_ledger_id::GeneralLedgerId, ledger_id::LedgerId},
         journal_transaction::JournalTransactionColumn,
         period::{interim_period::InterimPeriodId, period_id::PeriodId},
-        subsidiary_ledger::{account_id::AccountId, subleder_id::SubLedgerId},
+        subsidiary_ledger::{
+            account_id::AccountId, external_xact_type_code::ExternalXactTypeCode,
+            subleder_id::SubLedgerId,
+        },
         GeneralJournalService, GeneralLedgerService, JournalTransactionService, ServiceError,
         SpecialJournalService, SubsidiaryLedgerService,
     },
@@ -29,7 +32,7 @@ use crate::{
     },
     shared_kernel::{
         composite_ids::JournalTransactionColumnId, ids::JournalId, AccountTransactionId,
-        ColumnTotalId, ExternalXactTypeCode, JournalTransactionId, LedgerXactTypeCode, Sequence,
+        ColumnTotalId, JournalTransactionId, LedgerXactTypeCode, Sequence,
         SpecialJournalTemplateId, TemplateColumnId,
     },
     Store,

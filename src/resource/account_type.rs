@@ -1,6 +1,9 @@
 use postgres_types::{FromSql, ToSql};
 
-use crate::shared_kernel::{account_type::AccountType, array_long_string::ArrayString128};
+use crate::{
+    domain::subsidiary_ledger::account_type::AccountType,
+    shared_kernel::array_string_64::ArrayString128,
+};
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct Model {

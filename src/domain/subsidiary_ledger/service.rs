@@ -15,11 +15,12 @@ use crate::{
         ledger::{self, journal_entry::LedgerKey},
         subsidiary_ledger,
     },
-    shared_kernel::ExternalXactTypeCode,
     Store,
 };
 
-use super::{account_id::AccountId, subleder_id::SubLedgerId};
+use super::{
+    account_id::AccountId, external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
+};
 
 #[async_trait]
 pub trait SubsidiaryLedgerService<R>

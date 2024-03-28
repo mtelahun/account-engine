@@ -1,4 +1,4 @@
-use crate::shared_kernel::{entity_code::EntityCode, ArrayString128};
+use crate::{domain::subsidiary_ledger::entity_code::EntityCode, shared_kernel::ArrayString128};
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct Model {

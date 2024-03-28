@@ -6,12 +6,12 @@ use crate::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{account_engine::AccountEngine, external},
-    shared_kernel::{ids::ExternalEntityId, ArrayString128, ArrayString24, EntityCode},
+    shared_kernel::{ids::ExternalEntityId, ArrayString128, ArrayString24},
     Store,
 };
 
 use super::{
-    subsidiary_ledger::{account_id::AccountId, subleder_id::SubLedgerId},
+    subsidiary_ledger::{account_id::AccountId, entity_code::EntityCode, subleder_id::SubLedgerId},
     ServiceError,
 };
 

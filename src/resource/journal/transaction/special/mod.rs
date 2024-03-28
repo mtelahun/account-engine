@@ -1,6 +1,8 @@
-use crate::shared_kernel::{
-    ids::JournalId, ArrayString128, ExternalXactTypeCode, JournalTransactionId,
-    SpecialJournalTemplateId,
+use crate::{
+    domain::subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
+    shared_kernel::{
+        ids::JournalId, ArrayString128, JournalTransactionId, SpecialJournalTemplateId,
+    },
 };
 use chrono::NaiveDateTime;
 

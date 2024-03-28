@@ -70,9 +70,14 @@ pub mod account {
     use chrono::NaiveDateTime;
 
     use crate::{
-        domain::{general_ledger::ledger_id::LedgerId, subsidiary_ledger::account_id::AccountId},
+        domain::{
+            general_ledger::ledger_id::LedgerId,
+            subsidiary_ledger::{
+                account_id::AccountId, external_xact_type_code::ExternalXactTypeCode,
+            },
+        },
         resource::ledger::journal_entry::LedgerKey,
-        shared_kernel::{ExternalXactTypeCode, XactType},
+        shared_kernel::XactType,
     };
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]

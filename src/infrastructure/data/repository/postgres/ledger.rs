@@ -7,14 +7,14 @@ use tokio_postgres::Row;
 use crate::{
     domain::{ArrayString128, ArrayString24, LedgerId},
     infrastructure::data::db_context::{
-        error::OrmError, postgres::PostgresStore, repository_operations::ResourceOperations,
+        error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::ledger,
 };
 
 #[async_trait]
-impl ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId> for PostgresStore {
+impl RepositoryOperations<ledger::Model, ledger::ActiveModel, LedgerId> for PostgresStore {
     async fn get(&self, ids: Option<&Vec<LedgerId>>) -> Result<Vec<ledger::ActiveModel>, OrmError> {
         let search_one = format!(
             "SELECT * FROM {} WHERE id = any ($1::LedgerId[])",

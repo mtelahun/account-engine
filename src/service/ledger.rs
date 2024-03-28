@@ -4,7 +4,7 @@ use journal_entry::LedgerKey;
 use crate::{
     domain::{ArrayString128, ArrayString24, ArrayString3, LedgerId, XactType},
     infrastructure::data::db_context::{
-        memory::MemoryStore, postgres::PostgresStore, repository_operations::ResourceOperations,
+        memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{
         account_engine::AccountEngine,
@@ -22,11 +22,17 @@ pub trait LedgerOps {}
 pub trait LedgerService<R>
 where
     R: Store
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
-        + ResourceOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, LedgerId>
-        + ResourceOperations<ledger::intermediate::Model, ledger::intermediate::ActiveModel, LedgerId>
-        + ResourceOperations<ledger::transaction::Model, ledger::transaction::ActiveModel, LedgerKey>
-        + ResourceOperations<
+        + RepositoryOperations<ledger::Model, ledger::ActiveModel, LedgerId>
+        + RepositoryOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, LedgerId>
+        + RepositoryOperations<
+            ledger::intermediate::Model,
+            ledger::intermediate::ActiveModel,
+            LedgerId,
+        > + RepositoryOperations<
+            ledger::transaction::Model,
+            ledger::transaction::ActiveModel,
+            LedgerKey,
+        > + RepositoryOperations<
             ledger::transaction::ledger::Model,
             ledger::transaction::ledger::ActiveModel,
             LedgerKey,

@@ -5,14 +5,15 @@ use tokio_postgres::Row;
 use crate::{
     domain::ledger_xact_type_code::{self, LedgerXactTypeCode},
     infrastructure::data::db_context::{
-        error::OrmError, postgres::PostgresStore, repository_operations::ResourceOperations,
+        error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::ledger_xact_type,
 };
 
 #[async_trait]
-impl ResourceOperations<ledger_xact_type::Model, ledger_xact_type::ActiveModel, LedgerXactTypeCode>
+impl
+    RepositoryOperations<ledger_xact_type::Model, ledger_xact_type::ActiveModel, LedgerXactTypeCode>
     for PostgresStore
 {
     async fn insert(

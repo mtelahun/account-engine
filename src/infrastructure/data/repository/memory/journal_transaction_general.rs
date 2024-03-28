@@ -3,14 +3,14 @@ use async_trait::async_trait;
 use crate::{
     domain::JournalTransactionId,
     infrastructure::data::db_context::{
-        error::OrmError, memory::MemoryStore, repository_operations::ResourceOperations,
+        error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::journal,
 };
 
 #[async_trait]
 impl
-    ResourceOperations<
+    RepositoryOperations<
         journal::transaction::general::line::Model,
         journal::transaction::general::line::ActiveModel,
         JournalTransactionId,

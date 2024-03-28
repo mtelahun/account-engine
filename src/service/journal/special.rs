@@ -11,7 +11,7 @@ use crate::{
     },
     infrastructure::data::db_context::{
         error::OrmError, memory::MemoryStore, postgres::PostgresStore,
-        repository_operations::ResourceOperations,
+        repository_operations::RepositoryOperations,
     },
     resource::{
         account_engine::AccountEngine,
@@ -30,49 +30,49 @@ use crate::{
 pub trait SpecialJournalService<R>
 where
     R: Store
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
-        + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
-        + ResourceOperations<
+        + RepositoryOperations<ledger::Model, ledger::ActiveModel, LedgerId>
+        + RepositoryOperations<journal::Model, journal::ActiveModel, JournalId>
+        + RepositoryOperations<
             journal::transaction::Model,
             journal::transaction::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::special::Model,
             journal::transaction::special::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::special::column::Model,
             journal::transaction::special::column::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::column::ledger_drcr::Model,
             journal::transaction::column::ledger_drcr::ActiveModel,
             JournalTransactionColumnId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::column::text::Model,
             journal::transaction::column::text::ActiveModel,
             JournalTransactionColumnId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::column::account_dr::Model,
             journal::transaction::column::account_dr::ActiveModel,
             JournalTransactionColumnId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::column::account_cr::Model,
             journal::transaction::column::account_cr::ActiveModel,
             JournalTransactionColumnId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::special::template::Model,
             journal::transaction::special::template::ActiveModel,
             SpecialJournalTemplateId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::special::template::column::Model,
             journal::transaction::special::template::column::ActiveModel,
             TemplateColumnId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             ledger_xact_type::Model,
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
-        > + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
+        > + RepositoryOperations<external::account::Model, external::account::ActiveModel, AccountId>
         + Send
         + Sync
         + 'static,
@@ -90,7 +90,7 @@ where
         ServiceError,
     > {
         let domain = format!("journal_id = {id}");
-        let records = <R as ResourceOperations<
+        let records = <R as RepositoryOperations<
             journal::transaction::special::Model,
             journal::transaction::special::ActiveModel,
             JournalTransactionId,
@@ -150,13 +150,13 @@ where
             template_id,
             xact_type_external: Some(xact_type_external_code),
         };
-        let base_record = <R as ResourceOperations<
+        let base_record = <R as RepositoryOperations<
             journal::transaction::Model,
             journal::transaction::ActiveModel,
             JournalTransactionId,
         >>::insert(self.store(), &base_model)
         .await?;
-        let record = <R as ResourceOperations<
+        let record = <R as RepositoryOperations<
             journal::transaction::special::Model,
             journal::transaction::special::ActiveModel,
             JournalTransactionId,
@@ -175,7 +175,7 @@ where
                         ledger_cr_id: col.ledger_cr_id,
                         ledger_dr_id: col.ledger_dr_id,
                     };
-                    let active_model = <R as ResourceOperations<
+                    let active_model = <R as RepositoryOperations<
                         journal::transaction::column::ledger_drcr::Model,
                         journal::transaction::column::ledger_drcr::ActiveModel,
                         JournalTransactionColumnId,
@@ -191,7 +191,7 @@ where
                         account_id: col.account_id,
                         amount: col.amount,
                     };
-                    let active_model = <R as ResourceOperations<
+                    let active_model = <R as RepositoryOperations<
                         journal::transaction::column::account_dr::Model,
                         journal::transaction::column::account_dr::ActiveModel,
                         JournalTransactionColumnId,
@@ -207,7 +207,7 @@ where
                         account_id: col.account_id,
                         amount: col.amount,
                     };
-                    let active_model = <R as ResourceOperations<
+                    let active_model = <R as RepositoryOperations<
                         journal::transaction::column::account_cr::Model,
                         journal::transaction::column::account_cr::ActiveModel,
                         JournalTransactionColumnId,
@@ -235,13 +235,13 @@ where
         )>,
         ServiceError,
     > {
-        let base_records = <R as ResourceOperations<
+        let base_records = <R as RepositoryOperations<
             journal::transaction::Model,
             journal::transaction::ActiveModel,
             JournalTransactionId,
         >>::get(self.store(), ids)
         .await?;
-        let records = <R as ResourceOperations<
+        let records = <R as RepositoryOperations<
             journal::transaction::special::Model,
             journal::transaction::special::ActiveModel,
             JournalTransactionId,
@@ -253,7 +253,7 @@ where
             Vec<JournalTransactionColumn>,
         )>::new();
         for record in records {
-            let tpl_cols = <R as ResourceOperations<
+            let tpl_cols = <R as RepositoryOperations<
                 journal::transaction::special::template::column::Model,
                 journal::transaction::special::template::column::ActiveModel,
                 TemplateColumnId,
@@ -266,7 +266,7 @@ where
             for tpl_col in tpl_cols {
                 match tpl_col.column_type {
                     JournalTransactionColumnType::LedgerDrCr => {
-                        let special_columns = <R as ResourceOperations<
+                        let special_columns = <R as RepositoryOperations<
                             journal::transaction::column::ledger_drcr::Model,
                             journal::transaction::column::ledger_drcr::ActiveModel,
                             JournalTransactionColumnId,
@@ -284,7 +284,7 @@ where
                     }
                     JournalTransactionColumnType::Text => todo!(),
                     JournalTransactionColumnType::AccountDr => {
-                        let special_columns = <R as ResourceOperations<
+                        let special_columns = <R as RepositoryOperations<
                             journal::transaction::column::account_dr::Model,
                             journal::transaction::column::account_dr::ActiveModel,
                             JournalTransactionColumnId,
@@ -301,7 +301,7 @@ where
                         }
                     }
                     JournalTransactionColumnType::AccountCr => {
-                        let special_columns = <R as ResourceOperations<
+                        let special_columns = <R as RepositoryOperations<
                             journal::transaction::column::account_cr::Model,
                             journal::transaction::column::account_cr::ActiveModel,
                             JournalTransactionColumnId,
@@ -335,7 +335,7 @@ where
         &self,
         id: JournalTransactionId,
     ) -> Result<Vec<JournalTransactionColumn>, ServiceError> {
-        let jtx = <R as ResourceOperations<
+        let jtx = <R as RepositoryOperations<
             journal::transaction::special::Model,
             journal::transaction::special::ActiveModel,
             JournalTransactionId,
@@ -343,7 +343,7 @@ where
         .await?;
         let jtx = jtx[0];
         let t_columns =
-            <R as ResourceOperations<
+            <R as RepositoryOperations<
                 journal::transaction::special::template::column::Model,
                 journal::transaction::special::template::column::ActiveModel,
                 TemplateColumnId,
@@ -353,7 +353,7 @@ where
         for t_col in t_columns {
             match t_col.column_type {
                 JournalTransactionColumnType::LedgerDrCr => {
-                    let columns = <R as ResourceOperations<
+                    let columns = <R as RepositoryOperations<
                         journal::transaction::column::ledger_drcr::Model,
                         journal::transaction::column::ledger_drcr::ActiveModel,
                         JournalTransactionColumnId,
@@ -370,7 +370,7 @@ where
                     }
                 }
                 JournalTransactionColumnType::AccountDr => {
-                    let special_columns = <R as ResourceOperations<
+                    let special_columns = <R as RepositoryOperations<
                         journal::transaction::column::account_dr::Model,
                         journal::transaction::column::account_dr::ActiveModel,
                         JournalTransactionColumnId,
@@ -387,7 +387,7 @@ where
                     }
                 }
                 JournalTransactionColumnType::AccountCr => {
-                    let special_columns = <R as ResourceOperations<
+                    let special_columns = <R as RepositoryOperations<
                         journal::transaction::column::account_cr::Model,
                         journal::transaction::column::account_cr::ActiveModel,
                         JournalTransactionColumnId,
@@ -404,7 +404,7 @@ where
                     }
                 }
                 JournalTransactionColumnType::Text => {
-                    let columns = <R as ResourceOperations<
+                    let columns = <R as RepositoryOperations<
                         journal::transaction::column::text::Model,
                         journal::transaction::column::text::ActiveModel,
                         JournalTransactionColumnId,

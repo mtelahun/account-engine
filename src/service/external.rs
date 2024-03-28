@@ -4,7 +4,7 @@ use chrono::NaiveDate;
 use crate::{
     domain::{AccountId, ArrayString128, ArrayString24, EntityCode, EntityId, SubLedgerId},
     infrastructure::data::db_context::{
-        memory::MemoryStore, postgres::PostgresStore, repository_operations::ResourceOperations,
+        memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{account_engine::AccountEngine, external},
     Store,
@@ -16,9 +16,9 @@ use super::ServiceError;
 pub trait ExternalService<R>
 where
     R: Store
-        + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
-        + ResourceOperations<external::entity::Model, external::entity::ActiveModel, EntityId>
-        + ResourceOperations<
+        + RepositoryOperations<external::account::Model, external::account::ActiveModel, AccountId>
+        + RepositoryOperations<external::entity::Model, external::entity::ActiveModel, EntityId>
+        + RepositoryOperations<
             external::entity_type::Model,
             external::entity_type::ActiveModel,
             EntityCode,

@@ -4,14 +4,14 @@ use tokio_postgres::Row;
 use crate::{
     domain::ids::JournalId,
     infrastructure::data::db_context::{
-        error::OrmError, postgres::PostgresStore, repository_operations::ResourceOperations,
+        error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::journal,
 };
 
 #[async_trait]
-impl ResourceOperations<journal::Model, journal::ActiveModel, JournalId> for PostgresStore {
+impl RepositoryOperations<journal::Model, journal::ActiveModel, JournalId> for PostgresStore {
     async fn insert(&self, model: &journal::Model) -> Result<journal::ActiveModel, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(

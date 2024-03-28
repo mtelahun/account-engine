@@ -4,7 +4,7 @@ use postgres_types::{FromSql, ToSql};
 
 use crate::{
     domain::ids::{InterimPeriodId, PeriodId},
-    infrastructure::data::db_context::repository_operations::ResourceOperations,
+    infrastructure::data::db_context::repository_operations::RepositoryOperations,
 };
 
 pub mod interim_period;
@@ -41,7 +41,7 @@ impl std::fmt::Display for InterimType {
 impl ActiveModel {
     pub(crate) async fn create_interim_calendar(
         &self,
-        orm: &(dyn ResourceOperations<
+        orm: &(dyn RepositoryOperations<
             interim_period::Model,
             interim_period::ActiveModel,
             InterimPeriodId,

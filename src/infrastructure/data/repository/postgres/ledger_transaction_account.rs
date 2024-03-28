@@ -3,14 +3,14 @@ use tokio_postgres::Row;
 
 use crate::{
     infrastructure::data::db_context::{
-        error::OrmError, postgres::PostgresStore, repository_operations::ResourceOperations,
+        error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::{ledger::transaction, LedgerKey},
 };
 
 #[async_trait]
-impl ResourceOperations<transaction::account::Model, transaction::account::ActiveModel, LedgerKey>
+impl RepositoryOperations<transaction::account::Model, transaction::account::ActiveModel, LedgerKey>
     for PostgresStore
 {
     async fn insert(

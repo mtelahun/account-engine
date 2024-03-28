@@ -4,13 +4,13 @@ use chronoutil::RelativeDuration;
 use crate::{
     domain::ids::PeriodId,
     infrastructure::data::db_context::{
-        error::OrmError, memory::MemoryStore, repository_operations::ResourceOperations,
+        error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::accounting_period,
 };
 
 #[async_trait]
-impl ResourceOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
+impl RepositoryOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
     for MemoryStore
 {
     async fn insert(

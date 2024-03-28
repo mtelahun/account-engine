@@ -4,14 +4,14 @@ use tokio_postgres::Row;
 use crate::{
     domain::EntityId,
     infrastructure::data::db_context::{
-        error::OrmError, postgres::PostgresStore, repository_operations::ResourceOperations,
+        error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::external,
 };
 
 #[async_trait]
-impl ResourceOperations<external::entity::Model, external::entity::ActiveModel, EntityId>
+impl RepositoryOperations<external::entity::Model, external::entity::ActiveModel, EntityId>
     for PostgresStore
 {
     async fn insert(

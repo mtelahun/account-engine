@@ -8,7 +8,7 @@ use crate::{
     },
     infrastructure::data::db_context::{
         error::OrmError, memory::MemoryStore, postgres::PostgresStore,
-        repository_operations::ResourceOperations,
+        repository_operations::RepositoryOperations,
     },
     resource::{account_engine::AccountEngine, journal, ledger, ledger_xact_type},
     service::ServiceError,
@@ -19,17 +19,17 @@ use crate::{
 pub trait GeneralJournalService<R>
 where
     R: Store
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
-        + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
-        + ResourceOperations<
+        + RepositoryOperations<ledger::Model, ledger::ActiveModel, LedgerId>
+        + RepositoryOperations<journal::Model, journal::ActiveModel, JournalId>
+        + RepositoryOperations<
             journal::transaction::Model,
             journal::transaction::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::general::line::Model,
             journal::transaction::general::line::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             ledger_xact_type::Model,
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
@@ -44,7 +44,7 @@ where
         model: &journal::transaction::general::Model,
     ) -> Result<journal::transaction::general::ActiveModel, ServiceError> {
         for line in model.lines.iter() {
-            if <R as ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>>::get(
+            if <R as RepositoryOperations<ledger::Model, ledger::ActiveModel, LedgerId>>::get(
                 self.store(),
                 Some(&vec![line.dr_ledger_id]),
             )
@@ -56,7 +56,7 @@ where
                     line.dr_ledger_id
                 )));
             }
-            if <R as ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>>::get(
+            if <R as RepositoryOperations<ledger::Model, ledger::ActiveModel, LedgerId>>::get(
                 self.store(),
                 Some(&vec![line.cr_ledger_id]),
             )
@@ -75,7 +75,7 @@ where
             timestamp: model.timestamp,
             explanation: model.explanation,
         };
-        let record = <R as ResourceOperations<
+        let record = <R as RepositoryOperations<
             journal::transaction::Model,
             journal::transaction::ActiveModel,
             JournalTransactionId,
@@ -84,7 +84,7 @@ where
 
         let mut res_tx_lines = Vec::<journal::transaction::general::line::ActiveModel>::new();
         for line in model.lines.iter() {
-            let jtx_line = <R as ResourceOperations<
+            let jtx_line = <R as RepositoryOperations<
                 journal::transaction::general::line::Model,
                 journal::transaction::general::line::ActiveModel,
                 JournalTransactionId,
@@ -106,13 +106,13 @@ where
         ids: Option<&Vec<JournalTransactionId>>,
     ) -> Result<Vec<journal::transaction::general::ActiveModel>, ServiceError> {
         let mut res = Vec::<journal::transaction::general::ActiveModel>::new();
-        let xacts = <R as ResourceOperations<
+        let xacts = <R as RepositoryOperations<
             journal::transaction::Model,
             journal::transaction::ActiveModel,
             JournalTransactionId,
         >>::get(self.store(), ids)
         .await?;
-        let ledger_lines = <R as ResourceOperations<
+        let ledger_lines = <R as RepositoryOperations<
             journal::transaction::general::line::Model,
             journal::transaction::general::line::ActiveModel,
             JournalTransactionId,

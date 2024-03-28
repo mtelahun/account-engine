@@ -1,7 +1,7 @@
 use super::{error::OrmError, resource::Resource};
 
 #[async_trait::async_trait]
-pub trait ResourceOperations<M, AM, I>
+pub trait RepositoryOperations<M, AM, I>
 where
     M: Send + Sync,
     AM: Resource + Send + Sync,

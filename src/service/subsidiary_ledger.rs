@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::{
     domain::{AccountId, ExternalXactTypeCode, SubLedgerId},
     infrastructure::data::db_context::{
-        memory::MemoryStore, postgres::PostgresStore, repository_operations::ResourceOperations,
+        memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{
         account_engine::AccountEngine,
@@ -24,13 +24,13 @@ use super::{
 pub trait SubsidiaryLedgerService<R>
 where
     R: Store
-        + ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
-        + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
-        + ResourceOperations<
+        + RepositoryOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
+        + RepositoryOperations<external::account::Model, external::account::ActiveModel, AccountId>
+        + RepositoryOperations<
             external::transaction_type::Model,
             external::transaction_type::ActiveModel,
             ExternalXactTypeCode,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             ledger::transaction::account::Model,
             ledger::transaction::account::ActiveModel,
             LedgerKey,

@@ -3,7 +3,7 @@ use crate::{
         composite_ids::JournalTransactionColumnId, ids::JournalId, AccountId, GeneralLedgerId,
         JournalTransactionId, LedgerId, LedgerXactTypeCode, PeriodId, SubLedgerId,
     },
-    infrastructure::data::db_context::repository_operations::ResourceOperations,
+    infrastructure::data::db_context::repository_operations::RepositoryOperations,
     service::ServiceError,
     Store,
 };
@@ -16,36 +16,39 @@ use super::{
 pub struct AccountEngine<R>
 where
     R: Store
-        + ResourceOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
-        + ResourceOperations<ledger::transaction::Model, ledger::transaction::ActiveModel, LedgerKey>
-        + ResourceOperations<
+        + RepositoryOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
+        + RepositoryOperations<ledger::Model, ledger::ActiveModel, LedgerId>
+        + RepositoryOperations<
+            ledger::transaction::Model,
+            ledger::transaction::ActiveModel,
+            LedgerKey,
+        > + RepositoryOperations<
             ledger::transaction::ledger::Model,
             ledger::transaction::ledger::ActiveModel,
             LedgerKey,
-        > + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
-        + ResourceOperations<
+        > + RepositoryOperations<journal::Model, journal::ActiveModel, JournalId>
+        + RepositoryOperations<
             crate::resource::journal::transaction::Model,
             crate::resource::journal::transaction::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             crate::resource::journal::transaction::special::Model,
             crate::resource::journal::transaction::special::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::general::line::Model,
             journal::transaction::general::line::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::special::column::Model,
             journal::transaction::special::column::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             ledger_xact_type::Model,
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
-        > + ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
-        + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>,
+        > + RepositoryOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
+        + RepositoryOperations<external::account::Model, external::account::ActiveModel, AccountId>,
 {
     pub(crate) repository: R,
 }
@@ -53,45 +56,48 @@ where
 impl<R> AccountEngine<R>
 where
     R: Store
-        + ResourceOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
-        + ResourceOperations<ledger::transaction::Model, ledger::transaction::ActiveModel, LedgerKey>
-        + ResourceOperations<
+        + RepositoryOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
+        + RepositoryOperations<ledger::Model, ledger::ActiveModel, LedgerId>
+        + RepositoryOperations<
+            ledger::transaction::Model,
+            ledger::transaction::ActiveModel,
+            LedgerKey,
+        > + RepositoryOperations<
             ledger::transaction::ledger::Model,
             ledger::transaction::ledger::ActiveModel,
             LedgerKey,
-        > + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
-        + ResourceOperations<
+        > + RepositoryOperations<journal::Model, journal::ActiveModel, JournalId>
+        + RepositoryOperations<
             crate::resource::journal::transaction::Model,
             crate::resource::journal::transaction::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             crate::resource::journal::transaction::special::Model,
             crate::resource::journal::transaction::special::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::general::line::Model,
             journal::transaction::general::line::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::column::account_dr::Model,
             journal::transaction::column::account_dr::ActiveModel,
             JournalTransactionColumnId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::column::account_cr::Model,
             journal::transaction::column::account_cr::ActiveModel,
             JournalTransactionColumnId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::special::column::Model,
             journal::transaction::special::column::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             ledger_xact_type::Model,
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
-        > + ResourceOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
-        + ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
-        + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
+        > + RepositoryOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
+        + RepositoryOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
+        + RepositoryOperations<external::account::Model, external::account::ActiveModel, AccountId>
         + Send
         + Sync
         + 'static,

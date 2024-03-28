@@ -1,14 +1,15 @@
 use crate::{
     domain::ledger_xact_type_code::LedgerXactTypeCode,
     infrastructure::data::db_context::{
-        error::OrmError, memory::MemoryStore, repository_operations::ResourceOperations,
+        error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::ledger_xact_type,
 };
 use async_trait::async_trait;
 
 #[async_trait]
-impl ResourceOperations<ledger_xact_type::Model, ledger_xact_type::ActiveModel, LedgerXactTypeCode>
+impl
+    RepositoryOperations<ledger_xact_type::Model, ledger_xact_type::ActiveModel, LedgerXactTypeCode>
     for MemoryStore
 {
     async fn insert(

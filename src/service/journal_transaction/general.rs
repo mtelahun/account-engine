@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::{
     domain::{ids::JournalId, JournalTransactionId, LedgerId, LedgerXactTypeCode},
     infrastructure::data::db_context::{
-        memory::MemoryStore, postgres::PostgresStore, repository_operations::ResourceOperations,
+        memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{
         account_engine::AccountEngine, journal, ledger, ledger_xact_type, LedgerKey,
@@ -17,26 +17,29 @@ use crate::{
 pub trait JournalTransactionService<R>: GeneralJournalService<R>
 where
     R: Store
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
-        + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
-        + ResourceOperations<
+        + RepositoryOperations<ledger::Model, ledger::ActiveModel, LedgerId>
+        + RepositoryOperations<journal::Model, journal::ActiveModel, JournalId>
+        + RepositoryOperations<
             journal::transaction::Model,
             journal::transaction::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::general::line::Model,
             journal::transaction::general::line::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<ledger::transaction::Model, ledger::transaction::ActiveModel, LedgerKey>
-        + ResourceOperations<
+        > + RepositoryOperations<
+            ledger::transaction::Model,
+            ledger::transaction::ActiveModel,
+            LedgerKey,
+        > + RepositoryOperations<
             ledger::transaction::ledger::Model,
             ledger::transaction::ledger::ActiveModel,
             LedgerKey,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             ledger::transaction::account::Model,
             ledger::transaction::account::ActiveModel,
             LedgerKey,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             ledger_xact_type::Model,
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
@@ -47,7 +50,7 @@ where
     async fn post_transaction(&self, id: JournalTransactionId) -> Result<bool, ServiceError> {
         let ledger_xact_type = self.get_journal_entry_type(id).await?;
 
-        let jxact_lines = <R as ResourceOperations<
+        let jxact_lines = <R as RepositoryOperations<
             journal::transaction::general::line::Model,
             journal::transaction::general::line::ActiveModel,
             JournalTransactionId,

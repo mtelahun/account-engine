@@ -3,13 +3,13 @@ use async_trait::async_trait;
 use crate::{
     domain::ids::JournalId,
     infrastructure::data::db_context::{
-        error::OrmError, memory::MemoryStore, repository_operations::ResourceOperations,
+        error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::journal,
 };
 
 #[async_trait]
-impl ResourceOperations<journal::Model, journal::ActiveModel, JournalId> for MemoryStore {
+impl RepositoryOperations<journal::Model, journal::ActiveModel, JournalId> for MemoryStore {
     async fn insert(&self, model: &journal::Model) -> Result<journal::ActiveModel, OrmError> {
         let id = JournalId::new();
         let journal = model.into();

@@ -4,14 +4,14 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::{
     domain::{composite_ids::JournalTransactionColumnId, JournalId, TemplateColumnId},
     infrastructure::data::db_context::{
-        error::OrmError, memory::MemoryStore, repository_operations::ResourceOperations,
+        error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::journal,
 };
 
 #[async_trait]
 impl
-    ResourceOperations<
+    RepositoryOperations<
         journal::transaction::column::account_cr::Model,
         journal::transaction::column::account_cr::ActiveModel,
         JournalTransactionColumnId,

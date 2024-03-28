@@ -3,14 +3,14 @@ use async_trait::async_trait;
 use crate::{
     domain::ExternalXactTypeCode,
     infrastructure::data::db_context::{
-        error::OrmError, memory::MemoryStore, repository_operations::ResourceOperations,
+        error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::external,
 };
 
 #[async_trait]
 impl
-    ResourceOperations<
+    RepositoryOperations<
         external::transaction_type::Model,
         external::transaction_type::ActiveModel,
         ExternalXactTypeCode,

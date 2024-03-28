@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::{
     domain::{ids::InterimPeriodId, PeriodId},
     infrastructure::data::db_context::{
-        memory::MemoryStore, postgres::PostgresStore, repository_operations::ResourceOperations,
+        memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{
         account_engine::AccountEngine,
@@ -18,8 +18,8 @@ use super::ServiceError;
 pub trait AccountingPeriodService<R>
 where
     R: Store
-        + ResourceOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
-        + ResourceOperations<interim_period::Model, interim_period::ActiveModel, InterimPeriodId>
+        + RepositoryOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
+        + RepositoryOperations<interim_period::Model, interim_period::ActiveModel, InterimPeriodId>
         + Send
         + Sync
         + 'static,
@@ -30,7 +30,7 @@ where
         &self,
         ids: Option<&Vec<InterimPeriodId>>,
     ) -> Result<Vec<interim_period::ActiveModel>, ServiceError> {
-        Ok(<R as ResourceOperations<
+        Ok(<R as RepositoryOperations<
             interim_period::Model,
             interim_period::ActiveModel,
             InterimPeriodId,

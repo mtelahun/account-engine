@@ -17,7 +17,7 @@ use crate::{
         SpecialJournalTemplateId, SubLedgerId, TemplateColumnId,
     },
     infrastructure::data::db_context::{
-        memory::MemoryStore, postgres::PostgresStore, repository_operations::ResourceOperations,
+        memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{
         account_engine::AccountEngine,
@@ -42,90 +42,96 @@ pub trait SpecialJournalTransactionService<R>:
     + JournalTransactionService<R>
 where
     R: Store
-        + ResourceOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
-        + ResourceOperations<ledger::derived::Model, ledger::derived::ActiveModel, LedgerId>
-        + ResourceOperations<ledger::intermediate::Model, ledger::intermediate::ActiveModel, LedgerId>
-        + ResourceOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, LedgerId>
-        + ResourceOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
-        + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
-        + ResourceOperations<
+        + RepositoryOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
+        + RepositoryOperations<ledger::Model, ledger::ActiveModel, LedgerId>
+        + RepositoryOperations<ledger::derived::Model, ledger::derived::ActiveModel, LedgerId>
+        + RepositoryOperations<
+            ledger::intermediate::Model,
+            ledger::intermediate::ActiveModel,
+            LedgerId,
+        > + RepositoryOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, LedgerId>
+        + RepositoryOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
+        + RepositoryOperations<ledger::Model, ledger::ActiveModel, LedgerId>
+        + RepositoryOperations<journal::Model, journal::ActiveModel, JournalId>
+        + RepositoryOperations<
             accounting_period::interim_period::Model,
             accounting_period::interim_period::ActiveModel,
             InterimPeriodId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::Model,
             journal::transaction::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::column::ledger_drcr::Model,
             journal::transaction::column::ledger_drcr::ActiveModel,
             JournalTransactionColumnId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::column::text::Model,
             journal::transaction::column::text::ActiveModel,
             JournalTransactionColumnId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::column::account_dr::Model,
             journal::transaction::column::account_dr::ActiveModel,
             JournalTransactionColumnId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::column::account_cr::Model,
             journal::transaction::column::account_cr::ActiveModel,
             JournalTransactionColumnId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::general::line::Model,
             journal::transaction::general::line::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::special::Model,
             journal::transaction::special::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::special::summary::Model,
             journal::transaction::special::summary::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::special::column::Model,
             journal::transaction::special::column::ActiveModel,
             JournalTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::special::column::sum::Model,
             journal::transaction::special::column::sum::ActiveModel,
             ColumnTotalId,
-        > + ResourceOperations<ledger::transaction::Model, ledger::transaction::ActiveModel, LedgerKey>
-        + ResourceOperations<
+        > + RepositoryOperations<
+            ledger::transaction::Model,
+            ledger::transaction::ActiveModel,
+            LedgerKey,
+        > + RepositoryOperations<
             ledger::transaction::ledger::Model,
             ledger::transaction::ledger::ActiveModel,
             LedgerKey,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::special::template::Model,
             journal::transaction::special::template::ActiveModel,
             SpecialJournalTemplateId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             journal::transaction::special::template::column::Model,
             journal::transaction::special::template::column::ActiveModel,
             TemplateColumnId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             ledger::transaction::account::Model,
             ledger::transaction::account::ActiveModel,
             LedgerKey,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             ledger_xact_type::Model,
             ledger_xact_type::ActiveModel,
             LedgerXactTypeCode,
-        > + ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
-        + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
-        + ResourceOperations<
+        > + RepositoryOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
+        + RepositoryOperations<external::account::Model, external::account::ActiveModel, AccountId>
+        + RepositoryOperations<
             external::account::transaction::Model,
             external::account::transaction::ActiveModel,
             AccountTransactionId,
-        > + ResourceOperations<
+        > + RepositoryOperations<
             external::transaction_type::Model,
             external::transaction_type::ActiveModel,
             ExternalXactTypeCode,
-        > + ResourceOperations<external::account::Model, external::account::ActiveModel, AccountId>
+        > + RepositoryOperations<external::account::Model, external::account::ActiveModel, AccountId>
         + Send
         + Sync
         + 'static,
@@ -232,7 +238,7 @@ where
                         xact_type_code: crate::domain::XactType::Dr,
                         amount: col.amount(),
                     };
-                    let atx = <R as ResourceOperations<
+                    let atx = <R as RepositoryOperations<
                         external::account::transaction::Model,
                         external::account::transaction::ActiveModel,
                         AccountTransactionId,
@@ -246,7 +252,7 @@ where
                     };
                     let mut model = *inner;
                     model.posting_ref = Some(AccountPostingRef { key });
-                    let _ = <R as ResourceOperations<
+                    let _ = <R as RepositoryOperations<
                         journal::transaction::column::account_dr::Model,
                         journal::transaction::column::account_dr::ActiveModel,
                         JournalTransactionColumnId,
@@ -262,7 +268,7 @@ where
                         xact_type_code: crate::domain::XactType::Cr,
                         amount: col.amount(),
                     };
-                    let atx = <R as ResourceOperations<
+                    let atx = <R as RepositoryOperations<
                         external::account::transaction::Model,
                         external::account::transaction::ActiveModel,
                         AccountTransactionId,
@@ -276,7 +282,7 @@ where
                     };
                     let mut model = *inner;
                     model.posting_ref = Some(AccountPostingRef { key });
-                    let _ = <R as ResourceOperations<
+                    let _ = <R as RepositoryOperations<
                         journal::transaction::column::account_cr::Model,
                         journal::transaction::column::account_cr::ActiveModel,
                         JournalTransactionColumnId,
@@ -363,7 +369,7 @@ where
         ids: &Vec<JournalTransactionId>,
     ) -> Result<bool, ServiceError> {
         let journal_transactions =
-            <R as ResourceOperations<
+            <R as RepositoryOperations<
                 journal::transaction::special::Model,
                 journal::transaction::special::ActiveModel,
                 JournalTransactionId,
@@ -379,14 +385,14 @@ where
             .map(|tx| tx.id())
             .collect::<Vec<JournalTransactionId>>();
         let mut transaction_columns =
-            <R as ResourceOperations<
+            <R as RepositoryOperations<
                 journal::transaction::special::column::Model,
                 journal::transaction::special::column::ActiveModel,
                 JournalTransactionId,
             >>::get(SpecialJournalTransactionService::store(self), Some(&tx_ids))
             .await?;
         let journal =
-            <R as ResourceOperations<journal::Model, journal::ActiveModel, JournalId>>::get(
+            <R as RepositoryOperations<journal::Model, journal::ActiveModel, JournalId>>::get(
                 SpecialJournalTransactionService::store(self),
                 Some(&vec![journal_id]),
             )
@@ -433,7 +439,7 @@ where
             timestamp: now,
         };
         let transaction_totals =
-            <R as ResourceOperations<
+            <R as RepositoryOperations<
                 journal::transaction::special::summary::Model,
                 journal::transaction::special::summary::ActiveModel,
                 JournalTransactionId,
@@ -477,7 +483,7 @@ where
                 posting_ref_dr: ref_dr,
             };
             let column_total =
-                <R as ResourceOperations<
+                <R as RepositoryOperations<
                     journal::transaction::special::column::sum::Model,
                     journal::transaction::special::column::sum::ActiveModel,
                     ColumnTotalId,
@@ -507,7 +513,7 @@ where
 
             col.column_total_id = Some(column_total.id);
             col.state = TransactionState::Posted;
-            let _ = <R as ResourceOperations<
+            let _ = <R as RepositoryOperations<
                 journal::transaction::special::column::Model,
                 journal::transaction::special::column::ActiveModel,
                 JournalTransactionId,
@@ -523,7 +529,7 @@ where
         id: JournalTransactionId,
         sequence: Sequence,
     ) -> Result<journal::transaction::special::column::sum::ActiveModel, ServiceError> {
-        let cols = <R as ResourceOperations<
+        let cols = <R as RepositoryOperations<
             journal::transaction::special::column::Model,
             journal::transaction::special::column::ActiveModel,
             JournalTransactionId,
@@ -547,7 +553,7 @@ where
                         )))
                     }
                 };
-                let col_total = <R as ResourceOperations<
+                let col_total = <R as RepositoryOperations<
                     journal::transaction::special::column::sum::Model,
                     journal::transaction::special::column::sum::ActiveModel,
                     ColumnTotalId,

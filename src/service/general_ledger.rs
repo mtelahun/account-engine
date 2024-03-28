@@ -6,7 +6,7 @@ use crate::{
         ArrayString128, ArrayString24, ArrayString3, GeneralLedgerId, LedgerId, PeriodId,
     },
     infrastructure::data::db_context::{
-        memory::MemoryStore, postgres::PostgresStore, repository_operations::ResourceOperations,
+        memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{
         account_engine::AccountEngine,
@@ -23,14 +23,17 @@ use super::{Ledger, LedgerAccount, ServiceError};
 pub trait GeneralLedgerService<R>
 where
     R: Store
-        + ResourceOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
-        + ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>
-        + ResourceOperations<ledger::derived::Model, ledger::derived::ActiveModel, LedgerId>
-        + ResourceOperations<ledger::intermediate::Model, ledger::intermediate::ActiveModel, LedgerId>
-        + ResourceOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, LedgerId>
-        + ResourceOperations<journal::Model, journal::ActiveModel, JournalId>
-        + ResourceOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
-        + ResourceOperations<
+        + RepositoryOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
+        + RepositoryOperations<ledger::Model, ledger::ActiveModel, LedgerId>
+        + RepositoryOperations<ledger::derived::Model, ledger::derived::ActiveModel, LedgerId>
+        + RepositoryOperations<
+            ledger::intermediate::Model,
+            ledger::intermediate::ActiveModel,
+            LedgerId,
+        > + RepositoryOperations<ledger::leaf::Model, ledger::leaf::ActiveModel, LedgerId>
+        + RepositoryOperations<journal::Model, journal::ActiveModel, JournalId>
+        + RepositoryOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
+        + RepositoryOperations<
             accounting_period::interim_period::Model,
             accounting_period::interim_period::ActiveModel,
             InterimPeriodId,
@@ -111,17 +114,18 @@ where
         &self,
         ids: Option<&Vec<LedgerId>>,
     ) -> Result<Vec<LedgerAccount>, ServiceError> {
-        let ledgers = <R as ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId>>::get(
-            self.store(),
-            ids,
-        )
-        .await?;
+        let ledgers =
+            <R as RepositoryOperations<ledger::Model, ledger::ActiveModel, LedgerId>>::get(
+                self.store(),
+                ids,
+            )
+            .await?;
 
         let mut res = Vec::new();
         for ledger in ledgers {
             match ledger.ledger_type {
                 LedgerType::Derived => {
-                    let rows = <R as ResourceOperations<
+                    let rows = <R as RepositoryOperations<
                         ledger::derived::Model,
                         ledger::derived::ActiveModel,
                         LedgerId,
@@ -132,7 +136,7 @@ where
                     ))
                 }
                 LedgerType::Intermediate => {
-                    let rows = <R as ResourceOperations<
+                    let rows = <R as RepositoryOperations<
                         ledger::intermediate::Model,
                         ledger::intermediate::ActiveModel,
                         LedgerId,
@@ -146,7 +150,7 @@ where
                     )))
                 }
                 LedgerType::Leaf => {
-                    let rows = <R as ResourceOperations<
+                    let rows = <R as RepositoryOperations<
                         ledger::leaf::Model,
                         ledger::leaf::ActiveModel,
                         LedgerId,
@@ -181,7 +185,7 @@ where
         ids: Option<&Vec<JournalId>>,
     ) -> Result<Vec<journal::ActiveModel>, ServiceError> {
         Ok(
-            <R as ResourceOperations<journal::Model, journal::ActiveModel, JournalId>>::get(
+            <R as RepositoryOperations<journal::Model, journal::ActiveModel, JournalId>>::get(
                 self.store(),
                 ids,
             )
@@ -230,7 +234,7 @@ where
         &self,
         ids: Option<&Vec<PeriodId>>,
     ) -> Result<Vec<accounting_period::ActiveModel>, ServiceError> {
-        Ok(<R as ResourceOperations<
+        Ok(<R as RepositoryOperations<
             accounting_period::Model,
             accounting_period::ActiveModel,
             PeriodId,

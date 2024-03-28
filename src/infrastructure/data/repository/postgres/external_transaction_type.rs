@@ -4,7 +4,7 @@ use tokio_postgres::Row;
 use crate::{
     domain::ExternalXactTypeCode,
     infrastructure::data::db_context::{
-        error::OrmError, postgres::PostgresStore, repository_operations::ResourceOperations,
+        error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::external,
@@ -12,7 +12,7 @@ use crate::{
 
 #[async_trait]
 impl
-    ResourceOperations<
+    RepositoryOperations<
         external::transaction_type::Model,
         external::transaction_type::ActiveModel,
         ExternalXactTypeCode,

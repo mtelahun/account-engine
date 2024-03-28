@@ -6,14 +6,14 @@ use tokio_postgres::Row;
 use crate::{
     domain::ids::PeriodId,
     infrastructure::data::db_context::{
-        error::OrmError, postgres::PostgresStore, repository_operations::ResourceOperations,
+        error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::accounting_period,
 };
 
 #[async_trait]
-impl ResourceOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
+impl RepositoryOperations<accounting_period::Model, accounting_period::ActiveModel, PeriodId>
     for PostgresStore
 {
     async fn insert(

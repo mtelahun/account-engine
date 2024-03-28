@@ -6,12 +6,12 @@ use tokio_postgres::Row;
 use crate::domain::{ArrayString128, GeneralLedgerId};
 use crate::infrastructure::data::db_context::error::OrmError;
 use crate::infrastructure::data::db_context::postgres::PostgresStore;
-use crate::infrastructure::data::db_context::repository_operations::ResourceOperations;
+use crate::infrastructure::data::db_context::repository_operations::RepositoryOperations;
 use crate::infrastructure::data::db_context::resource::Resource;
 use crate::resource::general_ledger;
 
 #[async_trait]
-impl ResourceOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
+impl RepositoryOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
     for PostgresStore
 {
     async fn insert(

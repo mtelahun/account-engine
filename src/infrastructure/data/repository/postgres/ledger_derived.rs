@@ -4,14 +4,14 @@ use tokio_postgres::Row;
 use crate::{
     domain::LedgerId,
     infrastructure::data::db_context::{
-        error::OrmError, postgres::PostgresStore, repository_operations::ResourceOperations,
+        error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::ledger,
 };
 
 #[async_trait]
-impl ResourceOperations<ledger::derived::Model, ledger::derived::ActiveModel, LedgerId>
+impl RepositoryOperations<ledger::derived::Model, ledger::derived::ActiveModel, LedgerId>
     for PostgresStore
 {
     async fn get(

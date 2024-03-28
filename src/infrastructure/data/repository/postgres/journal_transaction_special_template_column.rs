@@ -4,7 +4,7 @@ use tokio_postgres::Row;
 use crate::{
     domain::{Sequence, TemplateColumnId},
     infrastructure::data::db_context::{
-        error::OrmError, postgres::PostgresStore, repository_operations::ResourceOperations,
+        error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::journal,
@@ -12,7 +12,7 @@ use crate::{
 
 #[async_trait]
 impl
-    ResourceOperations<
+    RepositoryOperations<
         journal::transaction::special::template::column::Model,
         journal::transaction::special::template::column::ActiveModel,
         TemplateColumnId,

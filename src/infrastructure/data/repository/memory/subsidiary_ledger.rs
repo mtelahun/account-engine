@@ -3,13 +3,13 @@ use async_trait::async_trait;
 use crate::{
     domain::SubLedgerId,
     infrastructure::data::db_context::{
-        error::OrmError, memory::MemoryStore, repository_operations::ResourceOperations,
+        error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::subsidiary_ledger,
 };
 
 #[async_trait]
-impl ResourceOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
+impl RepositoryOperations<subsidiary_ledger::Model, subsidiary_ledger::ActiveModel, SubLedgerId>
     for MemoryStore
 {
     async fn insert(

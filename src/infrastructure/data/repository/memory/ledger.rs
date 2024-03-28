@@ -3,13 +3,13 @@ use async_trait::async_trait;
 use crate::{
     domain::LedgerId,
     infrastructure::data::db_context::{
-        error::OrmError, memory::MemoryStore, repository_operations::ResourceOperations,
+        error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::ledger,
 };
 
 #[async_trait]
-impl ResourceOperations<ledger::Model, ledger::ActiveModel, LedgerId> for MemoryStore {
+impl RepositoryOperations<ledger::Model, ledger::ActiveModel, LedgerId> for MemoryStore {
     async fn insert(&self, model: &ledger::Model) -> Result<ledger::ActiveModel, OrmError> {
         let ledger = ledger::ActiveModel {
             id: LedgerId::new(),

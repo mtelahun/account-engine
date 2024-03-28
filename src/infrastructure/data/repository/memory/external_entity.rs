@@ -5,18 +5,18 @@ use crate::{
         error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::external,
-    shared_kernel::ids::EntityId,
+    shared_kernel::ids::ExternalEntityId,
 };
 
 #[async_trait]
-impl RepositoryOperations<external::entity::Model, external::entity::ActiveModel, EntityId>
+impl RepositoryOperations<external::entity::Model, external::entity::ActiveModel, ExternalEntityId>
     for MemoryStore
 {
     async fn insert(
         &self,
         model: &external::entity::Model,
     ) -> Result<external::entity::ActiveModel, OrmError> {
-        let id = EntityId::new();
+        let id = ExternalEntityId::new();
         let entity = external::entity::ActiveModel {
             id,
             entity_type_code: model.entity_type_code,
@@ -37,7 +37,7 @@ impl RepositoryOperations<external::entity::Model, external::entity::ActiveModel
 
     async fn get(
         &self,
-        ids: Option<&Vec<EntityId>>,
+        ids: Option<&Vec<ExternalEntityId>>,
     ) -> Result<Vec<external::entity::ActiveModel>, OrmError> {
         let mut res = Vec::<external::entity::ActiveModel>::new();
         let inner = self.inner.read().await;
@@ -80,7 +80,7 @@ impl RepositoryOperations<external::entity::Model, external::entity::ActiveModel
         )));
     }
 
-    async fn delete(&self, id: EntityId) -> Result<u64, OrmError> {
+    async fn delete(&self, id: ExternalEntityId) -> Result<u64, OrmError> {
         let mut inner = self.inner.write().await;
         match inner.external_entity.remove(&id) {
             Some(_) => return Ok(1),
@@ -88,11 +88,11 @@ impl RepositoryOperations<external::entity::Model, external::entity::ActiveModel
         }
     }
 
-    async fn archive(&self, _id: EntityId) -> Result<u64, OrmError> {
+    async fn archive(&self, _id: ExternalEntityId) -> Result<u64, OrmError> {
         todo!()
     }
 
-    async fn unarchive(&self, _id: EntityId) -> Result<u64, OrmError> {
+    async fn unarchive(&self, _id: ExternalEntityId) -> Result<u64, OrmError> {
         todo!()
     }
 }

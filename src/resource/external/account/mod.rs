@@ -2,7 +2,7 @@ use chrono::{NaiveDate, NaiveDateTime};
 use postgres_types::{FromSql, ToSql};
 
 use crate::shared_kernel::{
-    ids::{AccountId, EntityId},
+    ids::{AccountId, ExternalEntityId},
     ArrayString128, ArrayString24, SubLedgerId,
 };
 
@@ -18,7 +18,7 @@ pub struct SubsidiaryLedgerKey {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Model {
     pub subledger_id: SubLedgerId,
-    pub entity_id: EntityId,
+    pub entity_id: ExternalEntityId,
     pub account_no: ArrayString24,
     pub name: ArrayString128,
     pub date_opened: NaiveDate,
@@ -28,7 +28,7 @@ pub struct Model {
 pub struct ActiveModel {
     pub id: AccountId,
     pub subledger_id: SubLedgerId,
-    pub entity_id: EntityId,
+    pub entity_id: ExternalEntityId,
     pub account_no: ArrayString24,
     pub name: ArrayString128,
     pub date_opened: NaiveDate,

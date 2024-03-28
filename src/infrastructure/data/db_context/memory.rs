@@ -14,7 +14,7 @@ use crate::{
     shared_kernel::{
         composite_ids::JournalTransactionColumnId,
         entity_code::EntityCode,
-        ids::{EntityId, InterimPeriodId, JournalId},
+        ids::{ExternalEntityId, InterimPeriodId, JournalId},
         AccountId, AccountTransactionId, ArrayString128, ArrayString24, ArrayString3,
         ColumnTotalId, ExternalXactTypeCode, JournalTransactionId, LedgerXactTypeCode, PeriodId,
         Sequence, SpecialJournalTemplateId, SubLedgerId, TemplateColumnId,
@@ -77,7 +77,7 @@ pub(crate) struct Inner {
     pub(crate) external_account: HashMap<AccountId, external::account::ActiveModel>,
     pub(crate) external_account_transaction:
         HashMap<AccountTransactionId, external::account::transaction::ActiveModel>,
-    pub(crate) external_entity: HashMap<EntityId, external::entity::ActiveModel>,
+    pub(crate) external_entity: HashMap<ExternalEntityId, external::entity::ActiveModel>,
     pub(crate) entity_type: HashMap<EntityCode, external::entity_type::ActiveModel>,
 }
 
@@ -172,7 +172,7 @@ impl Inner {
                 AccountTransactionId,
                 external::account::transaction::ActiveModel,
             >::new(),
-            external_entity: HashMap::<EntityId, external::entity::ActiveModel>::new(),
+            external_entity: HashMap::<ExternalEntityId, external::entity::ActiveModel>::new(),
             entity_type: HashMap::<EntityCode, external::entity_type::ActiveModel>::new(),
         };
         let code = LedgerXactTypeCode::from_str("LL").unwrap();

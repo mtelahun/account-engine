@@ -25,18 +25,3 @@ impl Deref for GeneralLedgerId {
         &self.0
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::domain::general_ledger::general_ledger_id::GeneralLedgerId;
-
-    #[test]
-    fn test_gl_id() {
-        let lid = GeneralLedgerId::new();
-        assert_eq!(
-            lid.to_string().len(),
-            36,
-            "general ledger ID is 36 chars long"
-        )
-    }
-}

@@ -4,22 +4,21 @@ use async_trait::async_trait;
 use tokio::sync::RwLock;
 
 use crate::{
-    domain::{
-        composite_ids::JournalTransactionColumnId,
-        entity_code::EntityCode,
-        ids::{EntityId, InterimPeriodId, JournalId},
-        AccountId, AccountTransactionId, ArrayString128, ArrayString24, ArrayString3,
-        ColumnTotalId, ExternalXactTypeCode, GeneralLedgerId, JournalTransactionId, LedgerId,
-        LedgerXactTypeCode, PeriodId, Sequence, SpecialJournalTemplateId, SubLedgerId,
-        TemplateColumnId,
-    },
+    domain::general_ledger::{general_ledger_id::GeneralLedgerId, ledger_id::LedgerId},
+    infrastructure::data::db_context::error::OrmError,
     resource::{
         accounting_period, external, general_ledger,
         journal::{self, transaction::TransactionState},
         ledger::{self, journal_entry::LedgerKey, LedgerType},
         ledger_xact_type, organization, subsidiary_ledger,
     },
-    store::OrmError,
+    shared_kernel::{
+        ids::{ExternalEntityId, InterimPeriodId},
+        AccountId, AccountTransactionId, ArrayString128, ArrayString24, ArrayString3,
+        ColumnTotalId, EntityCode, ExternalXactTypeCode, JournalId, JournalTransactionColumnId,
+        JournalTransactionId, LedgerXactTypeCode, PeriodId, Sequence, SpecialJournalTemplateId,
+        SubLedgerId, TemplateColumnId,
+    },
     Store,
 };
 
@@ -76,7 +75,7 @@ pub(crate) struct Inner {
     pub(crate) external_account: HashMap<AccountId, external::account::ActiveModel>,
     pub(crate) external_account_transaction:
         HashMap<AccountTransactionId, external::account::transaction::ActiveModel>,
-    pub(crate) external_entity: HashMap<EntityId, external::entity::ActiveModel>,
+    pub(crate) external_entity: HashMap<ExternalEntityId, external::entity::ActiveModel>,
     pub(crate) entity_type: HashMap<EntityCode, external::entity_type::ActiveModel>,
 }
 
@@ -171,7 +170,7 @@ impl Inner {
                 AccountTransactionId,
                 external::account::transaction::ActiveModel,
             >::new(),
-            external_entity: HashMap::<EntityId, external::entity::ActiveModel>::new(),
+            external_entity: HashMap::<ExternalEntityId, external::entity::ActiveModel>::new(),
             entity_type: HashMap::<EntityCode, external::entity_type::ActiveModel>::new(),
         };
         let code = LedgerXactTypeCode::from_str("LL").unwrap();

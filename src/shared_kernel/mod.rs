@@ -4,6 +4,7 @@ pub mod array_long_string;
 pub mod array_short_string;
 pub mod composite_ids;
 pub mod entity_code;
+pub mod entity_id;
 pub mod external_xact_type_code;
 pub mod fixed_len_char;
 pub mod ids;
@@ -23,10 +24,11 @@ pub use array_long_string::ArrayString128;
 pub use array_short_string::ArrayString24;
 pub use composite_ids::{AccountTransactionId, JournalTransactionColumnId, JournalTransactionId};
 pub use entity_code::EntityCode;
+pub use entity_id::EntityId;
 pub use external_xact_type_code::ExternalXactTypeCode;
 pub use fixed_len_char::FixedLenChar;
 pub use ids::{
-    AccountId, ColumnTotalId, EntityId, JournalId, JournalRefId, JournalTypeId, PeriodId,
+    AccountId, ColumnTotalId, JournalId, JournalRefId, JournalTypeId, PeriodId,
     SpecialJournalColId, SpecialJournalTemplateId, SubLedgerId, TemplateColumnId,
 };
 pub use ledger_xact_type_code::{LedgerXactTypeCode, XACT_ACCOUNT, XACT_LEDGER};

@@ -7,11 +7,11 @@ use crate::{
         resource::Resource,
     },
     resource::external,
-    shared_kernel::EntityId,
+    shared_kernel::ids::ExternalEntityId,
 };
 
 #[async_trait]
-impl RepositoryOperations<external::entity::Model, external::entity::ActiveModel, EntityId>
+impl RepositoryOperations<external::entity::Model, external::entity::ActiveModel, ExternalEntityId>
     for PostgresStore
 {
     async fn insert(
@@ -26,7 +26,11 @@ impl RepositoryOperations<external::entity::Model, external::entity::ActiveModel
         let res = conn
             .query_one(
                 &query,
-                &[&EntityId::new(), &model.entity_type_code, &model.name],
+                &[
+                    &ExternalEntityId::new(),
+                    &model.entity_type_code,
+                    &model.name,
+                ],
             )
             .await
             .map_err(|e| OrmError::Internal(e.to_string()))?;
@@ -36,7 +40,7 @@ impl RepositoryOperations<external::entity::Model, external::entity::ActiveModel
 
     async fn get(
         &self,
-        ids: Option<&Vec<EntityId>>,
+        ids: Option<&Vec<ExternalEntityId>>,
     ) -> Result<Vec<external::entity::ActiveModel>, OrmError> {
         let search_one = format!(
             "SELECT * FROM {} WHERE id in $1::EntityId",
@@ -77,7 +81,7 @@ impl RepositoryOperations<external::entity::Model, external::entity::ActiveModel
         .map_err(|e| OrmError::Internal(e.to_string()))
     }
 
-    async fn delete(&self, id: EntityId) -> Result<u64, OrmError> {
+    async fn delete(&self, id: ExternalEntityId) -> Result<u64, OrmError> {
         let conn = self.get_connection().await?;
         let query = format!(
             "DELETE FROM {} WHERE id = $1::EntityId;",
@@ -89,11 +93,11 @@ impl RepositoryOperations<external::entity::Model, external::entity::ActiveModel
             .map_err(|e| OrmError::Internal(e.to_string()))
     }
 
-    async fn archive(&self, _id: EntityId) -> Result<u64, OrmError> {
+    async fn archive(&self, _id: ExternalEntityId) -> Result<u64, OrmError> {
         todo!()
     }
 
-    async fn unarchive(&self, _id: EntityId) -> Result<u64, OrmError> {
+    async fn unarchive(&self, _id: ExternalEntityId) -> Result<u64, OrmError> {
         todo!()
     }
 }

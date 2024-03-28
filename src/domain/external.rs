@@ -6,7 +6,9 @@ use crate::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{account_engine::AccountEngine, external},
-    shared_kernel::{AccountId, ArrayString128, ArrayString24, EntityCode, EntityId, SubLedgerId},
+    shared_kernel::{
+        ids::ExternalEntityId, AccountId, ArrayString128, ArrayString24, EntityCode, SubLedgerId,
+    },
     Store,
 };
 
@@ -17,8 +19,11 @@ pub trait ExternalService<R>
 where
     R: Store
         + RepositoryOperations<external::account::Model, external::account::ActiveModel, AccountId>
-        + RepositoryOperations<external::entity::Model, external::entity::ActiveModel, EntityId>
         + RepositoryOperations<
+            external::entity::Model,
+            external::entity::ActiveModel,
+            ExternalEntityId,
+        > + RepositoryOperations<
             external::entity_type::Model,
             external::entity_type::ActiveModel,
             EntityCode,
@@ -63,7 +68,7 @@ pub struct ExternalEntityBuilder(external::entity::Model);
 impl ExternalAccountBuilder {
     pub fn new(
         subledger_id: &SubLedgerId,
-        entity_id: &EntityId,
+        entity_id: &ExternalEntityId,
         account_no: ArrayString24,
         name: ArrayString128,
         date_opened: NaiveDate,
@@ -93,7 +98,7 @@ impl ExternalAccount {
         self.0.date_opened
     }
 
-    pub fn entity_id(&self) -> EntityId {
+    pub fn entity_id(&self) -> ExternalEntityId {
         self.0.entity_id
     }
 
@@ -140,7 +145,7 @@ impl ExternalEntityBuilder {
 }
 
 impl ExternalEntity {
-    pub fn id(&self) -> EntityId {
+    pub fn id(&self) -> ExternalEntityId {
         self.0.id
     }
 

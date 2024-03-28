@@ -1,5 +1,5 @@
 -- Add migration script here
-CREATE DOMAIN EntityId AS UUID;
+CREATE DOMAIN ExternalEntityId AS UUID;
 
 CREATE TABLE entity_type(
     code CHAR(2) NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE entity_type(
 );
 
 CREATE TABLE external_entity(
-    id EntityId NOT NULL,
+    id ExternalEntityId NOT NULL,
     entity_type_code CHAR(2),
     name TEXT NOT NULL,
     PRIMARY KEY(id)
@@ -24,7 +24,7 @@ CREATE TABLE external_account_type(
 CREATE TABLE external_account(
     id AccountId NOT NULL,
     subsidiary_ledger_id SubLedgerId NOT NULL,
-    external_entity_id EntityId NOT NULL,
+    external_entity_id ExternalEntityId NOT NULL,
     account_no TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL UNIQUE,
     date_opened DATE,

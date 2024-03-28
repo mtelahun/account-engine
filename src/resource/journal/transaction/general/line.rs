@@ -2,8 +2,8 @@ use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
 use crate::{
-    domain::{ids::JournalId, JournalTransactionId, LedgerId},
     resource::{LedgerPostingRef, TransactionState},
+    shared_kernel::{ids::JournalId, JournalTransactionId, LedgerId},
 };
 
 #[derive(Clone, Copy, Debug, Default)]

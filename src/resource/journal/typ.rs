@@ -1,4 +1,4 @@
-use crate::domain::{ids::JournalTypeId, ArrayString128};
+use crate::shared_kernel::{ids::JournalTypeId, ArrayString128};
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub struct Model {

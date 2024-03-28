@@ -1,4 +1,4 @@
-use crate::domain::{account_type::AccountType, ArrayString128, XactType};
+use crate::shared_kernel::{account_type::AccountType, ArrayString128, XactType};
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct Model {

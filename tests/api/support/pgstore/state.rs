@@ -2,8 +2,13 @@ use std::str::FromStr;
 
 use account_engine::{
     domain::{
-        AccountId, ArrayString128, ArrayString3, JournalId, LedgerId, Sequence,
-        SpecialJournalTemplateId, XactType,
+        external::{
+            EntityTypeBuilder, ExternalAccount, ExternalAccountBuilder, ExternalEntityBuilder,
+            ExternalEntityType, ExternalService,
+        },
+        journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
+        GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
+        SpecialJournalService, SubsidiaryLedgerService,
     },
     infrastructure::data::db_context::postgres::PostgresStore,
     resource::{
@@ -12,14 +17,9 @@ use account_engine::{
         journal::{self, transaction::JournalTransactionColumnType},
         subsidiary_ledger, LedgerType,
     },
-    service::{
-        external::{
-            EntityTypeBuilder, ExternalAccount, ExternalAccountBuilder, ExternalEntityBuilder,
-            ExternalEntityType, ExternalService,
-        },
-        journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
-        GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
-        SpecialJournalService, SubsidiaryLedgerService,
+    shared_kernel::{
+        AccountId, ArrayString128, ArrayString3, JournalId, LedgerId, Sequence,
+        SpecialJournalTemplateId, XactType,
     },
 };
 use chrono::NaiveDate;

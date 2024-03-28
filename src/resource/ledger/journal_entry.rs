@@ -5,10 +5,10 @@ use postgres_types::{FromSql, ToSql};
 use rust_decimal::Decimal;
 
 use crate::{
-    domain::{
+    resource::ledger,
+    shared_kernel::{
         xact_type::XactType, JournalTransactionId, LedgerId, LedgerXactTypeCode, XACT_LEDGER,
     },
-    resource::ledger,
 };
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, ToSql, FromSql)]

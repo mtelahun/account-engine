@@ -6,8 +6,13 @@ use std::str::FromStr;
 
 use account_engine::{
     domain::{
-        AccountId, ArrayString128, ArrayString24, ArrayString3, ExternalXactTypeCode, JournalId,
-        JournalTransactionId, LedgerId, Sequence, SpecialJournalTemplateId, SubLedgerId, XactType,
+        external::{
+            EntityTypeBuilder, ExternalAccount, ExternalAccountBuilder, ExternalEntityBuilder,
+            ExternalEntityType, ExternalService,
+        },
+        journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
+        GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
+        SpecialJournalService, SpecialJournalTransactionService, SubsidiaryLedgerService,
     },
     infrastructure::data::db_context::memory::MemoryStore,
     resource::{
@@ -16,14 +21,9 @@ use account_engine::{
         journal::{self, transaction::JournalTransactionColumnType, LedgerAccountPostingRef},
         ledger, subsidiary_ledger, LedgerKey, LedgerType,
     },
-    service::{
-        external::{
-            EntityTypeBuilder, ExternalAccount, ExternalAccountBuilder, ExternalEntityBuilder,
-            ExternalEntityType, ExternalService,
-        },
-        journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
-        GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
-        SpecialJournalService, SpecialJournalTransactionService, SubsidiaryLedgerService,
+    shared_kernel::{
+        AccountId, ArrayString128, ArrayString24, ArrayString3, ExternalXactTypeCode, JournalId,
+        JournalTransactionId, LedgerId, Sequence, SpecialJournalTemplateId, SubLedgerId, XactType,
     },
 };
 

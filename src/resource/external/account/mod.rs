@@ -1,7 +1,7 @@
 use chrono::{NaiveDate, NaiveDateTime};
 use postgres_types::{FromSql, ToSql};
 
-use crate::domain::{
+use crate::shared_kernel::{
     ids::{AccountId, EntityId},
     ArrayString128, ArrayString24, SubLedgerId,
 };

@@ -1,6 +1,6 @@
 use postgres_types::{FromSql, ToSql};
 
-use crate::domain::{ArrayString128, LedgerId, SubLedgerId};
+use crate::shared_kernel::{ArrayString128, LedgerId, SubLedgerId};
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, ToSql, FromSql)]
 pub struct Model {

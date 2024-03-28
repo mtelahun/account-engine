@@ -1,15 +1,17 @@
 pub mod domain;
 pub mod infrastructure;
 pub mod resource;
-pub mod service;
+pub mod shared_kernel;
 
 use async_trait::async_trait;
-use domain::{ArrayString24, JournalTransactionId, LedgerId, Sequence, SpecialJournalTemplateId};
 use infrastructure::data::db_context::error::OrmError;
 use resource::{
     accounting_period, journal,
     ledger::{self, transaction},
     organization,
+};
+use shared_kernel::{
+    ArrayString24, JournalTransactionId, LedgerId, Sequence, SpecialJournalTemplateId,
 };
 
 #[async_trait]

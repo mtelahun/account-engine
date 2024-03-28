@@ -1,4 +1,4 @@
-use crate::domain::{ArrayString128, ExternalXactTypeCode};
+use crate::shared_kernel::{ArrayString128, ExternalXactTypeCode};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Model {

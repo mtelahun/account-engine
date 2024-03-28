@@ -17,7 +17,7 @@ pub use ledger::journal_entry::LedgerKey;
 pub use ledger::LedgerType;
 use rust_decimal::Decimal;
 
-use crate::domain::XactType;
+use crate::shared_kernel::XactType;
 
 pub struct AccountBalance {
     pub amount: Decimal,

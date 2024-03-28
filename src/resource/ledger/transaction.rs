@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
-use crate::domain::{JournalTransactionId, LedgerId, LedgerXactTypeCode};
+use crate::shared_kernel::{JournalTransactionId, LedgerId, LedgerXactTypeCode};
 
 use super::journal_entry::LedgerKey;
 
@@ -35,7 +35,7 @@ impl ActiveModel {
 pub mod ledger {
     use chrono::NaiveDateTime;
 
-    use crate::{domain::LedgerId, resource::ledger::journal_entry::LedgerKey};
+    use crate::{resource::ledger::journal_entry::LedgerKey, shared_kernel::LedgerId};
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct Model {
@@ -65,8 +65,8 @@ pub mod account {
     use chrono::NaiveDateTime;
 
     use crate::{
-        domain::{AccountId, ExternalXactTypeCode, LedgerId, XactType},
         resource::ledger::journal_entry::LedgerKey,
+        shared_kernel::{AccountId, ExternalXactTypeCode, LedgerId, XactType},
     };
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]

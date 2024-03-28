@@ -1,4 +1,4 @@
-use crate::domain::{ArrayString128, SpecialJournalTemplateId};
+use crate::shared_kernel::{ArrayString128, SpecialJournalTemplateId};
 
 pub mod column;
 

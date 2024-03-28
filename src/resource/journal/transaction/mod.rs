@@ -2,8 +2,8 @@ use chrono::NaiveDateTime;
 use postgres_types::{FromSql, ToSql};
 
 use crate::{
-    domain::{AccountId, ArrayString128, JournalId, JournalTransactionId, LedgerId},
     resource::{LedgerKey, SubsidiaryLedgerKey},
+    shared_kernel::{AccountId, ArrayString128, JournalId, JournalTransactionId, LedgerId},
 };
 
 pub mod column;

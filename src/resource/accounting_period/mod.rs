@@ -3,8 +3,8 @@ use chronoutil::RelativeDuration;
 use postgres_types::{FromSql, ToSql};
 
 use crate::{
-    domain::ids::{InterimPeriodId, PeriodId},
     infrastructure::data::db_context::repository_operations::RepositoryOperations,
+    shared_kernel::ids::{InterimPeriodId, PeriodId},
 };
 
 pub mod interim_period;

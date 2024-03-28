@@ -1,8 +1,8 @@
 use rust_decimal::Decimal;
 
 use crate::{
-    domain::{ColumnTotalId, JournalTransactionId, Sequence},
     resource::LedgerPostingRef,
+    shared_kernel::{ColumnTotalId, JournalTransactionId, Sequence},
 };
 
 #[derive(Clone, Copy, Debug)]

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::{ids::JournalId, JournalTransactionId, LedgerId, LedgerXactTypeCode},
+    domain::{GeneralJournalService, ServiceError},
     infrastructure::data::db_context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
@@ -9,7 +9,7 @@ use crate::{
         account_engine::AccountEngine, journal, ledger, ledger_xact_type, LedgerKey,
         LedgerPostingRef, TransactionState,
     },
-    service::{GeneralJournalService, ServiceError},
+    shared_kernel::{ids::JournalId, JournalTransactionId, LedgerId, LedgerXactTypeCode},
     Store,
 };
 

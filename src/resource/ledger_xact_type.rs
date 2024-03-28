@@ -1,4 +1,4 @@
-use crate::domain::{ArrayString128, LedgerXactTypeCode};
+use crate::shared_kernel::{ArrayString128, LedgerXactTypeCode};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Model {

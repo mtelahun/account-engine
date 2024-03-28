@@ -1,10 +1,10 @@
 use crate::{
-    domain::{
+    domain::ServiceError,
+    infrastructure::data::db_context::repository_operations::RepositoryOperations,
+    shared_kernel::{
         composite_ids::JournalTransactionColumnId, ids::JournalId, AccountId, GeneralLedgerId,
         JournalTransactionId, LedgerId, LedgerXactTypeCode, PeriodId, SubLedgerId,
     },
-    infrastructure::data::db_context::repository_operations::RepositoryOperations,
-    service::ServiceError,
     Store,
 };
 

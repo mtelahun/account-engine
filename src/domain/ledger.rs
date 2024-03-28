@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use journal_entry::LedgerKey;
 
 use crate::{
-    domain::{ArrayString128, ArrayString24, ArrayString3, LedgerId, XactType},
     infrastructure::data::db_context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
@@ -11,6 +10,7 @@ use crate::{
         ledger::{self, journal_entry, LedgerType},
         AccountBalance, LedgerPostingRef,
     },
+    shared_kernel::{ArrayString128, ArrayString24, ArrayString3, LedgerId, XactType},
     Store,
 };
 

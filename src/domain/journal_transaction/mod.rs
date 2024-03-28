@@ -2,13 +2,13 @@ use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
 use crate::{
-    domain::{
-        AccountId, ArrayString128, ColumnTotalId, ExternalXactTypeCode, JournalId,
-        JournalTransactionColumnId, JournalTransactionId, LedgerId, SpecialJournalTemplateId,
-    },
     resource::journal::{
         self,
         transaction::{AccountPostingRef, JournalTransactionColumnType},
+    },
+    shared_kernel::{
+        AccountId, ArrayString128, ColumnTotalId, ExternalXactTypeCode, JournalId,
+        JournalTransactionColumnId, JournalTransactionId, LedgerId, SpecialJournalTemplateId,
     },
 };
 

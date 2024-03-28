@@ -1,6 +1,6 @@
 use chrono::NaiveDateTime;
 
-use crate::domain::{ids::JournalId, ArrayString128, JournalTransactionId};
+use crate::shared_kernel::{ids::JournalId, ArrayString128, JournalTransactionId};
 
 pub mod line;
 

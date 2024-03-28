@@ -2,11 +2,11 @@ use async_trait::async_trait;
 use chrono::NaiveDate;
 
 use crate::{
-    domain::{AccountId, ArrayString128, ArrayString24, EntityCode, EntityId, SubLedgerId},
     infrastructure::data::db_context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{account_engine::AccountEngine, external},
+    shared_kernel::{AccountId, ArrayString128, ArrayString24, EntityCode, EntityId, SubLedgerId},
     Store,
 };
 

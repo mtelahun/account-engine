@@ -1,4 +1,4 @@
-use account_engine::{domain::AccountId, service::LedgerAccount};
+use account_engine::{domain::LedgerAccount, shared_kernel::AccountId};
 use rust_decimal::Decimal;
 
 use super::{memstore::state::TestState, state_interface::StateInterface, CreateLedgerType};

@@ -1,8 +1,8 @@
 use crate::{
-    domain::{
+    resource::journal::transaction::JournalTransactionColumnType,
+    shared_kernel::{
         AccountId, ArrayString24, LedgerId, Sequence, SpecialJournalTemplateId, TemplateColumnId,
     },
-    resource::journal::transaction::JournalTransactionColumnType,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

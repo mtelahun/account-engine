@@ -1,12 +1,12 @@
 use account_engine::{
     domain::{
-        AccountId, ArrayString128, ExternalXactTypeCode, JournalTransactionId,
-        SpecialJournalTemplateId,
-    },
-    resource::{journal, subsidiary_ledger},
-    service::{
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
         LedgerAccount, ServiceError,
+    },
+    resource::{journal, subsidiary_ledger},
+    shared_kernel::{
+        AccountId, ArrayString128, ExternalXactTypeCode, JournalTransactionId,
+        SpecialJournalTemplateId,
     },
 };
 use chrono::NaiveDateTime;
@@ -86,7 +86,7 @@ impl<S: StateInterface + ServiceTestInterface> TestSpecialJournalTransaction<S> 
                 self.timestamp,
                 &self.template_id,
                 self.account_id,
-                account_engine::domain::XactType::Dr,
+                account_engine::shared_kernel::XactType::Dr,
                 &"DF".into(),
                 Decimal::from(100),
                 &self.explanation,

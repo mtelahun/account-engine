@@ -5,12 +5,12 @@ use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::{
-    domain::{ArrayString128, ArrayString24, LedgerId},
     infrastructure::data::db_context::{
         error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::ledger,
+    shared_kernel::{ArrayString128, ArrayString24, LedgerId},
 };
 
 #[async_trait]

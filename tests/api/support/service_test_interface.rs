@@ -1,15 +1,15 @@
 use account_engine::{
     domain::{
-        AccountId, ArrayString128, ExternalXactTypeCode, JournalId, JournalTransactionId, Sequence,
-        SpecialJournalTemplateId, XactType,
+        journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
+        ServiceError,
     },
     resource::{
         journal::{self, LedgerAccountPostingRef},
         ledger, LedgerKey,
     },
-    service::{
-        journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
-        ServiceError,
+    shared_kernel::{
+        AccountId, ArrayString128, ExternalXactTypeCode, JournalId, JournalTransactionId, Sequence,
+        SpecialJournalTemplateId, XactType,
     },
 };
 use chrono::NaiveDateTime;

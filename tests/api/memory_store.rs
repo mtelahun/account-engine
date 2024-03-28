@@ -1,5 +1,9 @@
 use account_engine::{
-    domain::{LedgerId, XactType},
+    domain::{
+        AccountingPeriodService, GeneralJournalService, GeneralLedgerService,
+        JournalTransactionService, LedgerAccount, LedgerService, ServiceError,
+        SpecialJournalService, SpecialJournalTransactionService,
+    },
     infrastructure::data::db_context::error::OrmError,
     resource::{
         accounting_period,
@@ -9,11 +13,7 @@ use account_engine::{
         },
         InterimType, LedgerType, TransactionState,
     },
-    service::{
-        AccountingPeriodService, GeneralJournalService, GeneralLedgerService,
-        JournalTransactionService, LedgerAccount, LedgerService, ServiceError,
-        SpecialJournalService, SpecialJournalTransactionService,
-    },
+    shared_kernel::{LedgerId, XactType},
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;

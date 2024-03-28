@@ -5,9 +5,8 @@ use chrono::NaiveDateTime;
 
 use crate::{
     domain::{
-        composite_ids::JournalTransactionColumnId, ids::JournalId, ledger_xact_type_code,
-        AccountId, ArrayString128, ExternalXactTypeCode, JournalTransactionId, LedgerId,
-        LedgerXactTypeCode, SpecialJournalTemplateId, TemplateColumnId,
+        journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
+        ServiceError,
     },
     infrastructure::data::db_context::{
         error::OrmError, memory::MemoryStore, postgres::PostgresStore,
@@ -19,9 +18,10 @@ use crate::{
         journal::{self, transaction::JournalTransactionColumnType},
         ledger, ledger_xact_type,
     },
-    service::{
-        journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
-        ServiceError,
+    shared_kernel::{
+        composite_ids::JournalTransactionColumnId, ids::JournalId, ledger_xact_type_code,
+        AccountId, ArrayString128, ExternalXactTypeCode, JournalTransactionId, LedgerId,
+        LedgerXactTypeCode, SpecialJournalTemplateId, TemplateColumnId,
     },
     Store,
 };

@@ -1,4 +1,4 @@
-use crate::domain::{ArrayString128, ArrayString24, ArrayString3};
+use crate::shared_kernel::{ArrayString128, ArrayString24, ArrayString3};
 
 use super::account_engine::EngineError;
 

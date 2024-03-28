@@ -1,6 +1,6 @@
 use postgres_types::{FromSql, ToSql};
 
-use crate::domain::{
+use crate::shared_kernel::{
     ids::JournalId, ArrayString128, ArrayString24, LedgerId, SpecialJournalTemplateId,
 };
 

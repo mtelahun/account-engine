@@ -2,12 +2,12 @@ use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::{
-    domain::ids::InterimPeriodId,
     infrastructure::data::db_context::{
         error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::accounting_period::interim_period,
+    shared_kernel::ids::InterimPeriodId,
 };
 
 #[async_trait]

@@ -1,10 +1,6 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::{
-        ids::{InterimPeriodId, JournalId},
-        ArrayString128, ArrayString24, ArrayString3, GeneralLedgerId, LedgerId, PeriodId,
-    },
     infrastructure::data::db_context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
@@ -13,6 +9,10 @@ use crate::{
         accounting_period, general_ledger, journal,
         ledger::{self, LedgerType},
         InterimType,
+    },
+    shared_kernel::{
+        ids::{InterimPeriodId, JournalId},
+        ArrayString128, ArrayString24, ArrayString3, GeneralLedgerId, LedgerId, PeriodId,
     },
     Store,
 };

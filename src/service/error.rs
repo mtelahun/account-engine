@@ -1,4 +1,4 @@
-use crate::store::OrmError;
+use crate::infrastructure::data::db_context::error::OrmError;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ServiceError {

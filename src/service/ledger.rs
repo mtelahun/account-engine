@@ -3,13 +3,14 @@ use journal_entry::LedgerKey;
 
 use crate::{
     domain::{ArrayString128, ArrayString24, ArrayString3, LedgerId, XactType},
-    infrastructure::data::db_context::postgres::PostgresStore,
+    infrastructure::data::db_context::{
+        memory::MemoryStore, postgres::PostgresStore, repository_operations::ResourceOperations,
+    },
     resource::{
         account_engine::AccountEngine,
         ledger::{self, journal_entry, LedgerType},
         AccountBalance, LedgerPostingRef,
     },
-    store::{memory::store::MemoryStore, ResourceOperations},
     Store,
 };
 

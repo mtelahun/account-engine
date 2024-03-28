@@ -2,7 +2,9 @@ use async_trait::async_trait;
 
 use crate::{
     domain::{AccountId, ExternalXactTypeCode, SubLedgerId},
-    infrastructure::data::db_context::postgres::PostgresStore,
+    infrastructure::data::db_context::{
+        memory::MemoryStore, postgres::PostgresStore, repository_operations::ResourceOperations,
+    },
     resource::{
         account_engine::AccountEngine,
         external,
@@ -10,7 +12,6 @@ use crate::{
         ledger::{self, journal_entry::LedgerKey},
         subsidiary_ledger,
     },
-    store::{memory::store::MemoryStore, ResourceOperations},
     Store,
 };
 

@@ -15,8 +15,10 @@ use crate::resource::{
     ledger::{self, transaction},
     organization, TransactionState,
 };
-use crate::store::{OrmError, Resource};
 use crate::Store;
+
+use super::error::OrmError;
+use super::resource::Resource;
 
 const MAX_OPEN_CONNECTIONS: u64 = 32;
 const MAX_IDLE_CONNECTIONS: u64 = 8;

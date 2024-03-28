@@ -3,8 +3,8 @@ use crate::{
         composite_ids::JournalTransactionColumnId, ids::JournalId, AccountId, GeneralLedgerId,
         JournalTransactionId, LedgerId, LedgerXactTypeCode, PeriodId, SubLedgerId,
     },
+    infrastructure::data::db_context::repository_operations::ResourceOperations,
     service::ServiceError,
-    store::ResourceOperations,
     Store,
 };
 

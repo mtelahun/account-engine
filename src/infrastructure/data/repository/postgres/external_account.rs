@@ -3,9 +3,11 @@ use tokio_postgres::Row;
 
 use crate::{
     domain::AccountId,
-    infrastructure::data::db_context::postgres::PostgresStore,
+    infrastructure::data::db_context::{
+        error::OrmError, postgres::PostgresStore, repository_operations::ResourceOperations,
+        resource::Resource,
+    },
     resource::external,
-    store::{OrmError, Resource, ResourceOperations},
 };
 
 #[async_trait]

@@ -16,7 +16,9 @@ use crate::{
         JournalTransactionId, LedgerId, LedgerXactTypeCode, PeriodId, Sequence,
         SpecialJournalTemplateId, SubLedgerId, TemplateColumnId,
     },
-    infrastructure::data::db_context::postgres::PostgresStore,
+    infrastructure::data::db_context::{
+        memory::MemoryStore, postgres::PostgresStore, repository_operations::ResourceOperations,
+    },
     resource::{
         account_engine::AccountEngine,
         accounting_period, external, general_ledger,
@@ -28,7 +30,6 @@ use crate::{
         journal_transaction::JournalTransactionColumn, GeneralJournalService, GeneralLedgerService,
         JournalTransactionService, ServiceError, SpecialJournalService, SubsidiaryLedgerService,
     },
-    store::{memory::store::MemoryStore, ResourceOperations},
     Store,
 };
 

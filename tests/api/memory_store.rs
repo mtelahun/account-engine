@@ -1,5 +1,6 @@
 use account_engine::{
     domain::{LedgerId, XactType},
+    infrastructure::data::db_context::error::OrmError,
     resource::{
         accounting_period,
         journal::{
@@ -13,7 +14,6 @@ use account_engine::{
         JournalTransactionService, LedgerAccount, LedgerService, ServiceError,
         SpecialJournalService, SpecialJournalTransactionService,
     },
-    store::OrmError,
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;

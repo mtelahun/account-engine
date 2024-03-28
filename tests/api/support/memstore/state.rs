@@ -9,6 +9,7 @@ use account_engine::{
         AccountId, ArrayString128, ArrayString24, ArrayString3, ExternalXactTypeCode, JournalId,
         JournalTransactionId, LedgerId, Sequence, SpecialJournalTemplateId, SubLedgerId, XactType,
     },
+    infrastructure::data::db_context::memory::MemoryStore,
     resource::{
         account_engine::AccountEngine,
         external, general_ledger,
@@ -24,7 +25,6 @@ use account_engine::{
         GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
         SpecialJournalService, SpecialJournalTransactionService, SubsidiaryLedgerService,
     },
-    store::memory::store::MemoryStore,
 };
 
 use crate::support::{

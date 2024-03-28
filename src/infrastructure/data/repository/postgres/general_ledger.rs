@@ -4,9 +4,11 @@ use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::domain::{ArrayString128, GeneralLedgerId};
+use crate::infrastructure::data::db_context::error::OrmError;
 use crate::infrastructure::data::db_context::postgres::PostgresStore;
+use crate::infrastructure::data::db_context::repository_operations::ResourceOperations;
+use crate::infrastructure::data::db_context::resource::Resource;
 use crate::resource::general_ledger;
-use crate::store::{OrmError, Resource, ResourceOperations};
 
 #[async_trait]
 impl ResourceOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>

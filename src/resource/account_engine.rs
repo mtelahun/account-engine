@@ -1,9 +1,12 @@
 use crate::{
-    domain::ServiceError,
+    domain::{
+        general_ledger::{general_ledger_id::GeneralLedgerId, ledger_id::LedgerId},
+        ServiceError,
+    },
     infrastructure::data::db_context::repository_operations::RepositoryOperations,
     shared_kernel::{
-        composite_ids::JournalTransactionColumnId, ids::JournalId, AccountId, GeneralLedgerId,
-        JournalTransactionId, LedgerId, LedgerXactTypeCode, PeriodId, SubLedgerId,
+        composite_ids::JournalTransactionColumnId, ids::JournalId, AccountId, JournalTransactionId,
+        LedgerXactTypeCode, PeriodId, SubLedgerId,
     },
     Store,
 };

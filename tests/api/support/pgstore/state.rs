@@ -6,6 +6,7 @@ use account_engine::{
             EntityTypeBuilder, ExternalAccount, ExternalAccountBuilder, ExternalEntityBuilder,
             ExternalEntityType, ExternalService,
         },
+        general_ledger::ledger_id::LedgerId,
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
         GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
         SpecialJournalService, SubsidiaryLedgerService,
@@ -18,8 +19,8 @@ use account_engine::{
         subsidiary_ledger, LedgerType,
     },
     shared_kernel::{
-        AccountId, ArrayString128, ArrayString3, JournalId, LedgerId, Sequence,
-        SpecialJournalTemplateId, XactType,
+        AccountId, ArrayString128, ArrayString3, JournalId, Sequence, SpecialJournalTemplateId,
+        XactType,
     },
 };
 use chrono::NaiveDate;

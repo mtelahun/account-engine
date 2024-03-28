@@ -10,6 +10,7 @@ use account_engine::{
             EntityTypeBuilder, ExternalAccount, ExternalAccountBuilder, ExternalEntityBuilder,
             ExternalEntityType, ExternalService,
         },
+        general_ledger::ledger_id::LedgerId,
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
         GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
         SpecialJournalService, SpecialJournalTransactionService, SubsidiaryLedgerService,
@@ -23,7 +24,7 @@ use account_engine::{
     },
     shared_kernel::{
         AccountId, ArrayString128, ArrayString24, ArrayString3, ExternalXactTypeCode, JournalId,
-        JournalTransactionId, LedgerId, Sequence, SpecialJournalTemplateId, SubLedgerId, XactType,
+        JournalTransactionId, Sequence, SpecialJournalTemplateId, SubLedgerId, XactType,
     },
 };
 

@@ -1,4 +1,4 @@
-use crate::shared_kernel::LedgerId;
+use crate::domain::general_ledger::ledger_id::LedgerId;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct Model {

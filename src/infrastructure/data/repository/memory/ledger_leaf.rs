@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
 use crate::{
+    domain::general_ledger::ledger_id::LedgerId,
     infrastructure::data::db_context::{
         error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::ledger,
-    shared_kernel::LedgerId,
 };
 
 #[async_trait]

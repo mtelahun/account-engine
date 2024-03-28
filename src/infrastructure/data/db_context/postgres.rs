@@ -7,15 +7,18 @@ use mobc::{Connection, Pool};
 use mobc_postgres::PgConnectionManager;
 use tokio_postgres::{Config, NoTls};
 
-use crate::resource::{
-    accounting_period, journal,
-    ledger::{self, transaction},
-    organization, TransactionState,
-};
 use crate::shared_kernel::{
-    ArrayString24, JournalTransactionId, LedgerId, Sequence, SpecialJournalTemplateId,
+    ArrayString24, JournalTransactionId, Sequence, SpecialJournalTemplateId,
 };
 use crate::Store;
+use crate::{
+    domain::general_ledger::ledger_id::LedgerId,
+    resource::{
+        accounting_period, journal,
+        ledger::{self, transaction},
+        organization, TransactionState,
+    },
+};
 
 use super::error::OrmError;
 use super::resource::Resource;

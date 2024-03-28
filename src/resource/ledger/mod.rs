@@ -1,7 +1,10 @@
 use postgres_types::{FromSql, ToSql};
 
-use crate::shared_kernel::{
-    array_long_string::ArrayString128, array_short_string::ArrayString24, ArrayString3, LedgerId,
+use crate::{
+    domain::general_ledger::ledger_id::LedgerId,
+    shared_kernel::{
+        array_long_string::ArrayString128, array_short_string::ArrayString24, ArrayString3,
+    },
 };
 
 pub mod derived;

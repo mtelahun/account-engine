@@ -1,7 +1,8 @@
 use crate::{
+    domain::general_ledger::ledger_id::LedgerId,
     resource::journal::transaction::JournalTransactionColumnType,
     shared_kernel::{
-        AccountId, ArrayString24, LedgerId, Sequence, SpecialJournalTemplateId, TemplateColumnId,
+        AccountId, ArrayString24, Sequence, SpecialJournalTemplateId, TemplateColumnId,
     },
 };
 

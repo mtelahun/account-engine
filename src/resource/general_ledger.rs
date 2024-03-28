@@ -1,5 +1,6 @@
-use crate::shared_kernel::{
-    array_long_string::ArrayString128, ArrayString3, GeneralLedgerId, LedgerId,
+use crate::{
+    domain::general_ledger::{general_ledger_id::GeneralLedgerId, ledger_id::LedgerId},
+    shared_kernel::{array_long_string::ArrayString128, ArrayString3},
 };
 
 #[derive(Clone, Copy, Debug)]

@@ -3,12 +3,13 @@ use std::str::FromStr;
 use async_trait::async_trait;
 use tokio_postgres::Row;
 
+use crate::domain::general_ledger::general_ledger_id::GeneralLedgerId;
 use crate::infrastructure::data::db_context::error::OrmError;
 use crate::infrastructure::data::db_context::postgres::PostgresStore;
 use crate::infrastructure::data::db_context::repository_operations::RepositoryOperations;
 use crate::infrastructure::data::db_context::resource::Resource;
 use crate::resource::general_ledger;
-use crate::shared_kernel::{ArrayString128, GeneralLedgerId};
+use crate::shared_kernel::ArrayString128;
 
 #[async_trait]
 impl RepositoryOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>

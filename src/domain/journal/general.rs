@@ -3,14 +3,14 @@ use std::str::FromStr;
 use async_trait::async_trait;
 
 use crate::{
-    domain::ServiceError,
+    domain::{general_ledger::ledger_id::LedgerId, ServiceError},
     infrastructure::data::db_context::{
         error::OrmError, memory::MemoryStore, postgres::PostgresStore,
         repository_operations::RepositoryOperations,
     },
     resource::{account_engine::AccountEngine, journal, ledger, ledger_xact_type},
     shared_kernel::{
-        ids::JournalId, ledger_xact_type_code, JournalTransactionId, LedgerId, LedgerXactTypeCode,
+        ids::JournalId, ledger_xact_type_code, JournalTransactionId, LedgerXactTypeCode,
     },
     Store,
 };

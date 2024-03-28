@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use tokio::sync::RwLock;
 
 use crate::{
+    domain::general_ledger::{general_ledger_id::GeneralLedgerId, ledger_id::LedgerId},
     resource::{
         accounting_period, external, general_ledger,
         journal::{self, transaction::TransactionState},
@@ -15,9 +16,8 @@ use crate::{
         entity_code::EntityCode,
         ids::{EntityId, InterimPeriodId, JournalId},
         AccountId, AccountTransactionId, ArrayString128, ArrayString24, ArrayString3,
-        ColumnTotalId, ExternalXactTypeCode, GeneralLedgerId, JournalTransactionId, LedgerId,
-        LedgerXactTypeCode, PeriodId, Sequence, SpecialJournalTemplateId, SubLedgerId,
-        TemplateColumnId,
+        ColumnTotalId, ExternalXactTypeCode, JournalTransactionId, LedgerXactTypeCode, PeriodId,
+        Sequence, SpecialJournalTemplateId, SubLedgerId, TemplateColumnId,
     },
     Store,
 };

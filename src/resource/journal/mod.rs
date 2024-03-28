@@ -1,7 +1,8 @@
 use postgres_types::{FromSql, ToSql};
 
-use crate::shared_kernel::{
-    ids::JournalId, ArrayString128, ArrayString24, LedgerId, SpecialJournalTemplateId,
+use crate::{
+    domain::general_ledger::ledger_id::LedgerId,
+    shared_kernel::{ids::JournalId, ArrayString128, ArrayString24, SpecialJournalTemplateId},
 };
 
 pub mod transaction;

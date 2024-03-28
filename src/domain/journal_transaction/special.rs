@@ -10,8 +10,10 @@ use rust_decimal::Decimal;
 
 use crate::{
     domain::{
-        journal_transaction::JournalTransactionColumn, GeneralJournalService, GeneralLedgerService,
-        JournalTransactionService, ServiceError, SpecialJournalService, SubsidiaryLedgerService,
+        general_ledger::{general_ledger_id::GeneralLedgerId, ledger_id::LedgerId},
+        journal_transaction::JournalTransactionColumn,
+        GeneralJournalService, GeneralLedgerService, JournalTransactionService, ServiceError,
+        SpecialJournalService, SubsidiaryLedgerService,
     },
     infrastructure::data::db_context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
@@ -26,9 +28,9 @@ use crate::{
     shared_kernel::{
         composite_ids::JournalTransactionColumnId,
         ids::{InterimPeriodId, JournalId},
-        AccountId, AccountTransactionId, ColumnTotalId, ExternalXactTypeCode, GeneralLedgerId,
-        JournalTransactionId, LedgerId, LedgerXactTypeCode, PeriodId, Sequence,
-        SpecialJournalTemplateId, SubLedgerId, TemplateColumnId,
+        AccountId, AccountTransactionId, ColumnTotalId, ExternalXactTypeCode, JournalTransactionId,
+        LedgerXactTypeCode, PeriodId, Sequence, SpecialJournalTemplateId, SubLedgerId,
+        TemplateColumnId,
     },
     Store,
 };

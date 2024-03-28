@@ -8,9 +8,11 @@ use crate::{
     },
     shared_kernel::{
         AccountId, ArrayString128, ColumnTotalId, ExternalXactTypeCode, JournalId,
-        JournalTransactionColumnId, JournalTransactionId, LedgerId, SpecialJournalTemplateId,
+        JournalTransactionColumnId, JournalTransactionId, SpecialJournalTemplateId,
     },
 };
+
+use super::general_ledger::ledger_id::LedgerId;
 
 pub mod column;
 pub mod general;

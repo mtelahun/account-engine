@@ -2,9 +2,9 @@ use chrono::NaiveDateTime;
 use postgres_types::{FromSql, ToSql};
 
 use crate::{
-    domain::general_ledger::ledger_id::LedgerId,
+    domain::{general_ledger::ledger_id::LedgerId, subsidiary_ledger::account_id::AccountId},
     resource::{LedgerKey, SubsidiaryLedgerKey},
-    shared_kernel::{AccountId, ArrayString128, JournalId, JournalTransactionId},
+    shared_kernel::{ArrayString128, JournalId, JournalTransactionId},
 };
 
 pub mod column;

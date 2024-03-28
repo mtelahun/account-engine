@@ -12,6 +12,7 @@ use account_engine::{
         },
         general_ledger::ledger_id::LedgerId,
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
+        subsidiary_ledger::{account_id::AccountId, subleder_id::SubLedgerId},
         GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
         SpecialJournalService, SpecialJournalTransactionService, SubsidiaryLedgerService,
     },
@@ -23,8 +24,8 @@ use account_engine::{
         ledger, subsidiary_ledger, LedgerKey, LedgerType,
     },
     shared_kernel::{
-        AccountId, ArrayString128, ArrayString24, ArrayString3, ExternalXactTypeCode, JournalId,
-        JournalTransactionId, Sequence, SpecialJournalTemplateId, SubLedgerId, XactType,
+        ArrayString128, ArrayString24, ArrayString3, ExternalXactTypeCode, JournalId,
+        JournalTransactionId, Sequence, SpecialJournalTemplateId, XactType,
     },
 };
 

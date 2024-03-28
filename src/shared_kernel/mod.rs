@@ -28,8 +28,8 @@ pub use entity_id::EntityId;
 pub use external_xact_type_code::ExternalXactTypeCode;
 pub use fixed_len_char::FixedLenChar;
 pub use ids::{
-    AccountId, ColumnTotalId, JournalId, JournalRefId, JournalTypeId, PeriodId,
-    SpecialJournalColId, SpecialJournalTemplateId, SubLedgerId, TemplateColumnId,
+    ColumnTotalId, JournalId, JournalRefId, JournalTypeId, SpecialJournalColId,
+    SpecialJournalTemplateId, TemplateColumnId,
 };
 pub use ledger_xact_type_code::{LedgerXactTypeCode, XACT_ACCOUNT, XACT_LEDGER};
 pub use sequence::Sequence;

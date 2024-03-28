@@ -2,12 +2,12 @@ use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::{
+    domain::subsidiary_ledger::subleder_id::SubLedgerId,
     infrastructure::data::db_context::{
         error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::subsidiary_ledger,
-    shared_kernel::SubLedgerId,
 };
 
 #[async_trait]

@@ -1,8 +1,8 @@
 use postgres_types::{FromSql, ToSql};
 
 use crate::{
-    domain::general_ledger::ledger_id::LedgerId,
-    shared_kernel::{ArrayString128, SubLedgerId},
+    domain::{general_ledger::ledger_id::LedgerId, subsidiary_ledger::subleder_id::SubLedgerId},
+    shared_kernel::ArrayString128,
 };
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, ToSql, FromSql)]

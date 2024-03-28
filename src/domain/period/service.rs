@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
+    domain::ServiceError,
     infrastructure::data::db_context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
@@ -8,11 +9,10 @@ use crate::{
         account_engine::AccountEngine,
         accounting_period::{self, interim_period},
     },
-    shared_kernel::{ids::InterimPeriodId, PeriodId},
     Store,
 };
 
-use super::ServiceError;
+use super::{interim_period::InterimPeriodId, period_id::PeriodId};
 
 #[async_trait]
 pub trait AccountingPeriodService<R>

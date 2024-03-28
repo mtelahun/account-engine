@@ -3,10 +3,9 @@ use postgres_types::{FromSql, ToSql};
 use rust_decimal::Decimal;
 
 use crate::{
+    domain::subsidiary_ledger::account_id::AccountId,
     resource::journal::transaction::AccountPostingRef,
-    shared_kernel::{
-        composite_ids::JournalTransactionColumnId, AccountId, JournalId, TemplateColumnId,
-    },
+    shared_kernel::{composite_ids::JournalTransactionColumnId, JournalId, TemplateColumnId},
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

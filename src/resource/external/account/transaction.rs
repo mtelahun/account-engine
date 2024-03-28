@@ -1,7 +1,10 @@
 use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
-use crate::shared_kernel::{AccountId, AccountTransactionId, XactType};
+use crate::{
+    domain::subsidiary_ledger::account_id::AccountId,
+    shared_kernel::{AccountTransactionId, XactType},
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Model {

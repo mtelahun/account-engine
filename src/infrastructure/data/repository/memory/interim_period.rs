@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
 use crate::{
+    domain::period::interim_period::InterimPeriodId,
     infrastructure::data::db_context::{
         error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::accounting_period::interim_period,
-    shared_kernel::ids::InterimPeriodId,
 };
 
 #[async_trait]

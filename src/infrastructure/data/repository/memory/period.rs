@@ -2,11 +2,11 @@ use async_trait::async_trait;
 use chronoutil::RelativeDuration;
 
 use crate::{
+    domain::period::period_id::PeriodId,
     infrastructure::data::db_context::{
         error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::accounting_period,
-    shared_kernel::ids::PeriodId,
 };
 
 #[async_trait]

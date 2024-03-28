@@ -1,6 +1,10 @@
 use async_trait::async_trait;
 
 use crate::{
+    domain::{
+        external::{ExternalAccount, ExternalAccountBuilder},
+        ServiceError,
+    },
     infrastructure::data::db_context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
@@ -11,14 +15,11 @@ use crate::{
         ledger::{self, journal_entry::LedgerKey},
         subsidiary_ledger,
     },
-    shared_kernel::{AccountId, ExternalXactTypeCode, SubLedgerId},
+    shared_kernel::ExternalXactTypeCode,
     Store,
 };
 
-use super::{
-    external::{ExternalAccount, ExternalAccountBuilder},
-    ServiceError,
-};
+use super::{account_id::AccountId, subleder_id::SubLedgerId};
 
 #[async_trait]
 pub trait SubsidiaryLedgerService<R>

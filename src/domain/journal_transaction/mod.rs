@@ -7,12 +7,12 @@ use crate::{
         transaction::{AccountPostingRef, JournalTransactionColumnType},
     },
     shared_kernel::{
-        AccountId, ArrayString128, ColumnTotalId, ExternalXactTypeCode, JournalId,
-        JournalTransactionColumnId, JournalTransactionId, SpecialJournalTemplateId,
+        ArrayString128, ColumnTotalId, ExternalXactTypeCode, JournalId, JournalTransactionColumnId,
+        JournalTransactionId, SpecialJournalTemplateId,
     },
 };
 
-use super::general_ledger::ledger_id::LedgerId;
+use super::{general_ledger::ledger_id::LedgerId, subsidiary_ledger::account_id::AccountId};
 
 pub mod column;
 pub mod general;

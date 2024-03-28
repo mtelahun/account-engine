@@ -6,13 +6,14 @@ use crate::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{account_engine::AccountEngine, external},
-    shared_kernel::{
-        ids::ExternalEntityId, AccountId, ArrayString128, ArrayString24, EntityCode, SubLedgerId,
-    },
+    shared_kernel::{ids::ExternalEntityId, ArrayString128, ArrayString24, EntityCode},
     Store,
 };
 
-use super::ServiceError;
+use super::{
+    subsidiary_ledger::{account_id::AccountId, subleder_id::SubLedgerId},
+    ServiceError,
+};
 
 #[async_trait]
 pub trait ExternalService<R>

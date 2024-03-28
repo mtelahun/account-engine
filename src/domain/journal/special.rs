@@ -7,6 +7,7 @@ use crate::{
     domain::{
         general_ledger::ledger_id::LedgerId,
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
+        subsidiary_ledger::account_id::AccountId,
         ServiceError,
     },
     infrastructure::data::db_context::{
@@ -21,7 +22,7 @@ use crate::{
     },
     shared_kernel::{
         composite_ids::JournalTransactionColumnId, ids::JournalId, ledger_xact_type_code,
-        AccountId, ArrayString128, ExternalXactTypeCode, JournalTransactionId, LedgerXactTypeCode,
+        ArrayString128, ExternalXactTypeCode, JournalTransactionId, LedgerXactTypeCode,
         SpecialJournalTemplateId, TemplateColumnId,
     },
     Store,

@@ -1,6 +1,7 @@
 use account_engine::{
     domain::{
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
+        subsidiary_ledger::account_id::AccountId,
         ServiceError,
     },
     resource::{
@@ -8,7 +9,7 @@ use account_engine::{
         ledger, LedgerKey,
     },
     shared_kernel::{
-        AccountId, ArrayString128, ExternalXactTypeCode, JournalId, JournalTransactionId, Sequence,
+        ArrayString128, ExternalXactTypeCode, JournalId, JournalTransactionId, Sequence,
         SpecialJournalTemplateId, XactType,
     },
 };

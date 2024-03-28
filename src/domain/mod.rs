@@ -15,5 +15,5 @@ pub use journal::general::GeneralJournalService;
 pub use journal::special::SpecialJournalService;
 pub use journal_transaction::general::JournalTransactionService;
 pub use journal_transaction::special::SpecialJournalTransactionService;
-pub use period::AccountingPeriodService;
-pub use subsidiary_ledger::SubsidiaryLedgerService;
+pub use period::service::AccountingPeriodService;
+pub use subsidiary_ledger::service::SubsidiaryLedgerService;

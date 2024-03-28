@@ -4,12 +4,12 @@ use chronoutil::RelativeDuration;
 use tokio_postgres::Row;
 
 use crate::{
+    domain::period::period_id::PeriodId,
     infrastructure::data::db_context::{
         error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::accounting_period,
-    shared_kernel::ids::PeriodId,
 };
 
 #[async_trait]

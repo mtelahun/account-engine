@@ -56,4 +56,23 @@ mod tests {
         // Assert
         assert_eq!(gl.currency_code(), ArrayString3::from_str("USD").unwrap(),);
     }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn given_GeneralLedger_when_update_name_then_get_name_returns_new_name() {
+        // Arrange
+        let name = ArrayString128::from_str("My New Company Name").unwrap();
+        let mut gl = GeneralLedger {
+            id: GeneralLedgerId::new(),
+            name: ArrayString128::from_str("My Company").unwrap(),
+            root: LedgerId::default(),
+            currency_code: ArrayString3::from_str("EUR").unwrap(),
+        };
+
+        // Act
+        gl.update_name(&name);
+
+        // Assert
+        assert_eq!(gl.name(), name,);
+    }
 }

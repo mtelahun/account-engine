@@ -62,10 +62,11 @@ mod tests {
         };
 
         // Act
-        gl.update_currency_code(&ArrayString3::from_str("USD").unwrap());
+        let prev = gl.update_currency_code(&ArrayString3::from_str("USD").unwrap());
 
         // Assert
         assert_eq!(gl.currency_code(), ArrayString3::from_str("USD").unwrap(),);
+        assert_eq!(prev, ArrayString3::from_str("EUR").unwrap());
     }
 
     #[test]
@@ -81,9 +82,10 @@ mod tests {
         };
 
         // Act
-        gl.update_name(&name);
+        let prev = gl.update_name(&name);
 
         // Assert
         assert_eq!(gl.name(), name,);
+        assert_eq!(prev, ArrayString128::from_str("My Company").unwrap());
     }
 }

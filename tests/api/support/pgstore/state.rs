@@ -2,14 +2,13 @@ use std::str::FromStr;
 
 use account_engine::{
     domain::{
-        entity::ledger::ledger_id::LedgerId,
+        entity::{external_account::account_id::AccountId, ledger::ledger_id::LedgerId},
         external::{
             EntityTypeBuilder, ExternalAccount, ExternalAccountBuilder, ExternalEntityBuilder,
             ExternalEntityType, ExternalService,
         },
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
         special_journal::special_journal_template_id::SpecialJournalTemplateId,
-        subsidiary_ledger::account_id::AccountId,
         GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
         SpecialJournalService, SubsidiaryLedgerService,
     },

@@ -1,4 +1,4 @@
-use account_engine::domain::{subsidiary_ledger::account_id::AccountId, LedgerAccount};
+use account_engine::domain::{entity::external_account::account_id::AccountId, LedgerAccount};
 use rust_decimal::Decimal;
 
 use super::{memstore::state::TestState, state_interface::StateInterface, CreateLedgerType};

@@ -1,5 +1,5 @@
 use crate::{
-    domain::subsidiary_ledger::account_type::AccountType,
+    domain::entity::external_account::account_type::AccountType,
     shared_kernel::{ArrayString128, XactType},
 };
 

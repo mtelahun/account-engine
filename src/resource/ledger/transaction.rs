@@ -71,10 +71,8 @@ pub mod account {
 
     use crate::{
         domain::{
-            entity::ledger::ledger_id::LedgerId,
-            subsidiary_ledger::{
-                account_id::AccountId, external_xact_type_code::ExternalXactTypeCode,
-            },
+            entity::{external_account::account_id::AccountId, ledger::ledger_id::LedgerId},
+            subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
         },
         resource::ledger::journal_entry::LedgerKey,
         shared_kernel::XactType,

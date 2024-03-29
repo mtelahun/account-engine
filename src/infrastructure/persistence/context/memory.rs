@@ -6,8 +6,13 @@ use tokio::sync::RwLock;
 use crate::{
     domain::{
         entity::{
+            external_account::{
+                account_id::AccountId, account_transaction_id::AccountTransactionId,
+            },
+            external_entity::entity_code::EntityCode,
             general_ledger::general_ledger_id::GeneralLedgerId,
-            interim_period::interim_period_id::InterimPeriodId, ledger::ledger_id::LedgerId,
+            interim_period::interim_period_id::InterimPeriodId,
+            ledger::ledger_id::LedgerId,
             period::period_id::PeriodId,
         },
         special_journal::{
@@ -15,9 +20,7 @@ use crate::{
             template_column_id::TemplateColumnId,
         },
         subsidiary_ledger::{
-            account_id::AccountId, account_transaction_id::AccountTransactionId,
-            entity_code::EntityCode, external_xact_type_code::ExternalXactTypeCode,
-            subleder_id::SubLedgerId,
+            external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
         },
     },
     resource::{

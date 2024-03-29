@@ -4,8 +4,8 @@ use rust_decimal::Decimal;
 
 use crate::{
     domain::{
+        entity::external_account::account_id::AccountId,
         special_journal::template_column_id::TemplateColumnId,
-        subsidiary_ledger::account_id::AccountId,
     },
     resource::journal::transaction::AccountPostingRef,
     shared_kernel::{journal_transaction_column_id::JournalTransactionColumnId, JournalId},

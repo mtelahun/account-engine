@@ -1,8 +1,9 @@
 use account_engine::{
     domain::{
+        entity::external_account::account_id::AccountId,
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
         special_journal::special_journal_template_id::SpecialJournalTemplateId,
-        subsidiary_ledger::{account_id::AccountId, external_xact_type_code::ExternalXactTypeCode},
+        subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
         LedgerAccount, ServiceError,
     },
     resource::{journal, subsidiary_ledger},

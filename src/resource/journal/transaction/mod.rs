@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use postgres_types::{FromSql, ToSql};
 
 use crate::{
-    domain::{entity::ledger::ledger_id::LedgerId, subsidiary_ledger::account_id::AccountId},
+    domain::entity::{external_account::account_id::AccountId, ledger::ledger_id::LedgerId},
     resource::{LedgerKey, SubsidiaryLedgerKey},
     shared_kernel::{ArrayString128, JournalId, JournalTransactionId},
 };

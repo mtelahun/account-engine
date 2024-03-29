@@ -2,7 +2,10 @@ use chrono::{NaiveDate, NaiveDateTime};
 use postgres_types::{FromSql, ToSql};
 
 use crate::{
-    domain::subsidiary_ledger::{account_id::AccountId, subleder_id::SubLedgerId},
+    domain::{
+        entity::external_account::account_id::AccountId,
+        subsidiary_ledger::subleder_id::SubLedgerId,
+    },
     shared_kernel::{ids::ExternalEntityId, ArrayString128, ArrayString24},
 };
 

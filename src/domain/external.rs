@@ -11,7 +11,8 @@ use crate::{
 };
 
 use super::{
-    subsidiary_ledger::{account_id::AccountId, entity_code::EntityCode, subleder_id::SubLedgerId},
+    entity::{external_account::account_id::AccountId, external_entity::entity_code::EntityCode},
+    subsidiary_ledger::subleder_id::SubLedgerId,
     ServiceError,
 };
 

@@ -2,6 +2,7 @@ use async_trait::async_trait;
 
 use crate::{
     domain::{
+        entity::external_account::account_id::AccountId,
         external::{ExternalAccount, ExternalAccountBuilder},
         ServiceError,
     },
@@ -18,9 +19,7 @@ use crate::{
     Store,
 };
 
-use super::{
-    account_id::AccountId, external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
-};
+use super::{external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId};
 
 #[async_trait]
 pub trait SubsidiaryLedgerService<R>

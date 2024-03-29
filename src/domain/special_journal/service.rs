@@ -5,9 +5,9 @@ use chrono::NaiveDateTime;
 
 use crate::{
     domain::{
-        entity::ledger::ledger_id::LedgerId,
+        entity::{external_account::account_id::AccountId, ledger::ledger_id::LedgerId},
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
-        subsidiary_ledger::{account_id::AccountId, external_xact_type_code::ExternalXactTypeCode},
+        subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
         ServiceError,
     },
     infrastructure::persistence::context::{

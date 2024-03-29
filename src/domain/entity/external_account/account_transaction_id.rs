@@ -1,6 +1,6 @@
 use chrono::NaiveDateTime;
 
-use crate::domain::subsidiary_ledger::account_id::AccountId;
+use super::account_id::AccountId;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AccountTransactionId(AccountId, NaiveDateTime);

@@ -11,8 +11,12 @@ use rust_decimal::Decimal;
 use crate::{
     domain::{
         entity::{
+            external_account::{
+                account_id::AccountId, account_transaction_id::AccountTransactionId,
+            },
             general_ledger::general_ledger_id::GeneralLedgerId,
-            interim_period::interim_period_id::InterimPeriodId, ledger::ledger_id::LedgerId,
+            interim_period::interim_period_id::InterimPeriodId,
+            ledger::ledger_id::LedgerId,
             period::period_id::PeriodId,
         },
         journal_transaction::JournalTransactionColumn,
@@ -21,7 +25,6 @@ use crate::{
             template_column_id::TemplateColumnId,
         },
         subsidiary_ledger::{
-            account_id::AccountId, account_transaction_id::AccountTransactionId,
             external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
         },
         GeneralJournalService, GeneralLedgerService, JournalTransactionService, ServiceError,

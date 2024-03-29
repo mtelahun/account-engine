@@ -1,5 +1,5 @@
 use crate::{
-    domain::subsidiary_ledger::entity_code::EntityCode,
+    domain::entity::external_entity::entity_code::EntityCode,
     shared_kernel::{ids::ExternalEntityId, ArrayString128},
 };
 

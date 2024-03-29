@@ -1,11 +1,11 @@
 use crate::{
     domain::{
+        entity::external_account::account_id::AccountId,
         entity::ledger::ledger_id::LedgerId,
         special_journal::{
             special_journal_template_id::SpecialJournalTemplateId,
             template_column_id::TemplateColumnId,
         },
-        subsidiary_ledger::account_id::AccountId,
     },
     resource::journal::transaction::JournalTransactionColumnType,
     shared_kernel::{ArrayString24, Sequence},

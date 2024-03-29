@@ -4,7 +4,7 @@ use chronoutil::RelativeDuration;
 use tokio_postgres::Row;
 
 use crate::{
-    domain::period::period_id::PeriodId,
+    domain::entity::period::period_id::PeriodId,
     infrastructure::persistence::context::{
         error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,

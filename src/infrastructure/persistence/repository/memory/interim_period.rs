@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::period::interim_period::InterimPeriodId,
+    domain::entity::interim_period::interim_period_id::InterimPeriodId,
     infrastructure::persistence::context::{
         error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },

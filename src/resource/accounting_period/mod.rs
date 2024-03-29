@@ -3,7 +3,9 @@ use chronoutil::RelativeDuration;
 use postgres_types::{FromSql, ToSql};
 
 use crate::{
-    domain::period::{interim_period::InterimPeriodId, period_id::PeriodId},
+    domain::entity::{
+        interim_period::interim_period_id::InterimPeriodId, period::period_id::PeriodId,
+    },
     infrastructure::persistence::context::repository_operations::RepositoryOperations,
 };
 

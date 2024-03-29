@@ -1,7 +1,9 @@
 use chrono::NaiveDate;
 use postgres_types::{FromSql, ToSql};
 
-use crate::domain::period::{interim_period::InterimPeriodId, period_id::PeriodId};
+use crate::domain::entity::{
+    interim_period::interim_period_id::InterimPeriodId, period::period_id::PeriodId,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ToSql, FromSql)]
 #[postgres(name = "interimtype")]

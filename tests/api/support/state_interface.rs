@@ -1,7 +1,8 @@
 use account_engine::{
     domain::{
-        entity::ledger::ledger_id::LedgerId, external::ExternalAccount,
-        subsidiary_ledger::subleder_id::SubLedgerId, LedgerAccount, ServiceError,
+        entity::{ledger::ledger_id::LedgerId, subsidiary_ledger::subleder_id::SubLedgerId},
+        external::ExternalAccount,
+        LedgerAccount, ServiceError,
     },
     resource::{journal, subsidiary_ledger, LedgerType},
     shared_kernel::JournalId,

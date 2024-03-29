@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::subsidiary_ledger::subleder_id::SubLedgerId,
+    domain::entity::subsidiary_ledger::subleder_id::SubLedgerId,
     infrastructure::persistence::context::{
         error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },

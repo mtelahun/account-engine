@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::{
-    domain::subsidiary_ledger::subleder_id::SubLedgerId,
+    domain::entity::subsidiary_ledger::subleder_id::SubLedgerId,
     infrastructure::persistence::context::{
         error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,

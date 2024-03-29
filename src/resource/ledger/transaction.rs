@@ -70,8 +70,8 @@ pub mod account {
     use chrono::NaiveDateTime;
 
     use crate::{
-        domain::{
-            entity::{external_account::account_id::AccountId, ledger::ledger_id::LedgerId},
+        domain::entity::{
+            external_account::account_id::AccountId, ledger::ledger_id::LedgerId,
             subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
         },
         resource::ledger::journal_entry::LedgerKey,

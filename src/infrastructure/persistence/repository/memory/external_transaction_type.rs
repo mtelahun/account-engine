@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
+    domain::entity::subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
     infrastructure::persistence::context::{
         error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },

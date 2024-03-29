@@ -1,5 +1,5 @@
 use crate::{
-    domain::subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
+    domain::entity::subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
     shared_kernel::ArrayString128,
 };
 

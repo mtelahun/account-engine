@@ -14,13 +14,13 @@ use crate::{
             interim_period::interim_period_id::InterimPeriodId,
             ledger::ledger_id::LedgerId,
             period::period_id::PeriodId,
+            subsidiary_ledger::{
+                external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
+            },
         },
         special_journal::{
             column_total_id::ColumnTotalId, special_journal_template_id::SpecialJournalTemplateId,
             template_column_id::TemplateColumnId,
-        },
-        subsidiary_ledger::{
-            external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
         },
     },
     resource::{

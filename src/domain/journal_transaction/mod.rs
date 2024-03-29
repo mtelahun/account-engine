@@ -1,3 +1,5 @@
+pub mod column;
+
 use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
@@ -18,10 +20,6 @@ use super::entity::{
     special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
     subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
 };
-
-pub mod column;
-pub mod general;
-pub mod special;
 
 pub trait JournalTransactionOps {}
 

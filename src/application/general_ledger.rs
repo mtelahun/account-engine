@@ -8,7 +8,7 @@ use crate::{
             interim_period::interim_period_id::InterimPeriodId, ledger::ledger_id::LedgerId,
             period::period_id::PeriodId,
         },
-        Ledger, LedgerAccount, ServiceError,
+        Ledger, LedgerAccount,
     },
     infrastructure::persistence::context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
@@ -22,6 +22,8 @@ use crate::{
     shared_kernel::{ArrayString24, ArrayString3, ArrayString64},
     Store,
 };
+
+use super::error::ServiceError;
 
 #[async_trait]
 pub trait GeneralLedgerService<R>

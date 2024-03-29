@@ -1,14 +1,12 @@
 use crate::{
-    domain::{
-        entity::{
-            external_account::account_id::AccountId, general_journal::journal_id::JournalId,
-            general_journal_transaction::journal_transaction_id::JournalTransactionId,
-            general_ledger::general_ledger_id::GeneralLedgerId,
-            journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
-            ledger::ledger_id::LedgerId, ledger_xact_type_code::LedgerXactTypeCode,
-            period::period_id::PeriodId, subsidiary_ledger::subleder_id::SubLedgerId,
-        },
-        ServiceError,
+    application::error::ServiceError,
+    domain::entity::{
+        external_account::account_id::AccountId, general_journal::journal_id::JournalId,
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+        general_ledger::general_ledger_id::GeneralLedgerId,
+        journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
+        ledger::ledger_id::LedgerId, ledger_xact_type_code::LedgerXactTypeCode,
+        period::period_id::PeriodId, subsidiary_ledger::subleder_id::SubLedgerId,
     },
     infrastructure::persistence::context::repository_operations::RepositoryOperations,
     Store,

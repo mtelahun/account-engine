@@ -17,7 +17,6 @@ use crate::{
             subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
         },
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
-        ServiceError,
     },
     infrastructure::persistence::context::{
         error::OrmError, memory::MemoryStore, postgres::PostgresStore,
@@ -32,6 +31,8 @@ use crate::{
     shared_kernel::ArrayString64,
     Store,
 };
+
+use super::error::ServiceError;
 
 #[async_trait]
 pub trait SpecialJournalService<R>

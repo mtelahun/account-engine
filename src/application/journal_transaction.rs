@@ -1,13 +1,10 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::{
-        entity::{
-            general_journal::journal_id::JournalId,
-            general_journal_transaction::journal_transaction_id::JournalTransactionId,
-            ledger::ledger_id::LedgerId, ledger_xact_type_code::LedgerXactTypeCode,
-        },
-        GeneralJournalService, ServiceError,
+    domain::entity::{
+        general_journal::journal_id::JournalId,
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+        ledger::ledger_id::LedgerId, ledger_xact_type_code::LedgerXactTypeCode,
     },
     infrastructure::persistence::context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
@@ -18,6 +15,8 @@ use crate::{
     },
     Store,
 };
+
+use super::{error::ServiceError, general_journal::GeneralJournalService};
 
 #[async_trait]
 pub trait JournalTransactionService<R>: GeneralJournalService<R>

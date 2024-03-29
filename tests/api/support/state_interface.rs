@@ -1,11 +1,11 @@
 use account_engine::{
+    application::error::ServiceError,
     domain::{
         entity::{
-            general_journal::journal_id::JournalId, ledger::ledger_id::LedgerId,
-            subsidiary_ledger::subleder_id::SubLedgerId,
+            external_account::ExternalAccount, general_journal::journal_id::JournalId,
+            ledger::ledger_id::LedgerId, subsidiary_ledger::subleder_id::SubLedgerId,
         },
-        external::ExternalAccount,
-        LedgerAccount, ServiceError,
+        LedgerAccount,
     },
     resource::{journal, subsidiary_ledger, LedgerType},
 };

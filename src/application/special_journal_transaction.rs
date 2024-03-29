@@ -31,8 +31,6 @@ use crate::{
             xact_type::XactType,
         },
         journal_transaction::JournalTransactionColumn,
-        GeneralJournalService, GeneralLedgerService, JournalTransactionService, ServiceError,
-        SpecialJournalService, SubsidiaryLedgerService,
     },
     infrastructure::persistence::context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
@@ -46,6 +44,12 @@ use crate::{
     },
     shared_kernel::Sequence,
     Store,
+};
+
+use super::{
+    error::ServiceError, general_journal::GeneralJournalService,
+    general_ledger::GeneralLedgerService, journal_transaction::JournalTransactionService,
+    special_journal::SpecialJournalService, subsidiary_ledger::SubsidiaryLedgerService,
 };
 
 #[async_trait]

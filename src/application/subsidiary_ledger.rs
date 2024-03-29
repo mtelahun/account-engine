@@ -1,15 +1,11 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::{
-        entity::{
-            external_account::account_id::AccountId,
-            subsidiary_ledger::{
-                external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
-            },
+    domain::entity::{
+        external_account::{account_id::AccountId, ExternalAccount, ExternalAccountBuilder},
+        subsidiary_ledger::{
+            external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
         },
-        external::{ExternalAccount, ExternalAccountBuilder},
-        ServiceError,
     },
     infrastructure::persistence::context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
@@ -23,6 +19,8 @@ use crate::{
     },
     Store,
 };
+
+use super::error::ServiceError;
 
 #[async_trait]
 pub trait SubsidiaryLedgerService<R>

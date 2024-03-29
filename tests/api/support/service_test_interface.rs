@@ -1,4 +1,5 @@
 use account_engine::{
+    application::error::ServiceError,
     domain::{
         entity::{
             external_account::account_id::AccountId, general_journal::journal_id::JournalId,
@@ -7,7 +8,6 @@ use account_engine::{
             subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode, xact_type::XactType,
         },
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
-        ServiceError,
     },
     resource::{
         journal::{self, LedgerAccountPostingRef},

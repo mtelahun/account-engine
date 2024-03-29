@@ -3,14 +3,11 @@ use std::str::FromStr;
 use async_trait::async_trait;
 
 use crate::{
-    domain::{
-        entity::{
-            general_journal::journal_id::JournalId,
-            general_journal_transaction::journal_transaction_id::JournalTransactionId,
-            ledger::ledger_id::LedgerId,
-            ledger_xact_type_code::{self, LedgerXactTypeCode},
-        },
-        ServiceError,
+    domain::entity::{
+        general_journal::journal_id::JournalId,
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+        ledger::ledger_id::LedgerId,
+        ledger_xact_type_code::{self, LedgerXactTypeCode},
     },
     infrastructure::persistence::context::{
         error::OrmError, memory::MemoryStore, postgres::PostgresStore,
@@ -19,6 +16,8 @@ use crate::{
     resource::{account_engine::AccountEngine, journal, ledger, ledger_xact_type},
     Store,
 };
+
+use super::error::ServiceError;
 
 #[async_trait]
 pub trait GeneralJournalService<R>

@@ -25,8 +25,19 @@ impl GeneralLedger {
         previous_code
     }
 
+    pub fn update_name(&mut self, name: &str) -> ArrayString128 {
+        let previous_name = self.name;
+        self.name = ArrayString128::from_str(name).unwrap();
+
+        previous_name
+    }
+
     pub fn currency_code(&self) -> ArrayString3 {
         self.currency_code
+    }
+
+    pub fn name(&self) -> ArrayString128 {
+        self.name
     }
 }
 

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::shared_kernel::{ArrayString128, ArrayString3};
 
 use self::{general_ledger_id::GeneralLedgerId, ledger_id::LedgerId};
@@ -15,6 +17,19 @@ pub struct GeneralLedger {
     pub currency_code: ArrayString3,
 }
 
+impl GeneralLedger {
+    pub fn update_currency_code(&mut self, code: &str) -> ArrayString3 {
+        let previous_code = self.currency_code;
+        self.currency_code = ArrayString3::from_str(code).unwrap();
+
+        previous_code
+    }
+
+    pub fn currency_code(&self) -> ArrayString3 {
+        self.currency_code
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -24,10 +39,11 @@ mod tests {
     use super::{general_ledger_id::GeneralLedgerId, ledger_id::LedgerId, GeneralLedger};
 
     #[test]
+    #[allow(non_snake_case)]
     fn given_GeneralLedger_when_update_currency_then_get_currency_returns_new_currency() {
         // Arrange
         let currency_code = ArrayString3::from_str("EUR").unwrap();
-        let gl = GeneralLedger {
+        let mut gl = GeneralLedger {
             id: GeneralLedgerId::new(),
             name: ArrayString128::from_str("My Company").unwrap(),
             root: LedgerId::default(),

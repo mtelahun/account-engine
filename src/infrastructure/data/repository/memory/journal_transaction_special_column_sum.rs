@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
 use crate::{
+    domain::special_journal::column_total_id::ColumnTotalId,
     infrastructure::data::db_context::{
         error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::journal,
-    shared_kernel::ColumnTotalId,
 };
 
 #[async_trait]

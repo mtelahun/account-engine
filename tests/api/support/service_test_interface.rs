@@ -1,6 +1,7 @@
 use account_engine::{
     domain::{
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
+        special_journal::special_journal_template_id::SpecialJournalTemplateId,
         subsidiary_ledger::{account_id::AccountId, external_xact_type_code::ExternalXactTypeCode},
         ServiceError,
     },
@@ -8,10 +9,7 @@ use account_engine::{
         journal::{self, LedgerAccountPostingRef},
         ledger, LedgerKey,
     },
-    shared_kernel::{
-        ArrayString128, JournalId, JournalTransactionId, Sequence, SpecialJournalTemplateId,
-        XactType,
-    },
+    shared_kernel::{ArrayString128, JournalId, JournalTransactionId, Sequence, XactType},
 };
 use chrono::NaiveDateTime;
 use rust_decimal::Decimal;

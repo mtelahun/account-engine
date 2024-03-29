@@ -7,7 +7,7 @@ use crate::{
     },
     infrastructure::data::db_context::repository_operations::RepositoryOperations,
     shared_kernel::{
-        composite_ids::JournalTransactionColumnId, ids::JournalId, JournalTransactionId,
+        journal_transaction_column_id::JournalTransactionColumnId, JournalId, JournalTransactionId,
         LedgerXactTypeCode,
     },
     Store,

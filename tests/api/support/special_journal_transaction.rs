@@ -1,11 +1,12 @@
 use account_engine::{
     domain::{
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
+        special_journal::special_journal_template_id::SpecialJournalTemplateId,
         subsidiary_ledger::{account_id::AccountId, external_xact_type_code::ExternalXactTypeCode},
         LedgerAccount, ServiceError,
     },
     resource::{journal, subsidiary_ledger},
-    shared_kernel::{ArrayString128, JournalTransactionId, SpecialJournalTemplateId},
+    shared_kernel::{ArrayString128, JournalTransactionId},
 };
 use chrono::NaiveDateTime;
 use rust_decimal::Decimal;

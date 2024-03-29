@@ -21,11 +21,14 @@ use crate::{
         ledger, ledger_xact_type,
     },
     shared_kernel::{
-        composite_ids::JournalTransactionColumnId, ids::JournalId, ledger_xact_type_code,
-        ArrayString128, JournalTransactionId, LedgerXactTypeCode, SpecialJournalTemplateId,
-        TemplateColumnId,
+        journal_transaction_column_id::JournalTransactionColumnId, ledger_xact_type_code,
+        ArrayString128, JournalId, JournalTransactionId, LedgerXactTypeCode,
     },
     Store,
+};
+
+use super::{
+    special_journal_template_id::SpecialJournalTemplateId, template_column_id::TemplateColumnId,
 };
 
 #[async_trait]

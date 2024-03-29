@@ -7,7 +7,7 @@ use crate::{
         resource::Resource,
     },
     resource::journal,
-    shared_kernel::JournalTransactionColumnId,
+    shared_kernel::journal_transaction_column_id::JournalTransactionColumnId,
 };
 
 #[async_trait]

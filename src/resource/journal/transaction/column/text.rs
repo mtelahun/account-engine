@@ -1,8 +1,11 @@
 use chrono::NaiveDateTime;
 use postgres_types::{FromSql, ToSql};
 
-use crate::shared_kernel::{
-    composite_ids::JournalTransactionColumnId, ArrayString128, JournalId, TemplateColumnId,
+use crate::{
+    domain::special_journal::template_column_id::TemplateColumnId,
+    shared_kernel::{
+        journal_transaction_column_id::JournalTransactionColumnId, ArrayString128, JournalId,
+    },
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

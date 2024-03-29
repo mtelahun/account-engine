@@ -12,6 +12,7 @@ use account_engine::{
         },
         general_ledger::ledger_id::LedgerId,
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
+        special_journal::special_journal_template_id::SpecialJournalTemplateId,
         subsidiary_ledger::{
             account_id::AccountId, external_xact_type_code::ExternalXactTypeCode,
             subleder_id::SubLedgerId,
@@ -28,7 +29,7 @@ use account_engine::{
     },
     shared_kernel::{
         ArrayString128, ArrayString24, ArrayString3, JournalId, JournalTransactionId, Sequence,
-        SpecialJournalTemplateId, XactType,
+        XactType,
     },
 };
 

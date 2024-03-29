@@ -13,6 +13,10 @@ use crate::{
         general_ledger::{general_ledger_id::GeneralLedgerId, ledger_id::LedgerId},
         journal_transaction::JournalTransactionColumn,
         period::{interim_period::InterimPeriodId, period_id::PeriodId},
+        special_journal::{
+            column_total_id::ColumnTotalId, special_journal_template_id::SpecialJournalTemplateId,
+            template_column_id::TemplateColumnId,
+        },
         subsidiary_ledger::{
             account_id::AccountId, external_xact_type_code::ExternalXactTypeCode,
             subleder_id::SubLedgerId,
@@ -31,9 +35,8 @@ use crate::{
         TransactionState,
     },
     shared_kernel::{
-        composite_ids::JournalTransactionColumnId, ids::JournalId, AccountTransactionId,
-        ColumnTotalId, JournalTransactionId, LedgerXactTypeCode, Sequence,
-        SpecialJournalTemplateId, TemplateColumnId,
+        journal_transaction_column_id::JournalTransactionColumnId, AccountTransactionId, JournalId,
+        JournalTransactionId, LedgerXactTypeCode, Sequence,
     },
     Store,
 };

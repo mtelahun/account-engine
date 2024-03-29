@@ -8,6 +8,7 @@ use account_engine::{
         },
         general_ledger::ledger_id::LedgerId,
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
+        special_journal::special_journal_template_id::SpecialJournalTemplateId,
         subsidiary_ledger::account_id::AccountId,
         GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
         SpecialJournalService, SubsidiaryLedgerService,
@@ -19,9 +20,7 @@ use account_engine::{
         journal::{self, transaction::JournalTransactionColumnType},
         subsidiary_ledger, LedgerType,
     },
-    shared_kernel::{
-        ArrayString128, ArrayString3, JournalId, Sequence, SpecialJournalTemplateId, XactType,
-    },
+    shared_kernel::{ArrayString128, ArrayString3, JournalId, Sequence, XactType},
 };
 use chrono::NaiveDate;
 use fake::{faker::name::en::Name, Fake};

@@ -4,14 +4,17 @@ pub mod resource;
 pub mod shared_kernel;
 
 use async_trait::async_trait;
-use domain::general_ledger::ledger_id::LedgerId;
+use domain::{
+    general_ledger::ledger_id::LedgerId,
+    special_journal::special_journal_template_id::SpecialJournalTemplateId,
+};
 use infrastructure::data::db_context::error::OrmError;
 use resource::{
     accounting_period, journal,
     ledger::{self, transaction},
     organization,
 };
-use shared_kernel::{ArrayString24, JournalTransactionId, Sequence, SpecialJournalTemplateId};
+use shared_kernel::{ArrayString24, JournalTransactionId, Sequence};
 
 #[async_trait]
 pub trait Store {

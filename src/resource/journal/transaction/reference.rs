@@ -1,6 +1,7 @@
 use crate::{
+    domain::special_journal::column_total_id::ColumnTotalId,
     resource::journal::JournalType,
-    shared_kernel::{ColumnTotalId, JournalRefId, JournalTransactionId},
+    shared_kernel::{JournalRefId, JournalTransactionId},
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

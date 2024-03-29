@@ -5,7 +5,7 @@ use crate::{
         error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::journal,
-    shared_kernel::ids::JournalId,
+    shared_kernel::JournalId,
 };
 
 #[async_trait]

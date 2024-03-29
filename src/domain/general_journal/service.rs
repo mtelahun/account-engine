@@ -9,9 +9,7 @@ use crate::{
         repository_operations::RepositoryOperations,
     },
     resource::{account_engine::AccountEngine, journal, ledger, ledger_xact_type},
-    shared_kernel::{
-        ids::JournalId, ledger_xact_type_code, JournalTransactionId, LedgerXactTypeCode,
-    },
+    shared_kernel::{ledger_xact_type_code, JournalId, JournalTransactionId, LedgerXactTypeCode},
     Store,
 };
 

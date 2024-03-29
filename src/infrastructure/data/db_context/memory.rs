@@ -7,6 +7,10 @@ use crate::{
     domain::{
         general_ledger::{general_ledger_id::GeneralLedgerId, ledger_id::LedgerId},
         period::{interim_period::InterimPeriodId, period_id::PeriodId},
+        special_journal::{
+            column_total_id::ColumnTotalId, special_journal_template_id::SpecialJournalTemplateId,
+            template_column_id::TemplateColumnId,
+        },
         subsidiary_ledger::{
             account_id::AccountId, entity_code::EntityCode,
             external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
@@ -19,11 +23,9 @@ use crate::{
         ledger_xact_type, organization, subsidiary_ledger,
     },
     shared_kernel::{
-        composite_ids::JournalTransactionColumnId,
-        ids::{ExternalEntityId, JournalId},
-        AccountTransactionId, ArrayString128, ArrayString24, ArrayString3, ColumnTotalId,
-        JournalTransactionId, LedgerXactTypeCode, Sequence, SpecialJournalTemplateId,
-        TemplateColumnId,
+        ids::ExternalEntityId, journal_transaction_column_id::JournalTransactionColumnId,
+        AccountTransactionId, ArrayString128, ArrayString24, ArrayString3, JournalId,
+        JournalTransactionId, LedgerXactTypeCode, Sequence,
     },
     Store,
 };

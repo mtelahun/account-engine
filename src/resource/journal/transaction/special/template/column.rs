@@ -1,7 +1,14 @@
 use crate::{
-    domain::{general_ledger::ledger_id::LedgerId, subsidiary_ledger::account_id::AccountId},
+    domain::{
+        general_ledger::ledger_id::LedgerId,
+        special_journal::{
+            special_journal_template_id::SpecialJournalTemplateId,
+            template_column_id::TemplateColumnId,
+        },
+        subsidiary_ledger::account_id::AccountId,
+    },
     resource::journal::transaction::JournalTransactionColumnType,
-    shared_kernel::{ArrayString24, Sequence, SpecialJournalTemplateId, TemplateColumnId},
+    shared_kernel::{ArrayString24, Sequence},
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

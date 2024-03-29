@@ -4,7 +4,7 @@ use rust_decimal::Decimal;
 use crate::{
     domain::general_ledger::ledger_id::LedgerId,
     resource::{LedgerPostingRef, TransactionState},
-    shared_kernel::{ids::JournalId, JournalTransactionId},
+    shared_kernel::{JournalId, JournalTransactionId},
 };
 
 #[derive(Clone, Copy, Debug, Default)]

@@ -14,7 +14,7 @@ use crate::{
         ledger::{self, LedgerType},
         InterimType,
     },
-    shared_kernel::{ids::JournalId, ArrayString128, ArrayString24, ArrayString3},
+    shared_kernel::{ArrayString128, ArrayString24, ArrayString3, JournalId},
     Store,
 };
 

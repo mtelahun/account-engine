@@ -3,7 +3,7 @@ use journal_entry::LedgerKey;
 
 use crate::{
     domain::ServiceError,
-    infrastructure::data::db_context::{
+    infrastructure::persistence::context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{

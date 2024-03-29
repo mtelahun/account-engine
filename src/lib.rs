@@ -8,7 +8,7 @@ use domain::{
     general_ledger::ledger_id::LedgerId,
     special_journal::special_journal_template_id::SpecialJournalTemplateId,
 };
-use infrastructure::data::db_context::error::OrmError;
+use infrastructure::persistence::context::error::OrmError;
 use resource::{
     accounting_period, journal,
     ledger::{self, transaction},

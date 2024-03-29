@@ -5,7 +5,7 @@ use crate::{
         period::{interim_period::InterimPeriodId, period_id::PeriodId},
         Ledger, LedgerAccount, ServiceError,
     },
-    infrastructure::data::db_context::{
+    infrastructure::persistence::context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{

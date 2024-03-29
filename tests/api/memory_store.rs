@@ -4,7 +4,7 @@ use account_engine::{
         GeneralLedgerService, JournalTransactionService, LedgerAccount, LedgerService,
         ServiceError, SpecialJournalService, SpecialJournalTransactionService,
     },
-    infrastructure::data::db_context::error::OrmError,
+    infrastructure::persistence::context::error::OrmError,
     resource::{
         accounting_period,
         journal::{

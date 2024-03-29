@@ -1,4 +1,3 @@
-pub mod account_transaction_id;
 pub mod array_string_24;
 pub mod array_string_3;
 pub mod array_string_64;
@@ -19,7 +18,6 @@ const STRING24_LEN: usize = 24;
 const STRING64_LEN: usize = 64;
 
 // Re-export
-pub use account_transaction_id::AccountTransactionId;
 pub use array_string_24::ArrayString24;
 pub use array_string_3::ArrayString3;
 pub use array_string_64::ArrayString128;

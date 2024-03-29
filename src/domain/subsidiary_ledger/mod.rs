@@ -1,4 +1,5 @@
 pub mod account_id;
+pub mod account_transaction_id;
 pub mod account_type;
 pub mod entity_code;
 pub mod external_xact_type_code;

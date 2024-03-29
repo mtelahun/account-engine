@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     domain::{general_ledger::ledger_id::LedgerId, ServiceError},
-    infrastructure::data::db_context::{
+    infrastructure::persistence::context::{
         error::OrmError, memory::MemoryStore, postgres::PostgresStore,
         repository_operations::RepositoryOperations,
     },

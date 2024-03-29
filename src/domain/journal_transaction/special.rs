@@ -18,13 +18,13 @@ use crate::{
             template_column_id::TemplateColumnId,
         },
         subsidiary_ledger::{
-            account_id::AccountId, external_xact_type_code::ExternalXactTypeCode,
-            subleder_id::SubLedgerId,
+            account_id::AccountId, account_transaction_id::AccountTransactionId,
+            external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
         },
         GeneralJournalService, GeneralLedgerService, JournalTransactionService, ServiceError,
         SpecialJournalService, SubsidiaryLedgerService,
     },
-    infrastructure::data::db_context::{
+    infrastructure::persistence::context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{
@@ -35,8 +35,8 @@ use crate::{
         TransactionState,
     },
     shared_kernel::{
-        journal_transaction_column_id::JournalTransactionColumnId, AccountTransactionId, JournalId,
-        JournalTransactionId, LedgerXactTypeCode, Sequence,
+        journal_transaction_column_id::JournalTransactionColumnId, JournalId, JournalTransactionId,
+        LedgerXactTypeCode, Sequence,
     },
     Store,
 };

@@ -3,7 +3,7 @@ use account_engine::{
         general_ledger::ledger_id::LedgerId, AccountingPeriodService, GeneralJournalService,
         GeneralLedgerService, JournalTransactionService, LedgerService, ServiceError,
     },
-    infrastructure::data::db_context::error::OrmError,
+    infrastructure::persistence::context::error::OrmError,
     resource::{accounting_period, journal, InterimType, LedgerType, TransactionState},
 };
 use chrono::{NaiveDate, NaiveDateTime};

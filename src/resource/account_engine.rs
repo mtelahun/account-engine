@@ -5,7 +5,7 @@ use crate::{
         subsidiary_ledger::{account_id::AccountId, subleder_id::SubLedgerId},
         ServiceError,
     },
-    infrastructure::data::db_context::repository_operations::RepositoryOperations,
+    infrastructure::persistence::context::repository_operations::RepositoryOperations,
     shared_kernel::{
         journal_transaction_column_id::JournalTransactionColumnId, JournalId, JournalTransactionId,
         LedgerXactTypeCode,

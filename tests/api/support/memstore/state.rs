@@ -20,7 +20,7 @@ use account_engine::{
         GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
         SpecialJournalService, SpecialJournalTransactionService, SubsidiaryLedgerService,
     },
-    infrastructure::data::db_context::memory::MemoryStore,
+    infrastructure::persistence::context::memory::MemoryStore,
     resource::{
         account_engine::AccountEngine,
         external, general_ledger,

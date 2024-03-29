@@ -2,8 +2,10 @@ use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
 use crate::{
-    domain::subsidiary_ledger::account_id::AccountId,
-    shared_kernel::{AccountTransactionId, XactType},
+    domain::subsidiary_ledger::{
+        account_id::AccountId, account_transaction_id::AccountTransactionId,
+    },
+    shared_kernel::XactType,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

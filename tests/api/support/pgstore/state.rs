@@ -13,7 +13,7 @@ use account_engine::{
         GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
         SpecialJournalService, SubsidiaryLedgerService,
     },
-    infrastructure::data::db_context::postgres::PostgresStore,
+    infrastructure::persistence::context::postgres::PostgresStore,
     resource::{
         account_engine::AccountEngine,
         external, general_ledger,

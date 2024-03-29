@@ -10,7 +10,7 @@ use crate::{
         subsidiary_ledger::{account_id::AccountId, external_xact_type_code::ExternalXactTypeCode},
         ServiceError,
     },
-    infrastructure::data::db_context::{
+    infrastructure::persistence::context::{
         error::OrmError, memory::MemoryStore, postgres::PostgresStore,
         repository_operations::RepositoryOperations,
     },

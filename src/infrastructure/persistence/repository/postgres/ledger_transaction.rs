@@ -3,12 +3,15 @@ use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::{
+    domain::entity::{
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+        ledger_xact_type_code::{self, LedgerXactTypeCode},
+    },
     infrastructure::persistence::context::{
         error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::{ledger, LedgerKey},
-    shared_kernel::{ledger_xact_type_code, JournalTransactionId, LedgerXactTypeCode},
 };
 
 #[async_trait]

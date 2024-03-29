@@ -9,7 +9,7 @@ use crate::infrastructure::persistence::context::postgres::PostgresStore;
 use crate::infrastructure::persistence::context::repository_operations::RepositoryOperations;
 use crate::infrastructure::persistence::context::resource::Resource;
 use crate::resource::general_ledger;
-use crate::shared_kernel::ArrayString128;
+use crate::shared_kernel::ArrayString64;
 
 #[async_trait]
 impl RepositoryOperations<general_ledger::Model, general_ledger::ActiveModel, GeneralLedgerId>
@@ -100,7 +100,7 @@ impl From<Row> for general_ledger::ActiveModel {
     fn from(value: Row) -> Self {
         Self {
             id: value.get("id"),
-            name: ArrayString128::from_str(value.get("name")).unwrap_or_default(),
+            name: ArrayString64::from_str(value.get("name")).unwrap_or_default(),
             root: value.get("root"),
             currency_code: value.get("currency_code"),
         }

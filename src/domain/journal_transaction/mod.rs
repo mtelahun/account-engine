@@ -6,20 +6,17 @@ use crate::{
         self,
         transaction::{AccountPostingRef, JournalTransactionColumnType},
     },
-    shared_kernel::{
-        journal_transaction_column_id::JournalTransactionColumnId, ArrayString128, JournalId,
-        JournalTransactionId,
-    },
+    shared_kernel::ArrayString64,
 };
 
-use super::{
-    entity::{
-        external_account::account_id::AccountId, ledger::ledger_id::LedgerId,
-        subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
-    },
-    special_journal::{
-        column_total_id::ColumnTotalId, special_journal_template_id::SpecialJournalTemplateId,
-    },
+use super::entity::{
+    column_total::column_total_id::ColumnTotalId, external_account::account_id::AccountId,
+    general_journal::journal_id::JournalId,
+    general_journal_transaction::journal_transaction_id::JournalTransactionId,
+    journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
+    ledger::ledger_id::LedgerId,
+    special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
+    subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
 };
 
 pub mod column;
@@ -32,7 +29,7 @@ pub trait JournalTransactionOps {}
 pub struct SpecialJournalTransaction<S: JournalTransactionOps> {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
-    pub explanation: ArrayString128,
+    pub explanation: ArrayString64,
     pub(crate) extra: S,
 }
 

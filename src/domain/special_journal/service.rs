@@ -6,7 +6,14 @@ use chrono::NaiveDateTime;
 use crate::{
     domain::{
         entity::{
-            external_account::account_id::AccountId, ledger::ledger_id::LedgerId,
+            external_account::account_id::AccountId,
+            general_journal::journal_id::JournalId,
+            general_journal_transaction::journal_transaction_id::JournalTransactionId,
+            journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
+            ledger::ledger_id::LedgerId,
+            ledger_xact_type_code::{self, LedgerXactTypeCode},
+            special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
+            special_journal_template_column::template_column_id::TemplateColumnId,
             subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
         },
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
@@ -22,15 +29,8 @@ use crate::{
         journal::{self, transaction::JournalTransactionColumnType},
         ledger, ledger_xact_type,
     },
-    shared_kernel::{
-        journal_transaction_column_id::JournalTransactionColumnId, ledger_xact_type_code,
-        ArrayString128, JournalId, JournalTransactionId, LedgerXactTypeCode,
-    },
+    shared_kernel::ArrayString64,
     Store,
-};
-
-use super::{
-    special_journal_template_id::SpecialJournalTemplateId, template_column_id::TemplateColumnId,
 };
 
 #[async_trait]
@@ -135,7 +135,7 @@ where
         &self,
         journal_id: JournalId,
         timestamp: NaiveDateTime,
-        explanation: ArrayString128,
+        explanation: ArrayString64,
         template_id: SpecialJournalTemplateId,
         xact_type_external_code: ExternalXactTypeCode,
         line_models: &[JournalTransactionColumn],

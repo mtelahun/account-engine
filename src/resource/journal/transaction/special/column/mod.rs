@@ -2,11 +2,13 @@ use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
 use crate::{
-    domain::{
-        entity::ledger::ledger_id::LedgerId, special_journal::column_total_id::ColumnTotalId,
+    domain::entity::{
+        column_total::column_total_id::ColumnTotalId, general_journal::journal_id::JournalId,
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+        ledger::ledger_id::LedgerId,
     },
     resource::TransactionState,
-    shared_kernel::{JournalId, JournalTransactionId, Sequence},
+    shared_kernel::Sequence,
 };
 
 pub mod sum;

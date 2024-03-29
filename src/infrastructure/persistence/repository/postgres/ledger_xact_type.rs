@@ -3,12 +3,12 @@ use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::{
+    domain::entity::ledger_xact_type_code::{self, LedgerXactTypeCode},
     infrastructure::persistence::context::{
         error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,
     },
     resource::ledger_xact_type,
-    shared_kernel::ledger_xact_type_code::{self, LedgerXactTypeCode},
 };
 
 #[async_trait]

@@ -9,13 +9,15 @@ use crate::{
     resource::{
         account_engine::AccountEngine,
         ledger::{self, journal_entry, LedgerType},
-        AccountBalance, LedgerPostingRef,
+        LedgerPostingRef,
     },
-    shared_kernel::{ArrayString128, ArrayString24, ArrayString3, XactType},
+    shared_kernel::{ArrayString24, ArrayString3, ArrayString64},
     Store,
 };
 
 use self::ledger_id::LedgerId;
+
+use super::{account_balance::AccountBalance, xact_type::XactType};
 
 pub mod ledger_id;
 
@@ -144,7 +146,7 @@ pub struct Ledger<S: LedgerOps> {
     pub number: ArrayString24,
     pub ledger_type: LedgerType,
     pub parent_id: Option<LedgerId>,
-    pub name: ArrayString128,
+    pub name: ArrayString64,
     pub currency_code: Option<ArrayString3>,
     extra: S,
 }
@@ -202,7 +204,7 @@ impl LedgerAccount {
         }
     }
 
-    pub fn name(&self) -> ArrayString128 {
+    pub fn name(&self) -> ArrayString64 {
         match self {
             LedgerAccount::Derived(l) => l.name,
             LedgerAccount::Intermediate(l) => l.name,

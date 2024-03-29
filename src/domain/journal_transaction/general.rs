@@ -1,7 +1,14 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::{entity::ledger::ledger_id::LedgerId, GeneralJournalService, ServiceError},
+    domain::{
+        entity::{
+            general_journal::journal_id::JournalId,
+            general_journal_transaction::journal_transaction_id::JournalTransactionId,
+            ledger::ledger_id::LedgerId, ledger_xact_type_code::LedgerXactTypeCode,
+        },
+        GeneralJournalService, ServiceError,
+    },
     infrastructure::persistence::context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
@@ -9,7 +16,6 @@ use crate::{
         account_engine::AccountEngine, journal, ledger, ledger_xact_type, LedgerKey,
         LedgerPostingRef, TransactionState,
     },
-    shared_kernel::{JournalId, JournalTransactionId, LedgerXactTypeCode},
     Store,
 };
 

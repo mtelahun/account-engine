@@ -1,18 +1,19 @@
 use account_engine::{
     domain::{
         entity::{
-            external_account::account_id::AccountId,
-            subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
+            external_account::account_id::AccountId, general_journal::journal_id::JournalId,
+            general_journal_transaction::journal_transaction_id::JournalTransactionId,
+            special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
+            subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode, xact_type::XactType,
         },
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
-        special_journal::special_journal_template_id::SpecialJournalTemplateId,
         ServiceError,
     },
     resource::{
         journal::{self, LedgerAccountPostingRef},
         ledger, LedgerKey,
     },
-    shared_kernel::{ArrayString128, JournalId, JournalTransactionId, Sequence, XactType},
+    shared_kernel::{ArrayString64, Sequence},
 };
 use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
@@ -55,7 +56,7 @@ pub trait ServiceTestInterface {
         account_xact_type: XactType,
         xact_type_external_code: &ExternalXactTypeCode,
         amount: Decimal,
-        explanation: &ArrayString128,
+        explanation: &ArrayString64,
         tpl_col: &Vec<journal::transaction::special::template::column::ActiveModel>,
         line_models: &'a [JournalTransactionColumn],
     ) -> Result<

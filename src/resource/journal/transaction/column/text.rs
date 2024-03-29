@@ -2,10 +2,12 @@ use chrono::NaiveDateTime;
 use postgres_types::{FromSql, ToSql};
 
 use crate::{
-    domain::special_journal::template_column_id::TemplateColumnId,
-    shared_kernel::{
-        journal_transaction_column_id::JournalTransactionColumnId, ArrayString128, JournalId,
+    domain::entity::{
+        general_journal::journal_id::JournalId,
+        journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
+        special_journal_template_column::template_column_id::TemplateColumnId,
     },
+    shared_kernel::ArrayString64,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -13,7 +15,7 @@ pub struct Model {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
     pub template_column_id: TemplateColumnId,
-    pub value: ArrayString128,
+    pub value: ArrayString64,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ToSql, FromSql)]
@@ -21,7 +23,7 @@ pub struct ActiveModel {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
     pub template_column_id: TemplateColumnId,
-    pub value: ArrayString128,
+    pub value: ArrayString64,
 }
 
 impl ActiveModel {

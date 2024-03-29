@@ -2,12 +2,11 @@ use chrono::NaiveDateTime;
 use postgres_types::{FromSql, ToSql};
 use rust_decimal::Decimal;
 
-use crate::{
-    domain::{
-        entity::ledger::ledger_id::LedgerId,
-        special_journal::{column_total_id::ColumnTotalId, template_column_id::TemplateColumnId},
-    },
-    shared_kernel::{journal_transaction_column_id::JournalTransactionColumnId, JournalId},
+use crate::domain::entity::{
+    column_total::column_total_id::ColumnTotalId, general_journal::journal_id::JournalId,
+    journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
+    ledger::ledger_id::LedgerId,
+    special_journal_template_column::template_column_id::TemplateColumnId,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

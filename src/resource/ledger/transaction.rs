@@ -1,9 +1,9 @@
 use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
-use crate::{
-    domain::entity::ledger::ledger_id::LedgerId,
-    shared_kernel::{JournalTransactionId, LedgerXactTypeCode},
+use crate::domain::entity::{
+    general_journal_transaction::journal_transaction_id::JournalTransactionId,
+    ledger::ledger_id::LedgerId, ledger_xact_type_code::LedgerXactTypeCode,
 };
 
 use super::journal_entry::LedgerKey;
@@ -72,10 +72,9 @@ pub mod account {
     use crate::{
         domain::entity::{
             external_account::account_id::AccountId, ledger::ledger_id::LedgerId,
-            subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
+            subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode, xact_type::XactType,
         },
         resource::ledger::journal_entry::LedgerKey,
-        shared_kernel::XactType,
     };
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]

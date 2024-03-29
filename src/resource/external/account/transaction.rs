@@ -1,11 +1,9 @@
 use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
-use crate::{
-    domain::entity::external_account::{
-        account_id::AccountId, account_transaction_id::AccountTransactionId,
-    },
-    shared_kernel::XactType,
+use crate::domain::entity::{
+    external_account::{account_id::AccountId, account_transaction_id::AccountTransactionId},
+    xact_type::XactType,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

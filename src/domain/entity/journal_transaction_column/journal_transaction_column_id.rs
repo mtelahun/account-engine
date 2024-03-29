@@ -1,8 +1,9 @@
 use chrono::NaiveDateTime;
 
-use crate::domain::special_journal::template_column_id::TemplateColumnId;
-
-use super::JournalId;
+use crate::domain::entity::{
+    general_journal::journal_id::JournalId,
+    special_journal_template_column::template_column_id::TemplateColumnId,
+};
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct JournalTransactionColumnId(JournalId, NaiveDateTime, TemplateColumnId);

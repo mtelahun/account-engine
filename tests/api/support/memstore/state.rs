@@ -8,17 +8,20 @@ use account_engine::{
     domain::{
         entity::{
             external_account::account_id::AccountId,
+            general_journal::journal_id::JournalId,
+            general_journal_transaction::journal_transaction_id::JournalTransactionId,
             ledger::ledger_id::LedgerId,
+            special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
             subsidiary_ledger::{
                 external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
             },
+            xact_type::XactType,
         },
         external::{
             EntityTypeBuilder, ExternalAccount, ExternalAccountBuilder, ExternalEntityBuilder,
             ExternalEntityType, ExternalService,
         },
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
-        special_journal::special_journal_template_id::SpecialJournalTemplateId,
         GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
         SpecialJournalService, SpecialJournalTransactionService, SubsidiaryLedgerService,
     },
@@ -29,10 +32,7 @@ use account_engine::{
         journal::{self, transaction::JournalTransactionColumnType, LedgerAccountPostingRef},
         ledger, subsidiary_ledger, LedgerKey, LedgerType,
     },
-    shared_kernel::{
-        ArrayString128, ArrayString24, ArrayString3, JournalId, JournalTransactionId, Sequence,
-        XactType,
-    },
+    shared_kernel::{ArrayString24, ArrayString3, ArrayString64, Sequence},
 };
 
 use crate::support::{
@@ -62,7 +62,7 @@ impl TestState {
             .await
             .expect("failed to create engine instance");
         let ledger = general_ledger::Model {
-            name: ArrayString128::from_str("My Company").unwrap(),
+            name: ArrayString64::from_str("My Company").unwrap(),
             currency_code: ArrayString3::from_str("USD").unwrap(),
         };
         let ledger = engine
@@ -346,7 +346,7 @@ impl StateInterface for TestState {
             &subledger_id,
             &entity.id(),
             ArrayString24::from(number),
-            ArrayString128::from(name),
+            ArrayString64::from(name),
             Utc::now().date_naive(),
         );
         self.engine
@@ -530,7 +530,7 @@ impl ServiceTestInterface for TestState {
         _account_xact_type: XactType,
         xact_type_external_code: &ExternalXactTypeCode,
         _amount: Decimal,
-        explanation: &ArrayString128,
+        explanation: &ArrayString64,
         _tpl_col: &Vec<journal::transaction::special::template::column::ActiveModel>,
         line_models: &'a [JournalTransactionColumn],
     ) -> Result<

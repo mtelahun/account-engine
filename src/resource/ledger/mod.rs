@@ -2,9 +2,7 @@ use postgres_types::{FromSql, ToSql};
 
 use crate::{
     domain::entity::ledger::ledger_id::LedgerId,
-    shared_kernel::{
-        array_string_24::ArrayString24, array_string_64::ArrayString128, ArrayString3,
-    },
+    shared_kernel::{array_string_24::ArrayString24, array_string_64::ArrayString64, ArrayString3},
 };
 
 pub mod derived;
@@ -18,7 +16,7 @@ pub struct Model {
     pub number: ArrayString24,
     pub ledger_type: LedgerType,
     pub parent_id: Option<LedgerId>,
-    pub name: ArrayString128,
+    pub name: ArrayString64,
     pub currency_code: Option<ArrayString3>,
 }
 
@@ -28,7 +26,7 @@ pub struct ActiveModel {
     pub number: ArrayString24,
     pub ledger_type: LedgerType,
     pub parent_id: Option<LedgerId>,
-    pub name: ArrayString128,
+    pub name: ArrayString64,
     pub currency_code: Option<ArrayString3>,
 }
 

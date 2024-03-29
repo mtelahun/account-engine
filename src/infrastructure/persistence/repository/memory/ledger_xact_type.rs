@@ -1,9 +1,9 @@
 use crate::{
+    domain::entity::ledger_xact_type_code::LedgerXactTypeCode,
     infrastructure::persistence::context::{
         error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::ledger_xact_type,
-    shared_kernel::ledger_xact_type_code::LedgerXactTypeCode,
 };
 use async_trait::async_trait;
 

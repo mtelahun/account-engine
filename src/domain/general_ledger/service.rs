@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use crate::{
     domain::{
         entity::{
+            general_journal::journal_id::JournalId,
             general_ledger::general_ledger_id::GeneralLedgerId,
             interim_period::interim_period_id::InterimPeriodId, ledger::ledger_id::LedgerId,
             period::period_id::PeriodId,
@@ -18,7 +19,7 @@ use crate::{
         ledger::{self, LedgerType},
         InterimType,
     },
-    shared_kernel::{ArrayString128, ArrayString24, ArrayString3, JournalId},
+    shared_kernel::{ArrayString24, ArrayString3, ArrayString64},
     Store,
 };
 
@@ -82,7 +83,7 @@ where
             ));
         }
         let base = ledger::Model {
-            name: ArrayString128::from(name),
+            name: ArrayString64::from(name),
             number: ArrayString24::from(number),
             ledger_type,
             parent_id: Some(parent_id),

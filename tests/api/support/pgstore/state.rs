@@ -2,13 +2,17 @@ use std::str::FromStr;
 
 use account_engine::{
     domain::{
-        entity::{external_account::account_id::AccountId, ledger::ledger_id::LedgerId},
+        entity::{
+            external_account::account_id::AccountId, general_journal::journal_id::JournalId,
+            ledger::ledger_id::LedgerId,
+            special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
+            xact_type::XactType,
+        },
         external::{
             EntityTypeBuilder, ExternalAccount, ExternalAccountBuilder, ExternalEntityBuilder,
             ExternalEntityType, ExternalService,
         },
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
-        special_journal::special_journal_template_id::SpecialJournalTemplateId,
         GeneralJournalService, GeneralLedgerService, LedgerAccount, ServiceError,
         SpecialJournalService, SubsidiaryLedgerService,
     },
@@ -19,7 +23,7 @@ use account_engine::{
         journal::{self, transaction::JournalTransactionColumnType},
         subsidiary_ledger, LedgerType,
     },
-    shared_kernel::{ArrayString128, ArrayString3, JournalId, Sequence, XactType},
+    shared_kernel::{ArrayString3, ArrayString64, Sequence},
 };
 use chrono::NaiveDate;
 use fake::{faker::name::en::Name, Fake};
@@ -54,7 +58,7 @@ impl TestState {
         println!("Database name: {db_name}");
 
         let general_ledger = general_ledger::Model {
-            name: ArrayString128::from_str("My Compnay").unwrap(),
+            name: ArrayString64::from_str("My Compnay").unwrap(),
             currency_code: ArrayString3::from_str("USD").unwrap(),
         };
         let general_ledger = GeneralLedgerService::update_general_ledger(&engine, &general_ledger)
@@ -146,7 +150,7 @@ impl TestState {
         let model = journal::transaction::general::Model {
             journal_id,
             timestamp,
-            explanation: ArrayString128::from(desc),
+            explanation: ArrayString64::from(desc),
             lines: vec![line1],
         };
 

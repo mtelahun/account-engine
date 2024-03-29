@@ -1,9 +1,11 @@
 use crate::{
-    domain::{
-        entity::subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
-        special_journal::special_journal_template_id::SpecialJournalTemplateId,
+    domain::entity::{
+        general_journal::journal_id::JournalId,
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+        special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
+        subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
     },
-    shared_kernel::{ArrayString128, JournalId, JournalTransactionId},
+    shared_kernel::ArrayString64,
 };
 use chrono::NaiveDateTime;
 
@@ -35,7 +37,7 @@ pub struct JournalTransactionSpecial {
     pub timestamp: NaiveDateTime,
     pub template_id: SpecialJournalTemplateId,
     pub xact_type_external: Option<ExternalXactTypeCode>,
-    pub explanation: ArrayString128,
+    pub explanation: ArrayString64,
     pub state: TransactionState,
 }
 

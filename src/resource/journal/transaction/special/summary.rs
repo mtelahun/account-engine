@@ -1,6 +1,9 @@
 use chrono::NaiveDateTime;
 
-use crate::shared_kernel::{JournalId, JournalTransactionId};
+use crate::domain::entity::{
+    general_journal::journal_id::JournalId,
+    general_journal_transaction::journal_transaction_id::JournalTransactionId,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Model {

@@ -1,8 +1,9 @@
 use account_engine::{
     domain::{
-        entity::ledger::ledger_id::LedgerId, AccountingPeriodService, GeneralJournalService,
-        GeneralLedgerService, JournalTransactionService, LedgerAccount, LedgerService,
-        ServiceError, SpecialJournalService, SpecialJournalTransactionService,
+        entity::{ledger::ledger_id::LedgerId, xact_type::XactType},
+        AccountingPeriodService, GeneralJournalService, GeneralLedgerService,
+        JournalTransactionService, LedgerAccount, LedgerService, ServiceError,
+        SpecialJournalService, SpecialJournalTransactionService,
     },
     infrastructure::persistence::context::error::OrmError,
     resource::{
@@ -13,7 +14,6 @@ use account_engine::{
         },
         InterimType, LedgerType, TransactionState,
     },
-    shared_kernel::XactType,
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;

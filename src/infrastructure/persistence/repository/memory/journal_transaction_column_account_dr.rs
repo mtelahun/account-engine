@@ -2,12 +2,15 @@ use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
 use crate::{
-    domain::special_journal::template_column_id::TemplateColumnId,
+    domain::entity::{
+        general_journal::journal_id::JournalId,
+        journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
+        special_journal_template_column::template_column_id::TemplateColumnId,
+    },
     infrastructure::persistence::context::{
         error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::journal,
-    shared_kernel::{journal_transaction_column_id::JournalTransactionColumnId, JournalId},
 };
 
 #[async_trait]

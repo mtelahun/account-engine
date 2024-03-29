@@ -2,9 +2,12 @@ use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
 use crate::{
-    domain::entity::ledger::ledger_id::LedgerId,
+    domain::entity::{
+        general_journal::journal_id::JournalId,
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+        ledger::ledger_id::LedgerId,
+    },
     resource::{LedgerPostingRef, TransactionState},
-    shared_kernel::{JournalId, JournalTransactionId},
 };
 
 #[derive(Clone, Copy, Debug, Default)]

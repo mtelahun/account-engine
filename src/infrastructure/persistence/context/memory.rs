@@ -4,23 +4,22 @@ use async_trait::async_trait;
 use tokio::sync::RwLock;
 
 use crate::{
-    domain::{
-        entity::{
-            external_account::{
-                account_id::AccountId, account_transaction_id::AccountTransactionId,
-            },
-            external_entity::entity_code::EntityCode,
-            general_ledger::general_ledger_id::GeneralLedgerId,
-            interim_period::interim_period_id::InterimPeriodId,
-            ledger::ledger_id::LedgerId,
-            period::period_id::PeriodId,
-            subsidiary_ledger::{
-                external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
-            },
-        },
-        special_journal::{
-            column_total_id::ColumnTotalId, special_journal_template_id::SpecialJournalTemplateId,
-            template_column_id::TemplateColumnId,
+    domain::entity::{
+        column_total::column_total_id::ColumnTotalId,
+        external_account::{account_id::AccountId, account_transaction_id::AccountTransactionId},
+        external_entity::entity_code::EntityCode,
+        general_journal::journal_id::JournalId,
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+        general_ledger::general_ledger_id::GeneralLedgerId,
+        interim_period::interim_period_id::InterimPeriodId,
+        journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
+        ledger::ledger_id::LedgerId,
+        ledger_xact_type_code::LedgerXactTypeCode,
+        period::period_id::PeriodId,
+        special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
+        special_journal_template_column::template_column_id::TemplateColumnId,
+        subsidiary_ledger::{
+            external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
         },
     },
     resource::{
@@ -29,11 +28,7 @@ use crate::{
         ledger::{self, journal_entry::LedgerKey, LedgerType},
         ledger_xact_type, organization, subsidiary_ledger,
     },
-    shared_kernel::{
-        ids::ExternalEntityId, journal_transaction_column_id::JournalTransactionColumnId,
-        ArrayString128, ArrayString24, ArrayString3, JournalId, JournalTransactionId,
-        LedgerXactTypeCode, Sequence,
-    },
+    shared_kernel::{ids::ExternalEntityId, ArrayString24, ArrayString3, ArrayString64, Sequence},
     Store,
 };
 
@@ -215,7 +210,7 @@ impl Inner {
             number: ArrayString24::from_str("0").unwrap(),
             ledger_type: LedgerType::Intermediate,
             parent_id: None,
-            name: ArrayString128::from_str("Root").unwrap(),
+            name: ArrayString64::from_str("Root").unwrap(),
             currency_code: None,
         };
         self.ledger.insert(root_id, root);
@@ -229,7 +224,7 @@ impl Inner {
         let id = GeneralLedgerId::new();
         let v = general_ledger::ActiveModel {
             id,
-            name: ArrayString128::from_str("Root").unwrap(),
+            name: ArrayString64::from_str("Root").unwrap(),
             currency_code: ArrayString3::from_str("USD").unwrap(),
             root: root_id,
         };

@@ -1,11 +1,11 @@
 use postgres_types::{FromSql, ToSql};
 
 use crate::{
-    domain::{
-        entity::ledger::ledger_id::LedgerId,
-        special_journal::special_journal_template_id::SpecialJournalTemplateId,
+    domain::entity::{
+        general_journal::journal_id::JournalId, ledger::ledger_id::LedgerId,
+        special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
     },
-    shared_kernel::{ArrayString128, ArrayString24, JournalId},
+    shared_kernel::{ArrayString24, ArrayString64},
 };
 
 pub mod transaction;
@@ -28,7 +28,7 @@ pub enum JournalType {
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Model {
-    pub name: ArrayString128,
+    pub name: ArrayString64,
     pub code: ArrayString24,
     pub journal_type: JournalType,
     pub control_ledger_id: Option<LedgerId>,
@@ -38,7 +38,7 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ActiveModel {
     pub id: JournalId,
-    pub name: ArrayString128,
+    pub name: ArrayString64,
     pub code: ArrayString24,
     pub journal_type: JournalType,
     pub control_ledger_id: Option<LedgerId>,

@@ -2,14 +2,15 @@ use account_engine::{
     domain::{
         entity::{
             external_account::account_id::AccountId,
-            subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
+            general_journal_transaction::journal_transaction_id::JournalTransactionId,
+            special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
+            subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode, xact_type::XactType,
         },
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
-        special_journal::special_journal_template_id::SpecialJournalTemplateId,
         LedgerAccount, ServiceError,
     },
     resource::{journal, subsidiary_ledger},
-    shared_kernel::{ArrayString128, JournalTransactionId},
+    shared_kernel::ArrayString64,
 };
 use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
@@ -29,7 +30,7 @@ pub struct TestSpecialJournalTransaction<S> {
     pub control: LedgerAccount,
     pub account_id: AccountId,
     pub template_id: SpecialJournalTemplateId,
-    pub explanation: ArrayString128,
+    pub explanation: ArrayString64,
     pub xact_type_external_code: ExternalXactTypeCode,
     pub column1: JournalTransactionColumn,
     pub timestamp: NaiveDateTime,
@@ -88,7 +89,7 @@ impl<S: StateInterface + ServiceTestInterface> TestSpecialJournalTransaction<S> 
                 self.timestamp,
                 &self.template_id,
                 self.account_id,
-                account_engine::shared_kernel::XactType::Dr,
+                XactType::Dr,
                 &"DF".into(),
                 Decimal::from(100),
                 &self.explanation,

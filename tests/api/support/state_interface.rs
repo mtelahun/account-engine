@@ -1,11 +1,13 @@
 use account_engine::{
     domain::{
-        entity::{ledger::ledger_id::LedgerId, subsidiary_ledger::subleder_id::SubLedgerId},
+        entity::{
+            general_journal::journal_id::JournalId, ledger::ledger_id::LedgerId,
+            subsidiary_ledger::subleder_id::SubLedgerId,
+        },
         external::ExternalAccount,
         LedgerAccount, ServiceError,
     },
     resource::{journal, subsidiary_ledger, LedgerType},
-    shared_kernel::JournalId,
 };
 use rust_decimal::Decimal;
 

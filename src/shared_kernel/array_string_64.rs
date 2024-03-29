@@ -6,13 +6,13 @@ use postgres_types::{to_sql_checked, FromSql, ToSql};
 use super::{fixed_len_char::InvalidLengthError, STRING64_LEN};
 
 #[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq)]
-pub struct ArrayString128(ArrayString<STRING64_LEN>);
+pub struct ArrayString64(ArrayString<STRING64_LEN>);
 
-impl ArrayString128 {
+impl ArrayString64 {
     pub const LENGTH: usize = STRING64_LEN;
 
     pub fn new() -> Self {
-        ArrayString128(ArrayString::<STRING64_LEN>::new())
+        ArrayString64(ArrayString::<STRING64_LEN>::new())
     }
 
     pub fn as_bytes(&self) -> &[u8] {
@@ -36,13 +36,13 @@ impl ArrayString128 {
     }
 }
 
-impl std::fmt::Display for ArrayString128 {
+impl std::fmt::Display for ArrayString64 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:#}", self.0.as_str())
     }
 }
 
-impl std::str::FromStr for ArrayString128 {
+impl std::str::FromStr for ArrayString64 {
     type Err = InvalidLengthError;
 
     fn from_str(src: &str) -> Result<Self, Self::Err> {
@@ -55,13 +55,13 @@ impl std::str::FromStr for ArrayString128 {
     }
 }
 
-impl From<&str> for ArrayString128 {
+impl From<&str> for ArrayString64 {
     fn from(value: &str) -> Self {
         Self::from(value.to_string())
     }
 }
 
-impl From<String> for ArrayString128 {
+impl From<String> for ArrayString64 {
     fn from(value: String) -> Self {
         let mut value = value;
         if value.len() > STRING64_LEN {
@@ -72,13 +72,13 @@ impl From<String> for ArrayString128 {
     }
 }
 
-impl From<ArrayString<STRING64_LEN>> for ArrayString128 {
+impl From<ArrayString<STRING64_LEN>> for ArrayString64 {
     fn from(value: ArrayString<STRING64_LEN>) -> Self {
         Self(value)
     }
 }
 
-impl Deref for ArrayString128 {
+impl Deref for ArrayString64 {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -86,26 +86,26 @@ impl Deref for ArrayString128 {
     }
 }
 
-impl PartialEq<ArrayString128> for str {
-    fn eq(&self, other: &ArrayString128) -> bool {
+impl PartialEq<ArrayString64> for str {
+    fn eq(&self, other: &ArrayString64) -> bool {
         *self == *other.as_str()
     }
 }
 
-impl AsRef<str> for ArrayString128 {
+impl AsRef<str> for ArrayString64 {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
     }
 }
 
-impl<'a> FromSql<'a> for ArrayString128 {
+impl<'a> FromSql<'a> for ArrayString64 {
     fn from_sql(
         ty: &postgres_types::Type,
         raw: &'a [u8],
     ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
         let res = <&str as FromSql>::from_sql(ty, raw).map(ToString::to_string)?;
 
-        Ok(ArrayString128::from(res))
+        Ok(ArrayString64::from(res))
     }
 
     fn accepts(ty: &postgres_types::Type) -> bool {
@@ -113,7 +113,7 @@ impl<'a> FromSql<'a> for ArrayString128 {
     }
 }
 
-impl ToSql for ArrayString128 {
+impl ToSql for ArrayString64 {
     fn to_sql(
         &self,
         ty: &postgres_types::Type,

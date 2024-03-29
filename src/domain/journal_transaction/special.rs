@@ -11,22 +11,26 @@ use rust_decimal::Decimal;
 use crate::{
     domain::{
         entity::{
+            column_total::column_total_id::ColumnTotalId,
             external_account::{
                 account_id::AccountId, account_transaction_id::AccountTransactionId,
             },
+            general_journal::journal_id::JournalId,
+            general_journal_transaction::journal_transaction_id::JournalTransactionId,
             general_ledger::general_ledger_id::GeneralLedgerId,
             interim_period::interim_period_id::InterimPeriodId,
+            journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
             ledger::ledger_id::LedgerId,
+            ledger_xact_type_code::LedgerXactTypeCode,
             period::period_id::PeriodId,
+            special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
+            special_journal_template_column::template_column_id::TemplateColumnId,
             subsidiary_ledger::{
                 external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
             },
+            xact_type::XactType,
         },
         journal_transaction::JournalTransactionColumn,
-        special_journal::{
-            column_total_id::ColumnTotalId, special_journal_template_id::SpecialJournalTemplateId,
-            template_column_id::TemplateColumnId,
-        },
         GeneralJournalService, GeneralLedgerService, JournalTransactionService, ServiceError,
         SpecialJournalService, SubsidiaryLedgerService,
     },
@@ -40,10 +44,7 @@ use crate::{
         ledger, ledger_xact_type, subsidiary_ledger, LedgerKey, SubsidiaryLedgerKey,
         TransactionState,
     },
-    shared_kernel::{
-        journal_transaction_column_id::JournalTransactionColumnId, JournalId, JournalTransactionId,
-        LedgerXactTypeCode, Sequence,
-    },
+    shared_kernel::Sequence,
     Store,
 };
 
@@ -249,7 +250,7 @@ where
                     let atx = external::account::transaction::Model {
                         external_account_id: inner.account_id,
                         timestamp: col.id().timestamp(),
-                        xact_type_code: crate::shared_kernel::XactType::Dr,
+                        xact_type_code: XactType::Dr,
                         amount: col.amount(),
                     };
                     let atx = <R as RepositoryOperations<
@@ -279,7 +280,7 @@ where
                     let atx = external::account::transaction::Model {
                         external_account_id: inner.account_id,
                         timestamp: col.id().timestamp(),
-                        xact_type_code: crate::shared_kernel::XactType::Cr,
+                        xact_type_code: XactType::Cr,
                         amount: col.amount(),
                     };
                     let atx = <R as RepositoryOperations<

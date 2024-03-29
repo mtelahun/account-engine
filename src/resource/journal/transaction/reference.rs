@@ -1,7 +1,10 @@
 use crate::{
-    domain::special_journal::column_total_id::ColumnTotalId,
+    domain::entity::{
+        column_total::column_total_id::ColumnTotalId,
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+    },
     resource::journal::JournalType,
-    shared_kernel::{JournalRefId, JournalTransactionId},
+    shared_kernel::JournalRefId,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

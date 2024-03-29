@@ -6,7 +6,7 @@ use crate::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{account_engine::AccountEngine, external},
-    shared_kernel::{ids::ExternalEntityId, ArrayString128, ArrayString24},
+    shared_kernel::{ids::ExternalEntityId, ArrayString24, ArrayString64},
     Store,
 };
 
@@ -74,7 +74,7 @@ impl ExternalAccountBuilder {
         subledger_id: &SubLedgerId,
         entity_id: &ExternalEntityId,
         account_no: ArrayString24,
-        name: ArrayString128,
+        name: ArrayString64,
         date_opened: NaiveDate,
     ) -> ExternalAccountBuilder {
         let model = external::account::Model {
@@ -110,7 +110,7 @@ impl ExternalAccount {
         self.0.id
     }
 
-    pub fn name(&self) -> ArrayString128 {
+    pub fn name(&self) -> ArrayString64 {
         self.0.name
     }
 
@@ -120,7 +120,7 @@ impl ExternalAccount {
 }
 
 impl EntityTypeBuilder {
-    pub fn new(code: EntityCode, description: ArrayString128) -> Self {
+    pub fn new(code: EntityCode, description: ArrayString64) -> Self {
         let typ = external::entity_type::Model { code, description };
 
         Self(typ)
@@ -132,13 +132,13 @@ impl ExternalEntityType {
         self.0.code
     }
 
-    pub fn description(&self) -> ArrayString128 {
+    pub fn description(&self) -> ArrayString64 {
         self.0.description
     }
 }
 
 impl ExternalEntityBuilder {
-    pub fn new(code: EntityCode, name: ArrayString128) -> Self {
+    pub fn new(code: EntityCode, name: ArrayString64) -> Self {
         let typ = external::entity::Model {
             entity_type_code: code,
             name,
@@ -157,7 +157,7 @@ impl ExternalEntity {
         self.0.entity_type_code
     }
 
-    pub fn name(&self) -> ArrayString128 {
+    pub fn name(&self) -> ArrayString64 {
         self.0.name
     }
 }

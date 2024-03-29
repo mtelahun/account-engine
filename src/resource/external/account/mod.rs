@@ -5,7 +5,7 @@ use crate::{
     domain::entity::{
         external_account::account_id::AccountId, subsidiary_ledger::subleder_id::SubLedgerId,
     },
-    shared_kernel::{ids::ExternalEntityId, ArrayString128, ArrayString24},
+    shared_kernel::{ids::ExternalEntityId, ArrayString24, ArrayString64},
 };
 
 pub mod transaction;
@@ -22,7 +22,7 @@ pub struct Model {
     pub subledger_id: SubLedgerId,
     pub entity_id: ExternalEntityId,
     pub account_no: ArrayString24,
-    pub name: ArrayString128,
+    pub name: ArrayString64,
     pub date_opened: NaiveDate,
 }
 
@@ -32,7 +32,7 @@ pub struct ActiveModel {
     pub subledger_id: SubLedgerId,
     pub entity_id: ExternalEntityId,
     pub account_no: ArrayString24,
-    pub name: ArrayString128,
+    pub name: ArrayString64,
     pub date_opened: NaiveDate,
 }
 

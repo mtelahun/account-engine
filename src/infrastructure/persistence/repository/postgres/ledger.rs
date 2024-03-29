@@ -11,7 +11,7 @@ use crate::{
         resource::Resource,
     },
     resource::ledger,
-    shared_kernel::{ArrayString128, ArrayString24},
+    shared_kernel::{ArrayString24, ArrayString64},
 };
 
 #[async_trait]
@@ -128,7 +128,7 @@ impl From<Row> for ledger::ActiveModel {
     fn from(value: Row) -> Self {
         Self {
             id: value.get("id"),
-            name: ArrayString128::from_str(value.get("name")).unwrap_or_default(),
+            name: ArrayString64::from_str(value.get("name")).unwrap_or_default(),
             number: ArrayString24::from_str(value.get("ledger_no")).unwrap_or_default(),
             ledger_type: value.get("ledger_type"),
             parent_id: value.get("parent_id"),

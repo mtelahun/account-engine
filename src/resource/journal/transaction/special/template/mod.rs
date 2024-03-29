@@ -1,19 +1,19 @@
 use crate::{
-    domain::special_journal::special_journal_template_id::SpecialJournalTemplateId,
-    shared_kernel::ArrayString128,
+    domain::entity::special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
+    shared_kernel::ArrayString64,
 };
 
 pub mod column;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Model {
-    pub name: ArrayString128,
+    pub name: ArrayString64,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct ActiveModel {
     pub id: SpecialJournalTemplateId,
-    pub name: ArrayString128,
+    pub name: ArrayString64,
 }
 
 impl From<&Model> for ActiveModel {

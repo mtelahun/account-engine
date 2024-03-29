@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use tokio_postgres::Row;
 
 use crate::{
-    domain::special_journal::special_journal_template_id::SpecialJournalTemplateId,
+    domain::entity::special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
     infrastructure::persistence::context::{
         error::OrmError, postgres::PostgresStore, repository_operations::RepositoryOperations,
         resource::Resource,

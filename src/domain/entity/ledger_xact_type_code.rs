@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use postgres_types::{to_sql_checked, FromSql, ToSql};
 
-use super::{fixed_len_char::InvalidLengthError, FixedLenChar};
+use crate::shared_kernel::{fixed_len_char::InvalidLengthError, FixedLenChar};
 
 pub(crate) const LEN: usize = 2;
 pub const XACT_LEDGER: &str = "LL";

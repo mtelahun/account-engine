@@ -1,6 +1,12 @@
 use chrono::NaiveDateTime;
 
-use crate::shared_kernel::{ArrayString128, JournalId, JournalTransactionId};
+use crate::{
+    domain::entity::{
+        general_journal::journal_id::JournalId,
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+    },
+    shared_kernel::ArrayString64,
+};
 
 pub mod line;
 
@@ -8,7 +14,7 @@ pub mod line;
 pub struct Model {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
-    pub explanation: ArrayString128,
+    pub explanation: ArrayString64,
     pub lines: Vec<line::Model>,
 }
 
@@ -16,7 +22,7 @@ pub struct Model {
 pub struct ActiveModel {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
-    pub explanation: ArrayString128,
+    pub explanation: ArrayString64,
     pub lines: Vec<line::ActiveModel>,
 }
 

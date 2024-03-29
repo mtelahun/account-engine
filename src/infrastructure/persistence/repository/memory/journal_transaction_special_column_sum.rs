@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::special_journal::column_total_id::ColumnTotalId,
+    domain::entity::column_total::column_total_id::ColumnTotalId,
     infrastructure::persistence::context::{
         error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },

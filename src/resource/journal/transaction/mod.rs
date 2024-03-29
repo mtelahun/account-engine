@@ -2,9 +2,13 @@ use chrono::NaiveDateTime;
 use postgres_types::{FromSql, ToSql};
 
 use crate::{
-    domain::entity::{external_account::account_id::AccountId, ledger::ledger_id::LedgerId},
+    domain::entity::{
+        external_account::account_id::AccountId, general_journal::journal_id::JournalId,
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+        ledger::ledger_id::LedgerId,
+    },
     resource::{LedgerKey, SubsidiaryLedgerKey},
-    shared_kernel::{ArrayString128, JournalId, JournalTransactionId},
+    shared_kernel::ArrayString64,
 };
 
 pub mod column;
@@ -16,14 +20,14 @@ pub mod special;
 pub struct Model {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
-    pub explanation: ArrayString128,
+    pub explanation: ArrayString64,
 }
 
 #[derive(Clone, Copy, Debug, ToSql, FromSql)]
 pub struct ActiveModel {
     pub journal_id: JournalId,
     pub timestamp: NaiveDateTime,
-    pub explanation: ArrayString128,
+    pub explanation: ArrayString64,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ToSql, FromSql)]

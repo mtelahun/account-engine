@@ -1,9 +1,12 @@
 use crate::{
+    domain::entity::{
+        general_journal::journal_id::JournalId,
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+    },
     infrastructure::persistence::context::{
         error::OrmError, memory::MemoryStore, repository_operations::RepositoryOperations,
     },
     resource::journal,
-    shared_kernel::{JournalId, JournalTransactionId},
 };
 use async_trait::async_trait;
 

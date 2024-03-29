@@ -2,6 +2,7 @@ use async_trait::async_trait;
 
 use crate::{
     domain::{
+        entity::{general_ledger::general_ledger_id::GeneralLedgerId, ledger::ledger_id::LedgerId},
         period::{interim_period::InterimPeriodId, period_id::PeriodId},
         Ledger, LedgerAccount, ServiceError,
     },
@@ -17,8 +18,6 @@ use crate::{
     shared_kernel::{ArrayString128, ArrayString24, ArrayString3, JournalId},
     Store,
 };
-
-use super::{general_ledger_id::GeneralLedgerId, ledger_id::LedgerId};
 
 #[async_trait]
 pub trait GeneralLedgerService<R>

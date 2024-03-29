@@ -1,6 +1,6 @@
 use crate::{
     domain::{
-        general_ledger::ledger_id::LedgerId,
+        entity::ledger::ledger_id::LedgerId,
         special_journal::{
             special_journal_template_id::SpecialJournalTemplateId,
             template_column_id::TemplateColumnId,

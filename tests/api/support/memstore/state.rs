@@ -6,11 +6,11 @@ use std::str::FromStr;
 
 use account_engine::{
     domain::{
+        entity::ledger::ledger_id::LedgerId,
         external::{
             EntityTypeBuilder, ExternalAccount, ExternalAccountBuilder, ExternalEntityBuilder,
             ExternalEntityType, ExternalService,
         },
-        general_ledger::ledger_id::LedgerId,
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
         special_journal::special_journal_template_id::SpecialJournalTemplateId,
         subsidiary_ledger::{

@@ -1,6 +1,6 @@
 use crate::{
     domain::{
-        general_ledger::{general_ledger_id::GeneralLedgerId, ledger_id::LedgerId},
+        entity::{general_ledger::general_ledger_id::GeneralLedgerId, ledger::ledger_id::LedgerId},
         period::period_id::PeriodId,
         subsidiary_ledger::{account_id::AccountId, subleder_id::SubLedgerId},
         ServiceError,

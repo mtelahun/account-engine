@@ -3,7 +3,7 @@ use std::str::FromStr;
 use async_trait::async_trait;
 use tokio_postgres::Row;
 
-use crate::domain::general_ledger::general_ledger_id::GeneralLedgerId;
+use crate::domain::entity::general_ledger::general_ledger_id::GeneralLedgerId;
 use crate::infrastructure::persistence::context::error::OrmError;
 use crate::infrastructure::persistence::context::postgres::PostgresStore;
 use crate::infrastructure::persistence::context::repository_operations::RepositoryOperations;

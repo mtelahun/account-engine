@@ -1,6 +1,6 @@
 use account_engine::{
     domain::{
-        general_ledger::ledger_id::LedgerId, AccountingPeriodService, GeneralJournalService,
+        entity::ledger::ledger_id::LedgerId, AccountingPeriodService, GeneralJournalService,
         GeneralLedgerService, JournalTransactionService, LedgerService, ServiceError,
     },
     infrastructure::persistence::context::error::OrmError,

@@ -1,7 +1,7 @@
 use postgres_types::{FromSql, ToSql};
 
 use crate::{
-    domain::general_ledger::ledger_id::LedgerId,
+    domain::entity::ledger::ledger_id::LedgerId,
     shared_kernel::{
         array_string_24::ArrayString24, array_string_64::ArrayString128, ArrayString3,
     },

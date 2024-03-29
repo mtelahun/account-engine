@@ -15,7 +15,9 @@ use crate::{
     Store,
 };
 
-use super::ledger_id::LedgerId;
+use self::ledger_id::LedgerId;
+
+pub mod ledger_id;
 
 pub trait LedgerOps {}
 

@@ -5,7 +5,7 @@ use postgres_types::{FromSql, ToSql};
 use rust_decimal::Decimal;
 
 use crate::{
-    domain::general_ledger::ledger_id::LedgerId,
+    domain::entity::ledger::ledger_id::LedgerId,
     resource::ledger,
     shared_kernel::{xact_type::XactType, JournalTransactionId, LedgerXactTypeCode, XACT_LEDGER},
 };

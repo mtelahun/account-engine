@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use rust_decimal::Decimal;
 
 use crate::{
-    domain::general_ledger::ledger_id::LedgerId,
+    domain::entity::ledger::ledger_id::LedgerId,
     shared_kernel::{JournalTransactionId, LedgerXactTypeCode},
 };
 
@@ -39,7 +39,7 @@ pub mod ledger {
     use chrono::NaiveDateTime;
 
     use crate::{
-        domain::general_ledger::ledger_id::LedgerId, resource::ledger::journal_entry::LedgerKey,
+        domain::entity::ledger::ledger_id::LedgerId, resource::ledger::journal_entry::LedgerKey,
     };
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -71,7 +71,7 @@ pub mod account {
 
     use crate::{
         domain::{
-            general_ledger::ledger_id::LedgerId,
+            entity::ledger::ledger_id::LedgerId,
             subsidiary_ledger::{
                 account_id::AccountId, external_xact_type_code::ExternalXactTypeCode,
             },

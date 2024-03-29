@@ -5,7 +5,7 @@ pub mod shared_kernel;
 
 use async_trait::async_trait;
 use domain::{
-    general_ledger::ledger_id::LedgerId,
+    entity::ledger::ledger_id::LedgerId,
     special_journal::special_journal_template_id::SpecialJournalTemplateId,
 };
 use infrastructure::persistence::context::error::OrmError;

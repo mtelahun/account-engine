@@ -5,7 +5,7 @@ use chrono::NaiveDateTime;
 
 use crate::{
     domain::{
-        general_ledger::ledger_id::LedgerId,
+        entity::ledger::ledger_id::LedgerId,
         journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
         subsidiary_ledger::{account_id::AccountId, external_xact_type_code::ExternalXactTypeCode},
         ServiceError,

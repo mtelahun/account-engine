@@ -3,7 +3,7 @@ use rust_decimal::Decimal;
 
 use crate::{
     domain::{
-        general_ledger::ledger_id::LedgerId, special_journal::column_total_id::ColumnTotalId,
+        entity::ledger::ledger_id::LedgerId, special_journal::column_total_id::ColumnTotalId,
     },
     resource::TransactionState,
     shared_kernel::{JournalId, JournalTransactionId, Sequence},

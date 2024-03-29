@@ -10,7 +10,7 @@ use rust_decimal::Decimal;
 
 use crate::{
     domain::{
-        general_ledger::{general_ledger_id::GeneralLedgerId, ledger_id::LedgerId},
+        entity::{general_ledger::general_ledger_id::GeneralLedgerId, ledger::ledger_id::LedgerId},
         journal_transaction::JournalTransactionColumn,
         period::{interim_period::InterimPeriodId, period_id::PeriodId},
         special_journal::{

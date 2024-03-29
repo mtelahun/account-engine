@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::{general_ledger::ledger_id::LedgerId, GeneralJournalService, ServiceError},
+    domain::{entity::ledger::ledger_id::LedgerId, GeneralJournalService, ServiceError},
     infrastructure::persistence::context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },

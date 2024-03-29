@@ -1,5 +1,7 @@
 use crate::{
-    domain::general_ledger::{general_ledger_id::GeneralLedgerId, ledger_id::LedgerId},
+    domain::entity::{
+        general_ledger::general_ledger_id::GeneralLedgerId, ledger::ledger_id::LedgerId,
+    },
     shared_kernel::{array_string_64::ArrayString128, ArrayString3},
 };
 

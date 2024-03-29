@@ -13,7 +13,7 @@ use crate::{
 };
 
 use super::{
-    general_ledger::ledger_id::LedgerId,
+    entity::ledger::ledger_id::LedgerId,
     special_journal::{
         column_total_id::ColumnTotalId, special_journal_template_id::SpecialJournalTemplateId,
     },

@@ -3,7 +3,7 @@ use std::str::FromStr;
 use async_trait::async_trait;
 
 use crate::{
-    domain::{general_ledger::ledger_id::LedgerId, ServiceError},
+    domain::{entity::ledger::ledger_id::LedgerId, ServiceError},
     infrastructure::persistence::context::{
         error::OrmError, memory::MemoryStore, postgres::PostgresStore,
         repository_operations::RepositoryOperations,

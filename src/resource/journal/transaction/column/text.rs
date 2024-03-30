@@ -3,8 +3,10 @@ use postgres_types::{FromSql, ToSql};
 
 use crate::{
     domain::entity::{
-        general_journal::journal_id::JournalId,
-        journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
+        journal::journal_id::JournalId,
+        journal_transaction_column::{
+            journal_transaction_column_id::JournalTransactionColumnId, text::ColumnText,
+        },
         special_journal_template_column::template_column_id::TemplateColumnId,
     },
     shared_kernel::ArrayString64,
@@ -35,6 +37,17 @@ impl ActiveModel {
 impl From<&Model> for ActiveModel {
     fn from(value: &Model) -> Self {
         Self {
+            journal_id: value.journal_id,
+            timestamp: value.timestamp,
+            template_column_id: value.template_column_id,
+            value: value.value,
+        }
+    }
+}
+
+impl From<ActiveModel> for ColumnText {
+    fn from(value: ActiveModel) -> Self {
+        ColumnText {
             journal_id: value.journal_id,
             timestamp: value.timestamp,
             template_column_id: value.template_column_id,

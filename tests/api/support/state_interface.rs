@@ -2,7 +2,7 @@ use account_engine::{
     application::error::ServiceError,
     domain::{
         entity::{
-            external_account::ExternalAccount, general_journal::journal_id::JournalId,
+            external_account::ExternalAccount, journal::journal_id::JournalId,
             ledger::ledger_id::LedgerId, subsidiary_ledger::subleder_id::SubLedgerId,
         },
         LedgerAccount,

@@ -1,6 +1,6 @@
 use chrono::NaiveDateTime;
 
-use crate::domain::entity::general_journal::journal_id::JournalId;
+use crate::domain::entity::journal::journal_id::JournalId;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct JournalTransactionId(JournalId, NaiveDateTime);

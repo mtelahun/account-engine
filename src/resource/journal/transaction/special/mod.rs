@@ -1,7 +1,7 @@
 use crate::{
     domain::entity::{
-        general_journal::journal_id::JournalId,
         general_journal_transaction::journal_transaction_id::JournalTransactionId,
+        journal::journal_id::JournalId,
         special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
         subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
     },

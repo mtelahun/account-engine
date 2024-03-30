@@ -1,13 +1,12 @@
 use account_engine::{
     application::error::ServiceError,
-    domain::{
-        entity::{
-            external_account::account_id::AccountId, general_journal::journal_id::JournalId,
-            general_journal_transaction::journal_transaction_id::JournalTransactionId,
-            special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
-            subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode, xact_type::XactType,
-        },
-        journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
+    domain::entity::{
+        external_account::account_id::AccountId,
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+        journal::journal_id::JournalId, journal_transaction::SpecialJournalTransaction,
+        journal_transaction_column::JournalTransactionColumn,
+        special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
+        subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode, xact_type::XactType,
     },
     resource::{
         journal::{self, LedgerAccountPostingRef},
@@ -59,35 +58,17 @@ pub trait ServiceTestInterface {
         explanation: &ArrayString64,
         tpl_col: &Vec<journal::transaction::special::template::column::ActiveModel>,
         line_models: &'a [JournalTransactionColumn],
-    ) -> Result<
-        (
-            SpecialJournalTransaction<journal::transaction::special::ActiveModel>,
-            Vec<JournalTransactionColumn>,
-        ),
-        ServiceError,
-    >;
+    ) -> Result<(SpecialJournalTransaction, Vec<JournalTransactionColumn>), ServiceError>;
 
     async fn get_subsidiary_transactions(
         &self,
         ids: Option<&Vec<JournalTransactionId>>,
-    ) -> Result<
-        Vec<(
-            SpecialJournalTransaction<journal::transaction::special::ActiveModel>,
-            Vec<JournalTransactionColumn>,
-        )>,
-        ServiceError,
-    >;
+    ) -> Result<Vec<(SpecialJournalTransaction, Vec<JournalTransactionColumn>)>, ServiceError>;
 
     async fn get_subsidiary_transactions_by_journal(
         &self,
         id: JournalId,
-    ) -> Result<
-        Vec<(
-            SpecialJournalTransaction<journal::transaction::special::ActiveModel>,
-            Vec<JournalTransactionColumn>,
-        )>,
-        ServiceError,
-    >;
+    ) -> Result<Vec<(SpecialJournalTransaction, Vec<JournalTransactionColumn>)>, ServiceError>;
 
     async fn get_subsidiary_transaction_columns(
         &self,

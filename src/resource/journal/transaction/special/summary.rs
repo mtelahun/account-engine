@@ -1,8 +1,8 @@
 use chrono::NaiveDateTime;
 
 use crate::domain::entity::{
-    general_journal::journal_id::JournalId,
     general_journal_transaction::journal_transaction_id::JournalTransactionId,
+    journal::journal_id::JournalId,
 };
 
 #[derive(Clone, Copy, Debug)]

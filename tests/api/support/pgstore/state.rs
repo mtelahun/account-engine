@@ -12,20 +12,23 @@ use account_engine::{
     domain::{
         entity::{
             external_account::{account_id::AccountId, ExternalAccount, ExternalAccountBuilder},
-            general_journal::journal_id::JournalId,
+            journal::journal_id::JournalId,
+            journal_transaction::SpecialJournalTransaction,
+            journal_transaction_column::{
+                account_cr::ColumnAccountCr, account_dr::ColumnAccountDr,
+                column_type::JournalTransactionColumnType, ledger_drcr::ColumnLedgerDrCr,
+                JournalTransactionColumn,
+            },
             ledger::ledger_id::LedgerId,
             special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
             xact_type::XactType,
         },
-        journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
         LedgerAccount,
     },
     infrastructure::persistence::context::postgres::PostgresStore,
     resource::{
-        account_engine::AccountEngine,
-        external, general_ledger,
-        journal::{self, transaction::JournalTransactionColumnType},
-        subsidiary_ledger, LedgerType,
+        account_engine::AccountEngine, external, general_ledger, journal, subsidiary_ledger,
+        LedgerType,
     },
     shared_kernel::{ArrayString3, ArrayString64, Sequence},
 };
@@ -279,17 +282,11 @@ impl TestState {
         account_xact_type: XactType,
         amount: Decimal,
         tpl_col: &Vec<journal::transaction::special::template::column::ActiveModel>,
-    ) -> Result<
-        (
-            SpecialJournalTransaction<journal::transaction::special::ActiveModel>,
-            Vec<JournalTransactionColumn>,
-        ),
-        ServiceError,
-    > {
+    ) -> Result<(SpecialJournalTransaction, Vec<JournalTransactionColumn>), ServiceError> {
         let timestamp = timestamp();
         let column0: JournalTransactionColumn;
         if account_xact_type == XactType::Dr {
-            let column = journal::transaction::column::account_dr::ActiveModel {
+            let column = ColumnAccountDr {
                 journal_id: journal.id,
                 timestamp,
                 template_column_id: tpl_col[0].id,
@@ -299,7 +296,7 @@ impl TestState {
             };
             column0 = JournalTransactionColumn::AccountDr(column);
         } else {
-            let column = journal::transaction::column::account_cr::ActiveModel {
+            let column = ColumnAccountCr {
                 journal_id: journal.id,
                 timestamp,
                 template_column_id: tpl_col[0].id,
@@ -309,7 +306,7 @@ impl TestState {
             };
             column0 = JournalTransactionColumn::AccountCr(column);
         }
-        let column1 = journal::transaction::column::ledger_drcr::ActiveModel {
+        let column1 = ColumnLedgerDrCr {
             journal_id: journal.id,
             timestamp,
             template_column_id: tpl_col[1].id,

@@ -3,9 +3,8 @@ use rust_decimal::Decimal;
 
 use crate::{
     domain::entity::{
-        general_journal::journal_id::JournalId,
         general_journal_transaction::journal_transaction_id::JournalTransactionId,
-        ledger::ledger_id::LedgerId,
+        journal::journal_id::JournalId, ledger::ledger_id::LedgerId,
     },
     resource::{LedgerPostingRef, TransactionState},
 };

@@ -1,21 +1,14 @@
-use chrono::{NaiveDate, NaiveDateTime};
-use postgres_types::{FromSql, ToSql};
+use chrono::NaiveDate;
 
 use crate::{
     domain::entity::{
-        external_account::account_id::AccountId, subsidiary_ledger::subleder_id::SubLedgerId,
+        external_account::account_id::AccountId,
+        subsidiary_ledger::{subleder_id::SubLedgerId, subsidiary_ledger_key::SubsidiaryLedgerKey},
     },
     shared_kernel::{ids::ExternalEntityId, ArrayString24, ArrayString64},
 };
 
 pub mod transaction;
-
-#[derive(Clone, Copy, Debug, Default, Hash, PartialEq, Eq, ToSql, FromSql)]
-#[postgres(name = "subsidiaryledgerkey")]
-pub struct SubsidiaryLedgerKey {
-    pub account_id: AccountId,
-    pub timestamp: NaiveDateTime,
-}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Model {

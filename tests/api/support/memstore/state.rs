@@ -17,8 +17,14 @@ use account_engine::{
     domain::{
         entity::{
             external_account::{account_id::AccountId, ExternalAccount, ExternalAccountBuilder},
-            general_journal::journal_id::JournalId,
             general_journal_transaction::journal_transaction_id::JournalTransactionId,
+            journal::journal_id::JournalId,
+            journal_transaction::SpecialJournalTransaction,
+            journal_transaction_column::{
+                account_cr::ColumnAccountCr, account_dr::ColumnAccountDr,
+                column_type::JournalTransactionColumnType, ledger_drcr::ColumnLedgerDrCr,
+                JournalTransactionColumn,
+            },
             ledger::ledger_id::LedgerId,
             special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
             subsidiary_ledger::{
@@ -26,14 +32,13 @@ use account_engine::{
             },
             xact_type::XactType,
         },
-        journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
         LedgerAccount,
     },
     infrastructure::persistence::context::memory::MemoryStore,
     resource::{
         account_engine::AccountEngine,
         external, general_ledger,
-        journal::{self, transaction::JournalTransactionColumnType, LedgerAccountPostingRef},
+        journal::{self, LedgerAccountPostingRef},
         ledger, subsidiary_ledger, LedgerKey, LedgerType,
     },
     shared_kernel::{ArrayString24, ArrayString3, ArrayString64, Sequence},
@@ -224,17 +229,11 @@ impl TestState {
         account_xact_type: XactType,
         amount: Decimal,
         tpl_col: &Vec<journal::transaction::special::template::column::ActiveModel>,
-    ) -> Result<
-        (
-            SpecialJournalTransaction<journal::transaction::special::ActiveModel>,
-            Vec<JournalTransactionColumn>,
-        ),
-        ServiceError,
-    > {
+    ) -> Result<(SpecialJournalTransaction, Vec<JournalTransactionColumn>), ServiceError> {
         let timestamp = timestamp();
         let column0: JournalTransactionColumn;
         if account_xact_type == XactType::Dr {
-            let column = journal::transaction::column::account_dr::ActiveModel {
+            let column = ColumnAccountDr {
                 journal_id: journal.id,
                 timestamp,
                 template_column_id: tpl_col[0].id,
@@ -244,7 +243,7 @@ impl TestState {
             };
             column0 = JournalTransactionColumn::AccountDr(column);
         } else {
-            let column = journal::transaction::column::account_cr::ActiveModel {
+            let column = ColumnAccountCr {
                 journal_id: journal.id,
                 timestamp,
                 template_column_id: tpl_col[0].id,
@@ -254,7 +253,7 @@ impl TestState {
             };
             column0 = JournalTransactionColumn::AccountCr(column);
         }
-        let column1 = journal::transaction::column::ledger_drcr::ActiveModel {
+        let column1 = ColumnLedgerDrCr {
             journal_id: journal.id,
             timestamp,
             template_column_id: tpl_col[1].id,
@@ -295,12 +294,11 @@ impl TestState {
             .create_journal_template(&sales)
             .await
             .expect("failed to create sales journal template");
-        let column_type: JournalTransactionColumnType;
-        if account_dr_id.is_some() {
-            column_type = JournalTransactionColumnType::AccountDr;
+        let column_type = if account_dr_id.is_some() {
+            JournalTransactionColumnType::AccountDr
         } else {
-            column_type = JournalTransactionColumnType::AccountCr;
-        }
+            JournalTransactionColumnType::AccountCr
+        };
         let act_column = journal::transaction::special::template::column::Model {
             template_id: template.id,
             sequence: Sequence::new(1).unwrap(),
@@ -537,13 +535,7 @@ impl ServiceTestInterface for TestState {
         explanation: &ArrayString64,
         _tpl_col: &Vec<journal::transaction::special::template::column::ActiveModel>,
         line_models: &'a [JournalTransactionColumn],
-    ) -> Result<
-        (
-            SpecialJournalTransaction<journal::transaction::special::ActiveModel>,
-            Vec<JournalTransactionColumn>,
-        ),
-        ServiceError,
-    > {
+    ) -> Result<(SpecialJournalTransaction, Vec<JournalTransactionColumn>), ServiceError> {
         self.engine
             .create_special_transaction(
                 *journal_id,
@@ -559,26 +551,14 @@ impl ServiceTestInterface for TestState {
     async fn get_subsidiary_transactions(
         &self,
         ids: Option<&Vec<JournalTransactionId>>,
-    ) -> Result<
-        Vec<(
-            SpecialJournalTransaction<journal::transaction::special::ActiveModel>,
-            Vec<JournalTransactionColumn>,
-        )>,
-        ServiceError,
-    > {
+    ) -> Result<Vec<(SpecialJournalTransaction, Vec<JournalTransactionColumn>)>, ServiceError> {
         self.engine.get_special_transactions(ids).await
     }
 
     async fn get_subsidiary_transactions_by_journal(
         &self,
         id: JournalId,
-    ) -> Result<
-        Vec<(
-            SpecialJournalTransaction<journal::transaction::special::ActiveModel>,
-            Vec<JournalTransactionColumn>,
-        )>,
-        ServiceError,
-    > {
+    ) -> Result<Vec<(SpecialJournalTransaction, Vec<JournalTransactionColumn>)>, ServiceError> {
         self.engine.get_subsidiary_transactions_by_journal(id).await
     }
 

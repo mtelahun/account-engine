@@ -4,8 +4,11 @@ use rust_decimal::Decimal;
 
 use crate::{
     domain::entity::{
-        external_account::account_id::AccountId, general_journal::journal_id::JournalId,
-        journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
+        external_account::account_id::AccountId,
+        journal::journal_id::JournalId,
+        journal_transaction_column::{
+            account_cr::ColumnAccountCr, journal_transaction_column_id::JournalTransactionColumnId,
+        },
         special_journal_template_column::template_column_id::TemplateColumnId,
     },
     resource::journal::transaction::AccountPostingRef,
@@ -49,6 +52,32 @@ impl From<Model> for ActiveModel {
             amount: value.amount,
             account_id: value.account_id,
             posting_ref: None,
+        }
+    }
+}
+
+impl From<ActiveModel> for ColumnAccountCr {
+    fn from(value: ActiveModel) -> Self {
+        ColumnAccountCr {
+            journal_id: value.journal_id,
+            timestamp: value.timestamp,
+            template_column_id: value.template_column_id,
+            account_id: value.account_id,
+            amount: value.amount,
+            posting_ref: value.posting_ref,
+        }
+    }
+}
+
+impl From<ColumnAccountCr> for ActiveModel {
+    fn from(value: ColumnAccountCr) -> Self {
+        ActiveModel {
+            journal_id: value.journal_id,
+            timestamp: value.timestamp,
+            template_column_id: value.template_column_id,
+            account_id: value.account_id,
+            amount: value.amount,
+            posting_ref: value.posting_ref,
         }
     }
 }

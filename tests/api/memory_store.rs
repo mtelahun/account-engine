@@ -7,18 +7,15 @@ use account_engine::{
         special_journal_transaction::SpecialJournalTransactionService,
     },
     domain::{
-        entity::{ledger::ledger_id::LedgerId, xact_type::XactType},
+        entity::{
+            account_posting_ref::AccountPostingRef,
+            journal_transaction_column::column_type::JournalTransactionColumnType,
+            ledger::ledger_id::LedgerId, xact_type::XactType,
+        },
         LedgerAccount,
     },
     infrastructure::persistence::context::error::OrmError,
-    resource::{
-        accounting_period,
-        journal::{
-            self,
-            transaction::{AccountPostingRef, JournalTransactionColumnType},
-        },
-        InterimType, LedgerType, TransactionState,
-    },
+    resource::{accounting_period, journal, InterimType, LedgerType, TransactionState},
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
@@ -752,7 +749,8 @@ async fn special_journal_dr_account_plus_one_double_ledger_column() {
 
     // Assert 1
     assert_eq!(
-        stx.journal_id, jrn.id,
+        stx.journal_id(),
+        jrn.id,
         "transaction journal_id matches input"
     );
     assert_eq!(
@@ -805,7 +803,7 @@ async fn special_journal_dr_account_plus_one_double_ledger_column() {
     );
     assert_eq!(
         stx_cols[0].account_posting_ref(),
-        Some(AccountPostingRef::new(&acct.id(), stx.timestamp)),
+        Some(AccountPostingRef::new(&acct.id(), stx.timestamp())),
         "the account contains a posting reference"
     );
 }
@@ -836,7 +834,8 @@ async fn special_journal_cr_account_plus_one_double_ledger_column() {
 
     // Assert 1
     assert_eq!(
-        stx.journal_id, jrn.id,
+        stx.journal_id(),
+        jrn.id,
         "transaction journal_id matches input"
     );
     assert_eq!(
@@ -889,7 +888,7 @@ async fn special_journal_cr_account_plus_one_double_ledger_column() {
     );
     assert_eq!(
         stx_cols[0].account_posting_ref(),
-        Some(AccountPostingRef::new(&acct.id(), stx.timestamp)),
+        Some(AccountPostingRef::new(&acct.id(), stx.timestamp())),
         "the account contains a posting reference"
     );
 }

@@ -9,38 +9,34 @@ use journal::LedgerPostingRef;
 use rust_decimal::Decimal;
 
 use crate::{
-    domain::{
-        entity::{
-            column_total::column_total_id::ColumnTotalId,
-            external_account::{
-                account_id::AccountId, account_transaction_id::AccountTransactionId,
-            },
-            general_journal::journal_id::JournalId,
-            general_journal_transaction::journal_transaction_id::JournalTransactionId,
-            general_ledger::general_ledger_id::GeneralLedgerId,
-            interim_period::interim_period_id::InterimPeriodId,
-            journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
-            ledger::ledger_id::LedgerId,
-            ledger_xact_type_code::LedgerXactTypeCode,
-            period::period_id::PeriodId,
-            special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
-            special_journal_template_column::template_column_id::TemplateColumnId,
-            subsidiary_ledger::{
-                external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
-            },
-            xact_type::XactType,
+    domain::entity::{
+        account_posting_ref::AccountPostingRef,
+        column_total::column_total_id::ColumnTotalId,
+        external_account::{account_id::AccountId, account_transaction_id::AccountTransactionId},
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+        general_ledger::general_ledger_id::GeneralLedgerId,
+        interim_period::interim_period_id::InterimPeriodId,
+        journal::journal_id::JournalId,
+        journal_transaction_column::{
+            journal_transaction_column_id::JournalTransactionColumnId, JournalTransactionColumn,
         },
-        journal_transaction::JournalTransactionColumn,
+        ledger::ledger_id::LedgerId,
+        ledger_xact_type_code::LedgerXactTypeCode,
+        period::period_id::PeriodId,
+        special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
+        special_journal_template_column::template_column_id::TemplateColumnId,
+        subsidiary_ledger::{
+            external_xact_type_code::ExternalXactTypeCode, subleder_id::SubLedgerId,
+            subsidiary_ledger_key::SubsidiaryLedgerKey,
+        },
+        xact_type::XactType,
     },
     infrastructure::persistence::context::{
         memory::MemoryStore, postgres::PostgresStore, repository_operations::RepositoryOperations,
     },
     resource::{
-        account_engine::AccountEngine,
-        accounting_period, external, general_ledger,
-        journal::{self, transaction::AccountPostingRef},
-        ledger, ledger_xact_type, subsidiary_ledger, LedgerKey, SubsidiaryLedgerKey,
-        TransactionState,
+        self, account_engine::AccountEngine, accounting_period, external, general_ledger, journal,
+        ledger, ledger_xact_type, subsidiary_ledger, LedgerKey, TransactionState,
     },
     shared_kernel::Sequence,
     Store,
@@ -269,7 +265,8 @@ where
                         account_id: atx.external_account_id,
                         timestamp: atx.timestamp,
                     };
-                    let mut model = *inner;
+                    let mut model: resource::journal::transaction::column::account_dr::ActiveModel =
+                        (*inner).into();
                     model.posting_ref = Some(AccountPostingRef { key });
                     let _ = <R as RepositoryOperations<
                         journal::transaction::column::account_dr::Model,
@@ -306,7 +303,7 @@ where
                         journal::transaction::column::account_cr::ActiveModel,
                         JournalTransactionColumnId,
                     >>::save(
-                        SpecialJournalTransactionService::store(self), &model
+                        SpecialJournalTransactionService::store(self), &model.into()
                     )
                     .await?;
                 }

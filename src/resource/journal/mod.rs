@@ -2,7 +2,7 @@ use postgres_types::{FromSql, ToSql};
 
 use crate::{
     domain::entity::{
-        general_journal::journal_id::JournalId, ledger::ledger_id::LedgerId,
+        journal::journal_id::JournalId, ledger::ledger_id::LedgerId,
         special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
     },
     shared_kernel::{ArrayString24, ArrayString64},

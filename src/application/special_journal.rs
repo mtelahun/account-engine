@@ -4,30 +4,26 @@ use async_trait::async_trait;
 use chrono::NaiveDateTime;
 
 use crate::{
-    domain::{
-        entity::{
-            external_account::account_id::AccountId,
-            general_journal::journal_id::JournalId,
-            general_journal_transaction::journal_transaction_id::JournalTransactionId,
-            journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
-            ledger::ledger_id::LedgerId,
-            ledger_xact_type_code::{self, LedgerXactTypeCode},
-            special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
-            special_journal_template_column::template_column_id::TemplateColumnId,
-            subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
+    domain::entity::{
+        external_account::account_id::AccountId,
+        general_journal_transaction::journal_transaction_id::JournalTransactionId,
+        journal::journal_id::JournalId,
+        journal_transaction::{JournalTransaction, SpecialJournalTransaction},
+        journal_transaction_column::{
+            column_type::JournalTransactionColumnType,
+            journal_transaction_column_id::JournalTransactionColumnId, JournalTransactionColumn,
         },
-        journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
+        ledger::ledger_id::LedgerId,
+        ledger_xact_type_code::{self, LedgerXactTypeCode},
+        special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
+        special_journal_template_column::template_column_id::TemplateColumnId,
+        subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
     },
     infrastructure::persistence::context::{
         error::OrmError, memory::MemoryStore, postgres::PostgresStore,
         repository_operations::RepositoryOperations,
     },
-    resource::{
-        account_engine::AccountEngine,
-        external,
-        journal::{self, transaction::JournalTransactionColumnType},
-        ledger, ledger_xact_type,
-    },
+    resource::{account_engine::AccountEngine, external, journal, ledger, ledger_xact_type},
     shared_kernel::ArrayString64,
     Store,
 };
@@ -90,13 +86,7 @@ where
     async fn get_subsidiary_transactions_by_journal(
         &self,
         id: JournalId,
-    ) -> Result<
-        Vec<(
-            SpecialJournalTransaction<journal::transaction::special::ActiveModel>,
-            Vec<JournalTransactionColumn>,
-        )>,
-        ServiceError,
-    > {
+    ) -> Result<Vec<(SpecialJournalTransaction, Vec<JournalTransactionColumn>)>, ServiceError> {
         let domain = format!("journal_id = {id}");
         let records = <R as RepositoryOperations<
             journal::transaction::special::Model,
@@ -140,13 +130,7 @@ where
         template_id: SpecialJournalTemplateId,
         xact_type_external_code: ExternalXactTypeCode,
         line_models: &[JournalTransactionColumn],
-    ) -> Result<
-        (
-            SpecialJournalTransaction<journal::transaction::special::ActiveModel>,
-            Vec<JournalTransactionColumn>,
-        ),
-        ServiceError,
-    > {
+    ) -> Result<(SpecialJournalTransaction, Vec<JournalTransactionColumn>), ServiceError> {
         let base_model = journal::transaction::Model {
             journal_id,
             timestamp,
@@ -189,7 +173,7 @@ where
                         JournalTransactionColumnId,
                     >>::insert(self.store(), &model)
                     .await?;
-                    columns.push(active_model.into());
+                    columns.push(JournalTransactionColumn::LedgerDrCr(active_model.into()));
                 }
                 JournalTransactionColumn::AccountDr(col) => {
                     let model = journal::transaction::column::account_dr::Model {
@@ -205,7 +189,7 @@ where
                         JournalTransactionColumnId,
                     >>::insert(self.store(), &model)
                     .await?;
-                    columns.push(active_model.into());
+                    columns.push(JournalTransactionColumn::AccountDr(active_model.into()));
                 }
                 JournalTransactionColumn::AccountCr(col) => {
                     let model = journal::transaction::column::account_cr::Model {
@@ -221,14 +205,19 @@ where
                         JournalTransactionColumnId,
                     >>::insert(self.store(), &model)
                     .await?;
-                    columns.push(active_model.into());
+                    columns.push(JournalTransactionColumn::AccountCr(active_model.into()));
                 }
                 JournalTransactionColumn::Text(_) => todo!(),
             }
         }
 
         Ok((
-            SpecialJournalTransaction::new(&base_record, record),
+            JournalTransaction::new(
+                &base_record.journal_id,
+                base_record.timestamp,
+                &base_record.explanation,
+            )
+            .build_special_transaction(record.template_id, record.xact_type_external.unwrap()),
             columns,
         ))
     }
@@ -236,13 +225,7 @@ where
     async fn get_special_transactions(
         &self,
         ids: Option<&Vec<JournalTransactionId>>,
-    ) -> Result<
-        Vec<(
-            SpecialJournalTransaction<journal::transaction::special::ActiveModel>,
-            Vec<JournalTransactionColumn>,
-        )>,
-        ServiceError,
-    > {
+    ) -> Result<Vec<(SpecialJournalTransaction, Vec<JournalTransactionColumn>)>, ServiceError> {
         let base_records = <R as RepositoryOperations<
             journal::transaction::Model,
             journal::transaction::ActiveModel,
@@ -256,10 +239,7 @@ where
         >>::get(self.store(), ids)
         .await?;
 
-        let mut result = Vec::<(
-            SpecialJournalTransaction<journal::transaction::special::ActiveModel>,
-            Vec<JournalTransactionColumn>,
-        )>::new();
+        let mut result = Vec::<(SpecialJournalTransaction, Vec<JournalTransactionColumn>)>::new();
         for record in records {
             let tpl_cols = <R as RepositoryOperations<
                 journal::transaction::special::template::column::Model,
@@ -287,7 +267,7 @@ where
                         )
                         .await?;
                         for col in special_columns {
-                            columns.push(JournalTransactionColumn::LedgerDrCr(col))
+                            columns.push(JournalTransactionColumn::LedgerDrCr(col.into()))
                         }
                     }
                     JournalTransactionColumnType::Text => todo!(),
@@ -305,7 +285,7 @@ where
                         )
                         .await?;
                         for col in special_columns {
-                            columns.push(JournalTransactionColumn::AccountDr(col))
+                            columns.push(JournalTransactionColumn::AccountDr(col.into()))
                         }
                     }
                     JournalTransactionColumnType::AccountCr => {
@@ -322,7 +302,7 @@ where
                         )
                         .await?;
                         for col in special_columns {
-                            columns.push(JournalTransactionColumn::AccountCr(col))
+                            columns.push(JournalTransactionColumn::AccountCr(col.into()))
                         }
                     }
                     _ => continue,
@@ -330,7 +310,18 @@ where
             }
             for base in base_records.iter() {
                 if base.journal_id == record.journal_id && base.timestamp == record.timestamp {
-                    result.push((SpecialJournalTransaction::new(base, record), columns));
+                    result.push((
+                        JournalTransaction::new(
+                            &base.journal_id,
+                            base.timestamp,
+                            &base.explanation,
+                        )
+                        .build_special_transaction(
+                            record.template_id,
+                            record.xact_type_external.unwrap(),
+                        ),
+                        columns,
+                    ));
                     break;
                 }
             }
@@ -374,7 +365,7 @@ where
                     )
                     .await?;
                     for col in columns {
-                        result.push(JournalTransactionColumn::LedgerDrCr(col))
+                        result.push(JournalTransactionColumn::LedgerDrCr(col.into()))
                     }
                 }
                 JournalTransactionColumnType::AccountDr => {
@@ -391,7 +382,7 @@ where
                     )
                     .await?;
                     for col in special_columns {
-                        result.push(JournalTransactionColumn::AccountDr(col))
+                        result.push(JournalTransactionColumn::AccountDr(col.into()))
                     }
                 }
                 JournalTransactionColumnType::AccountCr => {
@@ -408,7 +399,7 @@ where
                     )
                     .await?;
                     for col in special_columns {
-                        result.push(JournalTransactionColumn::AccountCr(col))
+                        result.push(JournalTransactionColumn::AccountCr(col.into()))
                     }
                 }
                 JournalTransactionColumnType::Text => {
@@ -421,7 +412,7 @@ where
                     )
                     .await?;
                     for col in columns {
-                        result.push(JournalTransactionColumn::Text(col))
+                        result.push(JournalTransactionColumn::Text(col.into()))
                     }
                 }
                 _ => continue,

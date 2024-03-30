@@ -4,8 +4,8 @@ use async_trait::async_trait;
 
 use crate::{
     domain::entity::{
-        general_journal::journal_id::JournalId,
         general_journal_transaction::journal_transaction_id::JournalTransactionId,
+        journal::journal_id::JournalId,
         ledger::ledger_id::LedgerId,
         ledger_xact_type_code::{self, LedgerXactTypeCode},
     },

@@ -3,7 +3,7 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
 use crate::{
     domain::entity::{
-        general_journal::journal_id::JournalId,
+        journal::journal_id::JournalId,
         journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
         special_journal_template_column::template_column_id::TemplateColumnId,
     },

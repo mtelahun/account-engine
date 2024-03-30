@@ -3,11 +3,12 @@ use postgres_types::{FromSql, ToSql};
 
 use crate::{
     domain::entity::{
-        external_account::account_id::AccountId, general_journal::journal_id::JournalId,
+        account_posting_ref::AccountPostingRef, external_account::account_id::AccountId,
         general_journal_transaction::journal_transaction_id::JournalTransactionId,
-        ledger::ledger_id::LedgerId,
+        journal::journal_id::JournalId, ledger::ledger_id::LedgerId,
+        subsidiary_ledger::subsidiary_ledger_key::SubsidiaryLedgerKey,
     },
-    resource::{LedgerKey, SubsidiaryLedgerKey},
+    resource::LedgerKey,
     shared_kernel::ArrayString64,
 };
 
@@ -43,13 +44,6 @@ pub struct LedgerAccountPostingRef {
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, ToSql, FromSql)]
-#[postgres(name = "accountpostingref")]
-pub struct AccountPostingRef {
-    #[postgres(name = "key")]
-    pub(crate) key: SubsidiaryLedgerKey,
-}
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, ToSql, FromSql)]
 #[postgres(name = "transactionstate")]
 pub enum TransactionState {
     #[postgres(name = "pending")]
@@ -59,23 +53,6 @@ pub enum TransactionState {
     Posted,
     #[postgres(name = "archived")]
     Archived,
-}
-
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, ToSql, FromSql)]
-#[postgres(name = "specialcolumntype")]
-pub enum JournalTransactionColumnType {
-    #[postgres(name = "ledger_drcr")]
-    LedgerDrCr,
-    #[postgres(name = "text")]
-    Text,
-    #[postgres(name = "account_dr")]
-    AccountDr,
-    #[postgres(name = "account_cr")]
-    AccountCr,
-    #[postgres(name = "ledger_dr")]
-    LedgerDr,
-    #[postgres(name = "ledger_cr")]
-    LedgerCr,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -4,10 +4,12 @@ use account_engine::{
         entity::{
             external_account::account_id::AccountId,
             general_journal_transaction::journal_transaction_id::JournalTransactionId,
+            journal_transaction::SpecialJournalTransaction,
+            journal_transaction_column::{ledger_drcr::ColumnLedgerDrCr, JournalTransactionColumn},
             special_journal_template::special_journal_template_id::SpecialJournalTemplateId,
-            subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode, xact_type::XactType,
+            subsidiary_ledger::external_xact_type_code::ExternalXactTypeCode,
+            xact_type::XactType,
         },
-        journal_transaction::{JournalTransactionColumn, SpecialJournalTransaction},
         LedgerAccount,
     },
     resource::{journal, subsidiary_ledger},
@@ -50,7 +52,7 @@ impl<S: StateInterface + ServiceTestInterface> TestSpecialJournalTransaction<S> 
         let timestamp = timestamp();
         let (sub, journal, control, account, tpl, tpl_col) =
             state.create_subsidiary("A/R", control).await;
-        let column1 = journal::transaction::column::ledger_drcr::ActiveModel {
+        let column1 = ColumnLedgerDrCr {
             journal_id: journal.id,
             timestamp,
             template_column_id: tpl_col[0].id,
@@ -76,12 +78,7 @@ impl<S: StateInterface + ServiceTestInterface> TestSpecialJournalTransaction<S> 
         }
     }
 
-    pub async fn journalize(
-        &self,
-    ) -> (
-        SpecialJournalTransaction<journal::transaction::special::ActiveModel>,
-        Vec<JournalTransactionColumn>,
-    ) {
+    pub async fn journalize(&self) -> (SpecialJournalTransaction, Vec<JournalTransactionColumn>) {
         let lines = vec![self.column1];
         let (tx, tx_lines) = self
             .state
@@ -162,7 +159,7 @@ impl<S: StateInterface + ServiceTestInterface> TestSpecialJournalTransaction<S> 
             }
         }
         if is_posted {
-            self.assert_match_column_posting_ref(jxacts.timestamp, &jx_columns)
+            self.assert_match_column_posting_ref(jxacts.timestamp(), &jx_columns)
                 .await;
         }
     }

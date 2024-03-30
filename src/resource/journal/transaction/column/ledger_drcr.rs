@@ -3,8 +3,11 @@ use postgres_types::{FromSql, ToSql};
 use rust_decimal::Decimal;
 
 use crate::domain::entity::{
-    column_total::column_total_id::ColumnTotalId, general_journal::journal_id::JournalId,
-    journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
+    column_total::column_total_id::ColumnTotalId,
+    journal::journal_id::JournalId,
+    journal_transaction_column::{
+        journal_transaction_column_id::JournalTransactionColumnId, ledger_drcr::ColumnLedgerDrCr,
+    },
     ledger::ledger_id::LedgerId,
     special_journal_template_column::template_column_id::TemplateColumnId,
 };
@@ -50,6 +53,20 @@ impl From<Model> for ActiveModel {
             ledger_cr_id: value.ledger_cr_id,
             ledger_dr_id: value.ledger_dr_id,
             column_total_id: None,
+        }
+    }
+}
+
+impl From<ActiveModel> for ColumnLedgerDrCr {
+    fn from(value: ActiveModel) -> Self {
+        ColumnLedgerDrCr {
+            journal_id: value.journal_id,
+            timestamp: value.timestamp,
+            template_column_id: value.template_column_id,
+            amount: value.amount,
+            ledger_dr_id: value.ledger_dr_id,
+            ledger_cr_id: value.ledger_cr_id,
+            column_total_id: value.column_total_id,
         }
     }
 }

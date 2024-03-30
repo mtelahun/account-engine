@@ -1,9 +1,9 @@
 use crate::{
     application::error::ServiceError,
     domain::entity::{
-        external_account::account_id::AccountId, general_journal::journal_id::JournalId,
+        external_account::account_id::AccountId,
         general_journal_transaction::journal_transaction_id::JournalTransactionId,
-        general_ledger::general_ledger_id::GeneralLedgerId,
+        general_ledger::general_ledger_id::GeneralLedgerId, journal::journal_id::JournalId,
         journal_transaction_column::journal_transaction_column_id::JournalTransactionColumnId,
         ledger::ledger_id::LedgerId, ledger_xact_type_code::LedgerXactTypeCode,
         period::period_id::PeriodId, subsidiary_ledger::subleder_id::SubLedgerId,
